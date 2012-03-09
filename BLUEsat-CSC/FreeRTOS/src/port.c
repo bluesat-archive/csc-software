@@ -60,10 +60,6 @@
  * to ARM mode are contained in portISR.c.
  *----------------------------------------------------------*/
 
-
-/* Standard includes. */
-//#include <stdlib.h>
-
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
