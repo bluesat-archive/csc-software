@@ -1,6 +1,6 @@
 use strict;
 use warnings;
-use parse_tests qw(parse_file);
+use parse_tests qw(parse_file generate_summary);
 
 
 unless ( @ARGV ==1)
@@ -12,6 +12,7 @@ unless ( @ARGV ==1)
 my $file = $ARGV[0];
 
 parse_file($file);
+generate_summary();
 
 sub usage
 {
