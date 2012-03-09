@@ -10,10 +10,10 @@ fi
 for x in $files
 do
 	filename=$(basename $x)
-	echo -e "Running test: $filename\n\r"
+	echo  "Running test: $filename"
 	$x
-	echo -e "\n\r"
-	echo -e "---------------------\n\r"
+	echo  ""
+	echo  "---------------------"
 done >> $output
 
 exit 0
