@@ -13,7 +13,7 @@ do
 	echo  "Running test: $filename"
 	$x
 	echo  ""
-	echo  "---------------------"
+	echo  "<Next Test>"
 done >> $output
 
 exit 0
