@@ -1,6 +1,6 @@
 # BLUESAT Critical Systems Computer Builder Script
-# Copyright BLUESAT Project 2009
-# Version 1.0 
+# Copyright BLUESAT Project 2011
+# Version 2.0 
 # Author: Colin Tan
 #
 # This script will build the various components of the OS and perform linking.
@@ -17,66 +17,60 @@ include ../Burner/lpcburn/Makefile
 #------------- 
 # Directories
 #-------------
+CSC_DIR           =..
 APP_SOURCE_DIR		=../Applications
 BURNER_DIR			=../Burner/lpcburn
 BUILDS_DIR			=../Builds
-CORE_SOURCE_DIR		=../Core
+CORE_SOURCE_DIR	=../Core
 DRIVER_SOURCE_DIR	=../Drivers
 IMAGE_DIR			=../Dist
-INCLUDES_DIR		=../Includes
-SCRIPTS_DIR			=../Scripts
+SCRIPTS_DIR			=.
 UNIT_TESTS_DIR		=../Unit_Tests
+TEST_SUITES			=$(UNIT_TESTS_DIR)/Test_Suites
 
 
 #---------------------
 # Compiler / Settings
 #---------------------
+C			=gcc
 CC			=arm-elf-gcc
-OBJCOPY		=arm-elf-objcopy
-WARNINGS=-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
+OBJCOPY	=arm-elf-objcopy
+WARNINGS =-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
 -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
-CFLAGS		=$(WARNINGS) -D GCC_ARM7 -I. -I $(INCLUDES_DIR) -mcpu=arm7tdmi -fomit-frame-pointer \
--fno-strict-aliasing -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2109-rom.ld
+CFLAGS	=$(WARNINGS) -D GCC_ARM7 -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
+-fno-strict-aliasing -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
 #TODO: use -nostdlib but have to implement some stdlib functions
 LINKER_FLAGS=-Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
 
-
+TESTWARNINGS 	=-Wall
+TESTCFLAGS 		=-I$(UNIT_TESTS_DIR) $(patsubst %,-I%,$(subst :, ,$(INC_DIRS)))
+TESTOUT			=-o $(IMAGE_DIR)/$(<F).exe
 #--------------
 # Source files
 #--------------
-CORE_SRC = \
-$(CORE_SOURCE_DIR)/tasks.c \
-$(CORE_SOURCE_DIR)/queue.c \
-$(CORE_SOURCE_DIR)/list.c \
-$(CORE_SOURCE_DIR)/heap_2.c \
-$(CORE_SOURCE_DIR)/port.c \
-$(CORE_SOURCE_DIR)/portISR.c \
-$(CORE_SOURCE_DIR)/main.c
+# files which should not be compiled need to be of another type instead of *.c/*.h
+# it is suggested changing to *.c.ignore/*.h.ignore
 
-APP_SRC = \
-$(APP_SOURCE_DIR)/VIC_Helper.c\
-$(APP_SOURCE_DIR)/Dtmf_keys.c \
-$(APP_SOURCE_DIR)/XXTEA_Dtmf.c \
-$(APP_SOURCE_DIR)/Dtmf.c \
-$(APP_SOURCE_DIR)/Terminal.c\
-$(APP_SOURCE_DIR)/Command.c\
-$(APP_SOURCE_DIR)/Radio.c\
-$(APP_SOURCE_DIR)/Inter_Tray_Comms.c
+TEST_CODE_TEMPLATE =test_*.c
+CODE_TEMPLATE		 =*.c
+EXEC_FILES    = $(shell  ls $(IMAGE_DIR)/test_*.exe)
+TEST_SUBDIRS  =/test/
+FIND_TESTS    =/usr/bin/find .. -name $(TEST_CODE_TEMPLATE) | grep $(TEST_SUBDIRS)
+CODE_SUBDIRS  =/src/
+FIND_CODE     =/usr/bin/find .. -name $(CODE_TEMPLATE) | grep $(CODE_SUBDIRS)
+INC_SUBDIRS   =includes
+FIND_INCLUDES =/usr/bin/find .. -type d -name $(INC_SUBDIRS)
 
-DRIVER_SRC = \
-$(DRIVER_SOURCE_DIR)/Init_Ports.c \
-$(DRIVER_SOURCE_DIR)/Reg_Ctrl.c \
-$(DRIVER_SOURCE_DIR)/Comms_DTMF.c \
-$(DRIVER_SOURCE_DIR)/Comms_UART.c\
-$(DRIVER_SOURCE_DIR)/Comms_Radio.c\
-$(DRIVER_SOURCE_DIR)/Comms_I2C.c\
-$(DRIVER_SOURCE_DIR)/Sys_RTC.c
+ALL_SRC = $(shell $(FIND_CODE))
+INC_DIRS = $(shell $(FIND_INCLUDES))
+TESTS  = $(shell  $(FIND_TESTS))
 
-ALL_SRC = \
-$(CORE_SRC) \
-$(DRIVER_SRC) \
-$(APP_SRC)
+CUTEST = $(shell ls $(UNIT_TESTS_DIR)/*.c) 
+SUITES = $(shell ls $(TEST_SUITES)/*.c) 
+
+TEST_CORE = $(CUTEST)\
+$(SUITES)
 
 
 #--------------------------
@@ -85,8 +79,7 @@ $(APP_SRC)
 
 # Define all object files
 ALL_OBJ = $(ALL_SRC:.c=.o)
-
-TARGET_OBJS=$(addprefix $(BUILDS_DIR)/,$(notdir $(ALL_OBJ)))
+ALL_TESTS = $(TESTS:.c=.o)
 
 default: hex
 
@@ -99,6 +92,9 @@ hex: elf
 $(ALL_OBJ): %.o : %.c
 	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 
+$(ALL_TESTS) : %.o : %.c
+	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)	
+	
 burn:
 	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
 	
@@ -110,18 +106,26 @@ burnerclean:
 	
 keys: 
 	perl $(SCRIPTS_DIR)/genDtmfKeys.pl > $(APP_SOURCE_DIR)/Dtmf_keys.c
+	
+combo:
+	$(MAKE) default burn
 
-makeCommands: $(APPS_SOURCE_DIR)/makeCommands.c $(APP_SOURCE_DIR)/XXTEA_Dtmf.c $(APP_SOURCE_DIR)/Dtmf_keys.c
-	gcc -o $(BUILDS_DIR)/makeCommands \
-$(APPS_SOURCE_DIR)/makeCommands.c \
-$(APP_SOURCE_DIR)/XXTEA_Dtmf.c \
-$(APP_SOURCE_DIR)/Dtmf_keys.c \
--I$(INCLUDES_DIR)/include
+	
+	
+unitTests: buildTests runAllTests
+
+buildTests: $(ALL_TESTS)	
+	
+runAllTests: 
+	sh run_tests.sh $(IMAGE_DIR)
 
 #----------
 # Clean Up
 #----------
 
-clean: 
+clean: cleanTests
 	rm -f $(BUILDS_DIR)/*
 	rm -f $(IMAGE_DIR)/csc.*
+	
+cleanTests:
+	rm -f $(IMAGE_DIR)/test_*.exe
