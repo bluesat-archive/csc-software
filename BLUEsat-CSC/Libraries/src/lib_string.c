@@ -14,7 +14,7 @@
 * Do not use memset() to access IO space, use memset_io() instead.
 */
 
-void * memset(void * s,int c,size_t count)
+void * memset(void * s, int c, unsigned long count)
 {
 	char *xs = (char *) s;
 
@@ -35,7 +35,7 @@ void * memset(void * s,int c,size_t count)
 * @count bytes.
 */
 
-char * strncpy(char * dest,const char *src,size_t count)
+char * strncpy(char * dest, const char *src, unsigned long count)
 {
 	char *tmp = dest;
 
