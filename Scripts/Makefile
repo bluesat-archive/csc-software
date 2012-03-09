@@ -17,12 +17,11 @@ include ../Burner/lpcburn/Makefile
 #------------- 
 # Directories
 #-------------
-CSC_DIR           =..
-APP_SOURCE_DIR		=../Applications
+CSC_DIR           =../BLUEsat-CSC
+APP_SOURCE_DIR		=$(CSC_DIR)/Applications
+CORE_SOURCE_DIR	=$(CSC_DIR)/Core
 BURNER_DIR			=../Burner/lpcburn
 BUILDS_DIR			=../Builds
-CORE_SOURCE_DIR	=../Core
-DRIVER_SOURCE_DIR	=../Drivers
 IMAGE_DIR			=../Dist
 SCRIPTS_DIR			=.
 UNIT_TESTS_DIR		=../Unit_Tests
@@ -59,10 +58,11 @@ TEST_SUBDIRS  =/test/
 FIND_TESTS    =/usr/bin/find .. -name $(TEST_CODE_TEMPLATE) | grep $(TEST_SUBDIRS)
 CODE_SUBDIRS  =/src/
 FIND_CODE     =/usr/bin/find .. -name $(CODE_TEMPLATE) | grep $(CODE_SUBDIRS)
+FIND_CORE     =ls $(CORE_SOURCE_DIR) *.c
 INC_SUBDIRS   =includes
 FIND_INCLUDES =/usr/bin/find .. -type d -name $(INC_SUBDIRS)
 
-ALL_SRC = $(shell $(FIND_CODE))
+ALL_SRC = $(shell $(FIND_CODE)) $(shell $(FIND_CORE))
 INC_DIRS = $(shell $(FIND_INCLUDES))
 TESTS  = $(shell  $(FIND_TESTS))
 
