@@ -79,11 +79,12 @@ $(SUITES)
 # Define all object files
 ALL_OBJ = $(ALL_SRC:.c=.o)
 ALL_TESTS = $(TESTS:.c=.o)
+ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
 
 default: hex
 
 elf: $(ALL_OBJ) $(CRT0)
-	$(CC) $(CFLAGS) $(TARGET_OBJS) -nostartfiles $(CRT0) $(LINKER_FLAGS)
+	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
 
 hex: elf
 	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
