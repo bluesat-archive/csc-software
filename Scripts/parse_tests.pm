@@ -75,7 +75,7 @@ sub parse_file
 
 sub generate_summary
 {
-   my $result =<<MOO_SQUID;
+my $result =<<MOO_SQUID;
 Bluesat Test Summary
 --------------------
 Total Tests Run   : TOTALTESTS
@@ -86,9 +86,13 @@ Suites Run
 ----------
 SUITESRUN
 
+MOO_SQUID
+
+my $resultDetails =<<MOO_SQUID;   
 Tests Failed
 ------------
 TESTSFAILED
+
 MOO_SQUID
 
    my ($totTest, $totPass, $totFail, $suites, $failed);
@@ -105,7 +109,12 @@ MOO_SQUID
    $result =~s/TOTALFAILED/$totFail/;
    $result =~s/TOTALPASSED/$totPass/;
    $result =~s/SUITESRUN/$suites/;
-   $result =~s/TESTSFAILED/$failed/;
+   if ($totFail>0)
+   {
+      $result .= $resultDetails;
+      $result =~s/TESTSFAILED/$failed/;
+   }
+  
    print $result;
 }
 
