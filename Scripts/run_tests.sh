@@ -15,5 +15,5 @@ do
 	echo  ""
 	echo  "<Next Test>"
 done >> $output
-perl parse_tests.pl ../Dist/AutoTestResults.txt
+perl parse_tests.pl $output
 exit 0
