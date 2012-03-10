@@ -53,7 +53,7 @@ sub process_test
                   errors => [@errors]
                };
                
-   $allResults->{$file}= $entry ;     
+   return ($file, $entry);
 }
 
 sub parse_file 
@@ -68,10 +68,18 @@ sub parse_file
    close $fh;
    foreach my $test (split(NEXT_TEST_TAG, $tests))
    {
-      process_test($test);
+      my ($key, $value) = process_test($test);
+      if ($key=~/\w+/)
+      {
+         $allResults->{$key}= $value ; 
+      }
    }
 }
 
+sub get_results_hash
+{
+   return $allResults;
+}
 
 sub generate_summary
 {
