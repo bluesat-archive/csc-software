@@ -10,4 +10,6 @@ void * memset(void * s, int c, unsigned long count);
 
 char * strncpy(char * dest, const char *src, unsigned long count);
 
+void * memcpy(void * dest, const void *src, unsigned long count);
+
 #endif /* LIB_STRING_H_ */

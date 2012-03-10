@@ -44,3 +44,24 @@ char * strncpy(char * dest, const char *src, unsigned long count)
 
 	return tmp;
 }
+
+/**
+* memcpy - Copy one area of memory to another
+* @dest: Where to copy to
+* @src: Where to copy from
+* @count: The size of the area.
+*
+* You should not use this function to access IO space, use memcpy_toio()
+* or memcpy_fromio() instead.
+*/
+
+void * memcpy(void * dest, const void *src, unsigned long count)
+{
+	char *tmp = (char *) dest, *s = (char *) src;
+
+	while (count--)
+		*tmp++ = *s++;
+
+	return dest;
+}
+
