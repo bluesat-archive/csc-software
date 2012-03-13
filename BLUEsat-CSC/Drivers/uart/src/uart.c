@@ -16,7 +16,7 @@
 #include "FreeRTOS.h"
 #include "queue.h"
 #include "task.h"
-#include "Irq.h"
+#include "irq.h"
 #include "semphr.h"
 #include "uart.h"
 

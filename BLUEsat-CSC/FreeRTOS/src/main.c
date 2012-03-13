@@ -64,8 +64,6 @@
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
-
-
 /*-----------------------------------------------------------*/
 
 /* Constants to setup the PLL. */
