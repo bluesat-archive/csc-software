@@ -64,6 +64,7 @@
 /* Scheduler includes. */
 #include "FreeRTOS.h"
 #include "task.h"
+#include "sysBootAgent.h"
 /*-----------------------------------------------------------*/
 
 /* Constants to setup the PLL. */
@@ -107,7 +108,11 @@ int main( void )
 {
 	prvSetupHardware();
 
-	//INSERT TASK KICKER HERE
+	initDrivers();
+
+	initServices();
+
+	initApplications();
 
 	/* Now all the tasks have been started - start the scheduler.
 
