@@ -12,7 +12,11 @@
  *  \bug No Bugs for now
  *  \note No Notes for now
  */
- 
+
+#ifdef APPLICATION_H_
+	#error "only services can access drivers!"
+#endif
+
 #ifndef UART_H_
 #define UART_H_
 
