@@ -67,6 +67,7 @@ transmitted. */
 static xQueueHandle RX_BUFF;
 static xQueueHandle TX_BUFF;
 static volatile portLONG UART_FREE;
+static xSemaphoreHandle RX_MUTEX;
 static xSemaphoreHandle TX_MUTEX;
 
 void Comms_UART_Handler(void);
@@ -137,8 +138,9 @@ unsigned portLONG Comms_UART_Init(void)
 	UART01_CLK_SEL |= UART_CLK_FULL << UART0_CLK_OFFSET;
 
 	// Setup UART mutex
+	vSemaphoreCreateBinary( RX_MUTEX );
 	vSemaphoreCreateBinary( TX_MUTEX );
-	if(!TX_MUTEX) return pdFAIL;
+	if(!TX_MUTEX && !RX_MUTEX) return pdFAIL;
 
 	/* Set up queues and Empty Flag */
 	RX_BUFF 	= xQueueCreate( serBUFF_LENGTH, ( unsigned portBASE_TYPE ) sizeof( signed portCHAR ) );
@@ -199,45 +201,68 @@ signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickTy
 {
 	signed portBASE_TYPE xReturn;
 
-	xSemaphoreTake( TX_MUTEX, portMAX_DELAY );
+	/* Is there space to write directly to the UART? */
+	if( UART_FREE == ( portLONG ) pdTRUE )
 	{
-		/* Is there space to write directly to the UART? */
-		if( UART_FREE == ( portLONG ) pdTRUE )
-		{
-			/* We wrote the character directly to the UART, so was
-			successful. */
+		/* We wrote the character directly to the UART, so was
+		successful. */
 
+		UART_FREE = pdFALSE;
+		U0THR = cOutChar;
+		xReturn = pdPASS;
+	}
+	else
+	{
+		/* We cannot write directly to the UART, so queue the character.
+		Block for a maximum of xBlockTime if there is no space in the
+		queue. */
+
+		xReturn = xQueueSend( TX_BUFF, &cOutChar, xBlockTime );
+
+		/* Depending on queue sizing and task prioritisation:  While we
+		were blocked waiting to post interrupts were not disabled.  It is
+		possible that the serial ISR has emptied the Tx queue, in which
+		case we need to start the Tx off again. */
+		if( ( UART_FREE == ( portLONG ) pdTRUE ) && ( xReturn == pdPASS ) )
+		{
+			xQueueReceive( TX_BUFF, &cOutChar, serNO_BLOCK );
 			UART_FREE = pdFALSE;
 			U0THR = cOutChar;
-			xReturn = pdPASS;
-		}
-		else
-		{
-			/* We cannot write directly to the UART, so queue the character.
-			Block for a maximum of xBlockTime if there is no space in the
-			queue. */
-
-			xReturn = xQueueSend( TX_BUFF, &cOutChar, xBlockTime );
-
-			/* Depending on queue sizing and task prioritisation:  While we
-			were blocked waiting to post interrupts were not disabled.  It is
-			possible that the serial ISR has emptied the Tx queue, in which
-			case we need to start the Tx off again. */
-			if( ( UART_FREE == ( portLONG ) pdTRUE ) && ( xReturn == pdPASS ) )
-			{
-				xQueueReceive( TX_BUFF, &cOutChar, serNO_BLOCK );
-				UART_FREE = pdFALSE;
-				U0THR = cOutChar;
-			}
 		}
 	}
-	
-	xSemaphoreGive( TX_MUTEX );
 	
 	return xReturn;
 }
 
+void vAcquireUARTChannel(enum UART_OPERATION enOperation, portTickType xBlockTime)
+{
+	switch(enOperation)
+	{
+		case READ	:	xSemaphoreTake( RX_MUTEX, xBlockTime );
+						break;
+
+		case WRITE	:	xSemaphoreTake( TX_MUTEX, xBlockTime );
+						break;
+
+		default		:	/* There is nothing to do */
+						break;
+	}
+}
 
 
+void vReleaseUARTChannel(enum UART_OPERATION enOperation)
+{
+	switch(enOperation)
+	{
+		case READ	:	xSemaphoreGive( RX_MUTEX );
+						break;
+
+		case WRITE	:	xSemaphoreGive( TX_MUTEX );
+						break;
+
+		default		:	/* There is nothing to do */
+						break;
+	}
+}
 
 

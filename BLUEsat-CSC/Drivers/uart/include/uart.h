@@ -16,6 +16,12 @@
 #ifndef UART_H_
 #define UART_H_
 
+enum UART_OPERATION
+{
+	READ,
+	WRITE
+};
+
 /**
  * \brief Initialise the pins to UART port to allow serial
  *        communications.
@@ -42,5 +48,23 @@ signed portBASE_TYPE Comms_UART_Read_Char( signed portCHAR *pcRxedChar, portTick
  */
 signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickType xBlockTime );
 
+/**
+ * \brief Acquire UART channel
+ *
+ * \param[in] enOperation Read or Write
+ * \param[in] xBlockTime Time to block, in ticks
+ *
+ * \returns void
+ */
+void vAcquireUARTChannel(enum UART_OPERATION enOperation, portTickType xBlockTime);
+
+/**
+ * \brief Release UART channel
+ *
+ * \param[in] enOperation Read or Write
+ *
+ * \returns void
+ */
+void vReleaseUARTChannel(enum UART_OPERATION enOperation);
 
 #endif /* UART_H_ */
