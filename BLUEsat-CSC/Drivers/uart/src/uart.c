@@ -33,8 +33,8 @@
 #define UART_CLK_EIGHTH		( ( unsigned portLONG ) 3)
 
 #define UART_DIV_LATCH_EN	( ( unsigned portLONG ) 0x00000080) /*DLAB =1 enables DLL and DLM Registers, DLAB =0 enables interrupts*/
-#define UART0_DLL			U0DLL /*Lower 8 divisor bits*/
-#define UART0_DLM			U0DLM /*Upper 8 divisor bits*/
+#define UART0_DLL			   U0DLL /*Lower 8 divisor bits*/
+#define UART0_DLM			   U0DLM /*Upper 8 divisor bits*/
 #define UART0_FDIV			U0FDR /*Fractional divisor bits*/
 #define UART_WRD_LEN_8CHR	( ( unsigned portLONG ) 0x00000003)
 #define UART_STOP_BIT_1		( ( unsigned portLONG ) 0x00000000)
