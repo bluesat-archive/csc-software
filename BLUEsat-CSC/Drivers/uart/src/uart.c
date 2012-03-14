@@ -234,14 +234,14 @@ signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickTy
 	return xReturn;
 }
 
-void vAcquireUARTChannel(enum UART_OPERATION enOperation, portTickType xBlockTime)
+void vAcquireUARTChannel(enum UART_CHANNEL_ID enChannelID, portTickType xBlockTime)
 {
-	switch(enOperation)
+	switch(enChannelID)
 	{
-		case READ	:	xSemaphoreTake( RX_MUTEX, xBlockTime );
+		case READ0	:	xSemaphoreTake( RX_MUTEX, xBlockTime );
 						break;
 
-		case WRITE	:	xSemaphoreTake( TX_MUTEX, xBlockTime );
+		case WRITE0	:	xSemaphoreTake( TX_MUTEX, xBlockTime );
 						break;
 
 		default		:	/* There is nothing to do */
@@ -250,14 +250,14 @@ void vAcquireUARTChannel(enum UART_OPERATION enOperation, portTickType xBlockTim
 }
 
 
-void vReleaseUARTChannel(enum UART_OPERATION enOperation)
+void vReleaseUARTChannel(enum UART_CHANNEL_ID enChannelID)
 {
-	switch(enOperation)
+	switch(enChannelID)
 	{
-		case READ	:	xSemaphoreGive( RX_MUTEX );
+		case READ0	:	xSemaphoreGive( RX_MUTEX );
 						break;
 
-		case WRITE	:	xSemaphoreGive( TX_MUTEX );
+		case WRITE0	:	xSemaphoreGive( TX_MUTEX );
 						break;
 
 		default		:	/* There is nothing to do */

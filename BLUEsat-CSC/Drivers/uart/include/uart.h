@@ -16,10 +16,10 @@
 #ifndef UART_H_
 #define UART_H_
 
-enum UART_OPERATION
+enum UART_CHANNEL_ID
 {
-	READ,
-	WRITE
+	READ0,
+	WRITE0
 };
 
 /**
@@ -51,20 +51,20 @@ signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickTy
 /**
  * \brief Acquire UART channel
  *
- * \param[in] enOperation Read or Write
+ * \param[in] enChannelID Channel ID
  * \param[in] xBlockTime Time to block, in ticks
  *
  * \returns void
  */
-void vAcquireUARTChannel(enum UART_OPERATION enOperation, portTickType xBlockTime);
+void vAcquireUARTChannel(enum UART_CHANNEL_ID enChannelID, portTickType xBlockTime);
 
 /**
  * \brief Release UART channel
  *
- * \param[in] enOperation Read or Write
+ * \param[in] enChannelID Channel ID
  *
  * \returns void
  */
-void vReleaseUARTChannel(enum UART_OPERATION enOperation);
+void vReleaseUARTChannel(enum UART_CHANNEL_ID enChannelID);
 
 #endif /* UART_H_ */
