@@ -8,6 +8,10 @@
 #ifndef SERVICE_H_
 #define SERVICE_H_
 
+#include "FreeRTOS.h"
+
 /* Service unique defines */
+
+#define SERV_TASK_PRIORITY	30
 
 #endif /* SERVICE_H_ */

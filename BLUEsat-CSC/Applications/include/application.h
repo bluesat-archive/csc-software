@@ -8,6 +8,10 @@
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
+#include "FreeRTOS.h"
+
 /* Application unique defines */
+
+#define APP_TASK_PRIORITY	20
 
 #endif /* APPLICATION_H_ */

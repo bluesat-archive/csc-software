@@ -14,7 +14,7 @@
  */
 
 #ifdef APPLICATION_H_
-	#error "Applications should access drivers via services"
+	#error "Applications should access drivers via services!"
 #endif
 
 #ifndef UART_H_
