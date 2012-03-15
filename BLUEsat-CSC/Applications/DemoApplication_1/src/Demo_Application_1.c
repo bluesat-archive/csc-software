@@ -11,7 +11,7 @@
 #include "debug.h"
 
 #define DEMO_Q_SIZE	1
-#define MESSAGE_WAIT_TIME 1000
+#define MESSAGE_WAIT_TIME 500
 
 typedef struct
 {
@@ -64,7 +64,7 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 		pMessageHandle->Dest = TASK_DEMO_APP_2;
 		pMessageHandle->CallBackFunc = vMessageCallBack;
 		pMessageHandle->Length = DEMOAPP_MSG_SIZE;
-		pMessageHandle->pMsg = (signed portCHAR *)"Demo Application 1 saids 'hi'\n\r";
+		pMessageHandle->pMsg = (signed portCHAR *)"Demo Application 1 said 'hi'\n\r";
 		pMessageHandle->usLength = 50;
 		if (xCommand_Push(&outgoing_message, portMAX_DELAY)) xSemaphoreTake(MSG_MUTEX, portMAX_DELAY);
 	}

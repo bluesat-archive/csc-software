@@ -11,7 +11,6 @@
 #include "debug.h"
 
 #define DEMO_Q_SIZE	1
-#define MESSAGE_WAIT_TIME 1000
 
 typedef struct
 {
@@ -47,26 +46,16 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 	(void) pvParameters;
 	signed portBASE_TYPE xResult;
 	Demo_Message incoming_message;
-	Cmd_Message	outgoing_message;
-	Demo_Message *pMessageHandle = (Demo_Message *)&outgoing_message;
 
 	for ( ; ; )
 	{
-		xResult = xGet_Message(DEMO_TaskToken, &incoming_message, MESSAGE_WAIT_TIME);
+		xResult = xGet_Message(DEMO_TaskToken, &incoming_message, portMAX_DELAY);
 
 		if (xResult == pdTRUE)
 		{
 			if (!vDebug_Print(DEMO_TaskToken, incoming_message.pMsg, incoming_message.usLength, vMessageCallBack)) xSemaphoreTake(MSG_MUTEX, portMAX_DELAY);
 			(incoming_message.CallBackFunc)(pdPASS);
 		}
-
-		pMessageHandle->Src = TASK_DEMO_APP_2;
-		pMessageHandle->Dest = TASK_DEMO_APP_1;
-		pMessageHandle->CallBackFunc = vMessageCallBack;
-		pMessageHandle->Length = DEMOAPP_MSG_SIZE;
-		pMessageHandle->pMsg = (signed portCHAR *)"Demo Application 2 saids 'hi'\n\r";
-		pMessageHandle->usLength = 50;
-		if (xCommand_Push(&outgoing_message, portMAX_DELAY)) xSemaphoreTake(MSG_MUTEX, portMAX_DELAY);
 	}
 }
 
