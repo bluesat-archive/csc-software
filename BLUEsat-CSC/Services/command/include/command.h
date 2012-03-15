@@ -11,13 +11,14 @@
 typedef enum
 {
 	TASK_COMMAND,
+	TASK_DEBUG,
 	NUM_TASKID
 } TaskID;
 
 typedef enum
 {
-	APPLICATION,
-	SERVICE
+	TT_APPLICATION,
+	TT_SERVICE
 } TASK_TYPE;
 
 #ifdef SERVICE_H_
@@ -31,22 +32,24 @@ typedef enum
 
 typedef struct taskToken *TaskToken;
 
+typedef void (*CALLBACK)(signed portBASE_TYPE xReturnStatus);
+
+#define MESSAGE_HEADER struct {unsigned portCHAR Src; unsigned portCHAR Dest; CALLBACK CallBackFunc; unsigned portSHORT Length;}
+
 #define CMD_MSG_SIZE_WORD 	2
 
 typedef struct
 {
-	unsigned portCHAR 	Src;
-	unsigned portCHAR 	Dest;
-	unsigned portSHORT 	Length;
+	MESSAGE_HEADER;
 	unsigned portLONG 	Msg[CMD_MSG_SIZE_WORD];	//can casted into a struct
 } Cmd_Message;
 
-void vCommand_Init( unsigned portBASE_TYPE uxPriority );
+void vCommand_Init(unsigned portBASE_TYPE uxPriority);
 
 signed portBASE_TYPE xCommand_Push (Cmd_Message *pMessage, portTickType block_time);
 
-signed portBASE_TYPE xGet_Message (TaskID enTaskID,
-									Cmd_Message *pMessageBuffer,
+signed portBASE_TYPE xGet_Message (TaskToken taskToken,
+									void *pMessageBuffer,
 									portTickType block_time);
 
 TaskToken ActivateTask(TaskID enTaskID,

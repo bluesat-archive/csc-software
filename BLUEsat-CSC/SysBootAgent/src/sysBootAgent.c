@@ -18,8 +18,19 @@ unsigned int initDrivers(void)
 	return 0;
 }
 
+#define COMMAND_TASK_PRIORITY	30
+#define DEBUG_TASK_PRIORITY		25
+
 unsigned int initServices(void)
 {
+	#ifdef COMMAND_H_
+		vCommand_Init(COMMAND_TASK_PRIORITY);
+	#endif
+
+	#ifdef DEBUG_H_
+		vDebug_Init(DEBUG_TASK_PRIORITY);
+	#endif
+
 	return 0;
 }
 

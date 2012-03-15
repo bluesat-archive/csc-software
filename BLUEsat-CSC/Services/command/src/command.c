@@ -1,5 +1,5 @@
 /**
- * command.h - Central command task for message forwarding,
+ * command.c - Central command task for message forwarding,
  * 			   task creation and message queue creation.
  *
  *  Created by: James Qin
@@ -10,6 +10,8 @@
 #include "task.h"
 #include "queue.h"
 #include "command.h"
+
+#include "debug.h"
 
 #define CMD_Q_SIZE			1
 #define CMD_PUSH_BLK_TIME	0
@@ -29,7 +31,7 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 		TaskTokens[usIndex].pcTaskName = NULL;
 	}
 
-	ActivateTask(TASK_COMMAND, (const signed char *)"Command", SERVICE, uxPriority, SERV_STACK_SIZE, vCommandTask);
+	ActivateTask(TASK_COMMAND, (const signed char *)"Command", TT_SERVICE, uxPriority, SERV_STACK_SIZE, vCommandTask);
 
 	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE, sizeof(Cmd_Message));
 }
@@ -37,14 +39,14 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 static portTASK_FUNCTION(vCommandTask, pvParameters)
 {
 	(void) pvParameters;
-	signed portBASE_TYPE result;
+	signed portBASE_TYPE xResult;
 	Cmd_Message incoming_message;
 
 	for ( ; ; )
 	{
-		result = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_message, portMAX_DELAY);
+		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_message, portMAX_DELAY);
 
-		if (result == pdPASS)
+		if (xResult == pdPASS)
 		{
 			if (incoming_message.Dest == TASK_COMMAND)
 			{
@@ -53,9 +55,9 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 			else if (incoming_message.Dest < NUM_TASKID && xTaskQueueHandles[incoming_message.Dest] != NULL)
 			// forward msg to destination task Q
 			{
-				result = xQueueSend(xTaskQueueHandles[incoming_message.Dest], &incoming_message, 0);
+				xResult = xQueueSend(xTaskQueueHandles[incoming_message.Dest], &incoming_message, 0);
 
-				if (result != pdPASS)
+				if (xResult != pdPASS)
 				{
 					//TODO return busy msg
 				}
@@ -73,11 +75,11 @@ signed portBASE_TYPE xCommand_Push (Cmd_Message *pMessage, portTickType block_ti
 	return xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessage, block_time);
 }
 
-signed portBASE_TYPE xGet_Message (TaskID enTaskID,
-									Cmd_Message *pMessageBuffer,
+signed portBASE_TYPE xGet_Message (TaskToken taskToken,
+									void *pMessageBuffer,
 									portTickType block_time)
 {
-	return xQueueReceive(xTaskQueueHandles[enTaskID], pMessageBuffer, block_time);
+	return xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessageBuffer, block_time);
 }
 
 TaskToken ActivateTask(TaskID enTaskID,
