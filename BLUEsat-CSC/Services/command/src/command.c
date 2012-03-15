@@ -44,7 +44,7 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	{
 		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_message, portMAX_DELAY);
 
-		if (xResult == pdPASS)
+		if (xResult == pdTRUE)
 		{
 			if (incoming_message.Dest == TASK_COMMAND)
 			{
@@ -55,9 +55,9 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 			{
 				xResult = xQueueSend(xTaskQueueHandles[incoming_message.Dest], &incoming_message, 0);
 
-				if (xResult != pdPASS)
+				if (xResult != pdTRUE)
 				{
-					//TODO return busy msg
+					(incoming_message.CallBackFunc)(pdFAIL);
 				}
 			}
 			else
@@ -89,8 +89,8 @@ TaskToken ActivateTask(TaskID enTaskID,
 {
 	xTaskCreate(pvTaskFunction, pcTaskName, usStackSize, NULL, uxPriority, NULL);
 
-	TaskTokens[enTaskID].pcTaskName	= pcTaskName;
-	TaskTokens[enTaskID].enTaskType	= enTaskType;
+	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
+	TaskTokens[enTaskID].enTaskType		= enTaskType;
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
 
 	return &TaskTokens[enTaskID];

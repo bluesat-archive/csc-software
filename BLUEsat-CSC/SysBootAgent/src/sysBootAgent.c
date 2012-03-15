@@ -34,7 +34,19 @@ unsigned int initServices(void)
 	return 0;
 }
 
+
+#define DEMOAPP_1_TASK_PRIORITY		20
+#define DEMOAPP_2_TASK_PRIORITY		20
+
 unsigned int initApplications(void)
 {
+	#ifdef DEMO_APPLICATION_1_H_
+		vDemoApp1_Init(DEMOAPP_1_TASK_PRIORITY);
+	#endif
+
+	#ifdef DEMO_APPLICATION_2_H_
+		vDemoApp2_Init(DEMOAPP_2_TASK_PRIORITY);
+	#endif
+
 	return 0;
 }

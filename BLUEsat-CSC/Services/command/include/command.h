@@ -12,6 +12,10 @@ typedef enum
 {
 	TASK_COMMAND,
 	TASK_DEBUG,
+	/* DEMO APP TASK */
+	TASK_DEMO_APP_1,
+	TASK_DEMO_APP_2,
+	/*****************/
 	NUM_TASKID
 } TaskID;
 
@@ -20,6 +24,8 @@ typedef enum
 	TT_APPLICATION,
 	TT_SERVICE
 } TASK_TYPE;
+
+#define TASK_NAME_MAX_CHAR	10
 
 #ifdef SERVICE_H_
 	struct taskToken
@@ -31,6 +37,8 @@ typedef enum
 #endif
 
 typedef struct taskToken *TaskToken;
+
+#define CALLBACK_FUNCTION(vFunction, xReturnStatus) void vFunction(signed portBASE_TYPE xReturnStatus)
 
 typedef void (*CALLBACK)(signed portBASE_TYPE xReturnStatus);
 

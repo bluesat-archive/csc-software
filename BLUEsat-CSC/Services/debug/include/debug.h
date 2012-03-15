@@ -11,9 +11,11 @@
 
 void vDebug_Init(unsigned portBASE_TYPE uxPriority);
 
-void vDebug_Print(TaskToken taskToken,
-				signed portCHAR *pDebugString,
-				unsigned portSHORT usLength,
-				CALLBACK CallBackFunc);
+#define DEBUG_PRINT_DEFERRED	0
+#define DEBUG_PRINT_COMPLETE	1
+signed portBASE_TYPE vDebug_Print(TaskToken taskToken,
+								signed portCHAR *pcDebugString,
+								unsigned portSHORT usLength,
+								CALLBACK CallBackFunc);
 
 #endif /* DEBUG_H_ */
