@@ -73,6 +73,13 @@ signed portBASE_TYPE xCommand_Push (Cmd_Message *pMessage, portTickType block_ti
 	return xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessage, block_time);
 }
 
+signed portBASE_TYPE xGet_Message (TaskID enTaskID,
+									Cmd_Message *pMessageBuffer,
+									portTickType block_time)
+{
+	return xQueueReceive(xTaskQueueHandles[enTaskID], pMessageBuffer, block_time);
+}
+
 TaskToken ActivateTask(TaskID enTaskID,
 						const signed portCHAR* const pcTaskName,
 						TASK_TYPE enTaskType,
