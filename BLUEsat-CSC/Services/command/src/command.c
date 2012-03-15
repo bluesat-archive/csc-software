@@ -11,8 +11,6 @@
 #include "queue.h"
 #include "command.h"
 
-#include "debug.h"
-
 #define CMD_Q_SIZE			1
 #define CMD_PUSH_BLK_TIME	0
 
