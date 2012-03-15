@@ -5,6 +5,10 @@
  * Created by: James Qin
  */
 
+#ifdef SERVICE_H_
+	error "Task can only be application or service"
+#endif
+
 #ifndef APPLICATION_H_
 #define APPLICATION_H_
 
@@ -12,6 +16,6 @@
 
 /* Application unique defines */
 
-#define APP_TASK_PRIORITY	20
+#define APP_STACK_SIZE		configMINIMAL_STACK_SIZE
 
 #endif /* APPLICATION_H_ */
