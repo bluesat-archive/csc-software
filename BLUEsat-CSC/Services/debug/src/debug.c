@@ -28,7 +28,7 @@ void vPrintString(signed portCHAR *pcDebugString, unsigned portSHORT usLength);
 
 void vDebug_Init(unsigned portBASE_TYPE uxPriority)
 {
-	Debug_TaskToken = ActivateTask(TASK_DEBUG, (const signed portCHAR *)"Debug", TT_SERVICE, uxPriority, SERV_STACK_SIZE, vDebugTask);
+	Debug_TaskToken = ActivateTask(TASK_DEBUG, (const signed portCHAR *)"Debug", TYPE_SERVICE, uxPriority, SERV_STACK_SIZE, vDebugTask);
 	vActivateQueue(Debug_TaskToken, DEBUG_Q_SIZE, sizeof(Debug_Message));
 }
 
@@ -47,7 +47,7 @@ static portTASK_FUNCTION(vDebugTask, pvParameters)
 			vPrintString(incoming_message.pcTaskName, TASK_NAME_MAX_CHAR);
 			vPrintString((signed portCHAR *)">", 1);
 			vPrintString(incoming_message.pcDebugString, incoming_message.usLength);
-			(incoming_message.CallBackFunc)(pdPASS);
+			incoming_message.CallBackFunc(pdPASS);
 		}
 	}
 }
@@ -62,12 +62,12 @@ signed portBASE_TYPE vDebug_Print(TaskToken taskToken,
 
 	switch (taskToken->enTaskType)
 	{
-		case TT_SERVICE		:	vPrintString((signed portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
+		case TYPE_SERVICE		:	vPrintString((signed portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
 								vPrintString((signed portCHAR *)">", 1);
 								vPrintString(pcDebugString, usLength);
 								return DEBUG_PRINT_COMPLETE;
 
-		case TT_APPLICATION	:	if (CallBackFunc != NULL)
+		case TYPE_APPLICATION	:	if (CallBackFunc != NULL)
 								{
 									pMessageHandle->Src = taskToken->enTaskID;
 									pMessageHandle->Dest = TASK_DEBUG;

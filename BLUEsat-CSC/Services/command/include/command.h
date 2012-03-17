@@ -21,8 +21,8 @@ typedef enum
 
 typedef enum
 {
-	TT_APPLICATION,
-	TT_SERVICE
+	TYPE_APPLICATION,
+	TYPE_SERVICE
 } TASK_TYPE;
 
 #define TASK_NAME_MAX_CHAR	10

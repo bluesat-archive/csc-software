@@ -33,7 +33,7 @@ static CALLBACK_FUNCTION(vMessageCallBack, xReturnStatus);
 
 void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority)
 {
-	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_1, (const signed char *)"DemoApp1", TT_APPLICATION, uxPriority, APP_STACK_SIZE, vDemoTask);
+	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_1, (const signed char *)"DemoApp1", TYPE_APPLICATION, uxPriority, APP_STACK_SIZE, vDemoTask);
 
 	vActivateQueue(DEMO_TaskToken, DEMO_Q_SIZE, sizeof(Demo_Message));
 

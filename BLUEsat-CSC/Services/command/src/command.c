@@ -29,7 +29,7 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 		TaskTokens[usIndex].pcTaskName = NULL;
 	}
 
-	ActivateTask(TASK_COMMAND, (const signed char *)"Command", TT_SERVICE, uxPriority, SERV_STACK_SIZE, vCommandTask);
+	ActivateTask(TASK_COMMAND, (const signed char *)"Command", TYPE_SERVICE, uxPriority, SERV_STACK_SIZE, vCommandTask);
 
 	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE, sizeof(Cmd_Message));
 }
