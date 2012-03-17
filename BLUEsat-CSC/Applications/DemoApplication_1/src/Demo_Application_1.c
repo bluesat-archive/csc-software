@@ -72,8 +72,8 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 
 static CALLBACK_FUNCTION(vMessageCallBack, xReturnStatus)
 {
-	xSemaphoreGive(MSG_MUTEX);
 	xMSGReturnStatus = xReturnStatus;
+	xSemaphoreGive(MSG_MUTEX);
 }
 
 
