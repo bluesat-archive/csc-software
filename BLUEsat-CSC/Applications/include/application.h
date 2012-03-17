@@ -16,7 +16,7 @@
 #include "semphr.h"
 
 /* Application unique defines */
-
+#define NO_BLOCK			0
 #define APP_STACK_SIZE		configMINIMAL_STACK_SIZE
 
 #endif /* APPLICATION_H_ */

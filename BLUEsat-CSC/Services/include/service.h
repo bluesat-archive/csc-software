@@ -15,7 +15,7 @@
 #include "FreeRTOS.h"
 
 /* Service unique defines */
-
+#define NO_BLOCK			0
 #define SERV_STACK_SIZE		configMINIMAL_STACK_SIZE
 
 #endif /* SERVICE_H_ */

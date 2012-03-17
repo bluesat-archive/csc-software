@@ -53,7 +53,7 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 			else if (incoming_message.Dest < NUM_TASKID && xTaskQueueHandles[incoming_message.Dest] != NULL)
 			// forward msg to destination task Q
 			{
-				xResult = xQueueSend(xTaskQueueHandles[incoming_message.Dest], &incoming_message, 0);
+				xResult = xQueueSend(xTaskQueueHandles[incoming_message.Dest], &incoming_message, NO_BLOCK);
 
 				if (xResult != pdTRUE)
 				{

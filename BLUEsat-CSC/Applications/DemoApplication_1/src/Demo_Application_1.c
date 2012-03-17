@@ -39,7 +39,7 @@ void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority)
 
 	vSemaphoreCreateBinary(MSG_MUTEX);
 
-	xSemaphoreTake(MSG_MUTEX, 0);
+	xSemaphoreTake(MSG_MUTEX, NO_BLOCK);
 }
 
 static portTASK_FUNCTION(vDemoTask, pvParameters)
