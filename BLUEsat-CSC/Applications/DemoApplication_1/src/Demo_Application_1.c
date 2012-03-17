@@ -24,56 +24,45 @@ typedef struct
 
 static TaskToken DEMO_TaskToken;
 
-static xSemaphoreHandle MSG_MUTEX;
-static signed portBASE_TYPE xMSGReturnStatus;
-
 static portTASK_FUNCTION(vDemoTask, pvParameters);
-
-static CALLBACK_FUNCTION(vMessageCallBack, xReturnStatus);
 
 void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority)
 {
-	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_1, (const signed char *)"DemoApp1", TYPE_APPLICATION, uxPriority, APP_STACK_SIZE, vDemoTask);
+	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_1, 
+								(const signed char *)"DemoApp1", 
+								TYPE_APPLICATION, 
+								uxPriority, 
+								APP_STACK_SIZE, 
+								vDemoTask);
 
 	vActivateQueue(DEMO_TaskToken, DEMO_Q_SIZE, sizeof(Demo_Message));
-
-	vSemaphoreCreateBinary(MSG_MUTEX);
-
-	xSemaphoreTake(MSG_MUTEX, NO_BLOCK);
 }
 
 static portTASK_FUNCTION(vDemoTask, pvParameters)
 {
 	(void) pvParameters;
-	signed portBASE_TYPE xResult;
+	UnivRetCode enResult;
 	Demo_Message incoming_message;
 	Cmd_Message	outgoing_message;
 	Demo_Message *pMessageHandle = (Demo_Message *)&outgoing_message;
 
 	for ( ; ; )
 	{
-		xResult = xGet_Message(DEMO_TaskToken, &incoming_message, MESSAGE_WAIT_TIME);
+		enResult = enGet_Message(DEMO_TaskToken, &incoming_message, MESSAGE_WAIT_TIME);
 
-		if (xResult == pdTRUE)
+		if (enResult == URC_SUCCESS)
 		{
-			if (!vDebug_Print(DEMO_TaskToken, incoming_message.pMsg, incoming_message.usLength, vMessageCallBack)) xSemaphoreTake(MSG_MUTEX, portMAX_DELAY);
-			(incoming_message.CallBackFunc)(pdPASS);
+			enDebug_Print(DEMO_TaskToken, incoming_message.pMsg, incoming_message.usLength);
 		}
 
-		pMessageHandle->Src = TASK_DEMO_APP_1;
-		pMessageHandle->Dest = TASK_DEMO_APP_2;
-		pMessageHandle->CallBackFunc = vMessageCallBack;
-		pMessageHandle->Length = DEMOAPP_MSG_SIZE;
-		pMessageHandle->pMsg = (signed portCHAR *)"Demo Application 1 said 'hi'\n\r";
-		pMessageHandle->usLength = 50;
-		if (xCommand_Push(&outgoing_message, portMAX_DELAY)) xSemaphoreTake(MSG_MUTEX, portMAX_DELAY);
+		pMessageHandle->Src			= TASK_DEMO_APP_1;
+		pMessageHandle->Dest		= TASK_DEMO_APP_2;
+		pMessageHandle->Token		= DEMO_TaskToken;
+		pMessageHandle->Length		= DEMOAPP_MSG_SIZE;
+		pMessageHandle->pMsg		= (signed portCHAR *)"Demo Application 1 said 'hi'\n\r";
+		pMessageHandle->usLength	= 50;
+		enCommand_Push(&outgoing_message, portMAX_DELAY);
 	}
-}
-
-static CALLBACK_FUNCTION(vMessageCallBack, xReturnStatus)
-{
-	xMSGReturnStatus = xReturnStatus;
-	xSemaphoreGive(MSG_MUTEX);
 }
 
 

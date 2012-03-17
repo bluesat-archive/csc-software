@@ -13,6 +13,7 @@
 #define SERVICE_H_
 
 #include "FreeRTOS.h"
+#include "semphr.h"
 
 /* Service unique defines */
 #define NO_BLOCK			0

@@ -13,7 +13,6 @@
 #define APPLICATION_H_
 
 #include "FreeRTOS.h"
-#include "semphr.h"
 
 /* Application unique defines */
 #define NO_BLOCK			0

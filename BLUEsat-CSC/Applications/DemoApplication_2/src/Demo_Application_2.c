@@ -23,46 +23,36 @@ typedef struct
 
 static TaskToken DEMO_TaskToken;
 
-static xSemaphoreHandle MSG_MUTEX;
-static signed portBASE_TYPE xMSGReturnStatus;
-
 static portTASK_FUNCTION(vDemoTask, pvParameters);
-
-static CALLBACK_FUNCTION(vMessageCallBack, xReturnStatus);
 
 void vDemoApp2_Init(unsigned portBASE_TYPE uxPriority)
 {
-	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_2, (const signed char *)"DemoApp2", TYPE_APPLICATION, uxPriority, APP_STACK_SIZE, vDemoTask);
+	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_2, 
+								(const signed char *)"DemoApp2", 
+								TYPE_APPLICATION, 
+								uxPriority, 
+								APP_STACK_SIZE, 
+								vDemoTask);
 
 	vActivateQueue(DEMO_TaskToken, DEMO_Q_SIZE, sizeof(Demo_Message));
-
-	vSemaphoreCreateBinary(MSG_MUTEX);
-
-	xSemaphoreTake(MSG_MUTEX, NO_BLOCK);
 }
 
 static portTASK_FUNCTION(vDemoTask, pvParameters)
 {
 	(void) pvParameters;
-	signed portBASE_TYPE xResult;
+	UnivRetCode enResult;
 	Demo_Message incoming_message;
 
 	for ( ; ; )
 	{
-		xResult = xGet_Message(DEMO_TaskToken, &incoming_message, portMAX_DELAY);
+		enResult = enGet_Message(DEMO_TaskToken, &incoming_message, portMAX_DELAY);
 
-		if (xResult == pdTRUE)
+		if (enResult == URC_SUCCESS)
 		{
-			if (!vDebug_Print(DEMO_TaskToken, incoming_message.pMsg, incoming_message.usLength, vMessageCallBack)) xSemaphoreTake(MSG_MUTEX, portMAX_DELAY);
-			(incoming_message.CallBackFunc)(pdPASS);
+			enResult = enDebug_Print(DEMO_TaskToken, incoming_message.pMsg, incoming_message.usLength);
+			vCompleteRequest(incoming_message.Token, enResult);
 		}
 	}
-}
-
-static CALLBACK_FUNCTION(vMessageCallBack, xReturnStatus)
-{
-	xMSGReturnStatus = xReturnStatus;
-	xSemaphoreGive(MSG_MUTEX);
 }
 
 

@@ -57,8 +57,6 @@ signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickTy
  *
  * \param[in] enChannelID Channel ID
  * \param[in] xBlockTime Time to block, in ticks
- *
- * \returns void
  */
 void vAcquireUARTChannel(enum UART_CHANNEL_ID enChannelID, portTickType xBlockTime);
 
@@ -66,8 +64,6 @@ void vAcquireUARTChannel(enum UART_CHANNEL_ID enChannelID, portTickType xBlockTi
  * \brief Release UART channel
  *
  * \param[in] enChannelID Channel ID
- *
- * \returns void
  */
 void vReleaseUARTChannel(enum UART_CHANNEL_ID enChannelID);
 

@@ -25,11 +25,17 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 
 	for (usIndex = 0; usIndex < NUM_TASKID; usIndex++)
 	{
-		xTaskQueueHandles[usIndex] = NULL;
-		TaskTokens[usIndex].pcTaskName = NULL;
+		xTaskQueueHandles[usIndex]		= NULL;
+		TaskTokens[usIndex].pcTaskName	= NULL;
+		TaskTokens[usIndex].enRetVal	= 0;
 	}
 
-	ActivateTask(TASK_COMMAND, (const signed char *)"Command", TYPE_SERVICE, uxPriority, SERV_STACK_SIZE, vCommandTask);
+	ActivateTask(TASK_COMMAND, 
+				(const signed char *)"Command", 
+				TYPE_SERVICE, 
+				uxPriority, 
+				SERV_STACK_SIZE, 
+				vCommandTask);
 
 	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE, sizeof(Cmd_Message));
 }
@@ -57,7 +63,7 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 
 				if (xResult != pdTRUE)
 				{
-					(incoming_message.CallBackFunc)(pdFAIL);
+					vCompleteRequest(incoming_message.Token, URC_FAIL);
 				}
 			}
 			else
@@ -68,16 +74,31 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	}
 }
 
-signed portBASE_TYPE xCommand_Push (Cmd_Message *pMessage, portTickType block_time)
+UnivRetCode enCommand_Push (Cmd_Message *pMessage, portTickType block_time)
 {
-	return xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessage, block_time);
+	switch (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessage, block_time))
+	{
+		case pdTRUE	:	xSemaphoreTake((pMessage->Token)->TaskSemphr, portMAX_DELAY);
+						return (pMessage->Token)->enRetVal;
+		default		:	return URC_FAIL;
+	}
 }
 
-signed portBASE_TYPE xGet_Message (TaskToken taskToken,
+UnivRetCode enGet_Message (TaskToken taskToken,
 									void *pMessageBuffer,
 									portTickType block_time)
 {
-	return xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessageBuffer, block_time);
+	switch (xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessageBuffer, block_time))
+	{
+		case pdTRUE	:	return URC_SUCCESS;
+		default		:	return URC_FAIL;
+	}
+}
+
+void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal)
+{
+	taskToken->enRetVal = enRetVal;
+	xSemaphoreGive(taskToken->TaskSemphr);
 }
 
 TaskToken ActivateTask(TaskID enTaskID,
@@ -92,6 +113,8 @@ TaskToken ActivateTask(TaskID enTaskID,
 	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
 	TaskTokens[enTaskID].enTaskType		= enTaskType;
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
+	vSemaphoreCreateBinary(TaskTokens[enTaskID].TaskSemphr);
+	xSemaphoreTake(TaskTokens[enTaskID].TaskSemphr, NO_BLOCK);
 
 	return &TaskTokens[enTaskID];
 }
