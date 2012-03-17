@@ -16,18 +16,21 @@
 #define DEBUG_H_
 
 #include "command.h"
+#include "UniversalReturnCode.h"
 
 /**
- * \brief Writes a single character onto the port
+ * \brief Initialise debug service
  *
  * \param[in] uxPriority Priority for debug service.
  */
 void vDebug_Init(unsigned portBASE_TYPE uxPriority);
 
 /**
- * \brief Writes a single character onto the port
+ * \brief Write debug message string
  *
  * \param[in] uxPriority Priority for debug service.
+ *
+ * \returns enum Universal return code
  */
 UnivRetCode enDebug_Print(TaskToken taskToken,
 						signed portCHAR *pcDebugString,

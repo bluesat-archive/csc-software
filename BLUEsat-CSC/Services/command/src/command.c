@@ -1,8 +1,15 @@
-/**
- * command.c - Central command task for message forwarding,
- * 			   task creation and message queue creation.
+ /**
+ *  \file command.c
  *
- *  Created by: James Qin
+ *  \brief Provide Inter Process Communication (IPC)
+ *
+ *  \author $Author: James Qin $
+ *  \version 1.0
+ *
+ *  $Date: 2010-10-24 23:35:54 +1100 (Sun, 24 Oct 2010) $
+ *  \warning No Warnings for now
+ *  \bug No Bugs for now
+ *  \note No Notes for now
  */
 
 
@@ -23,6 +30,7 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 {
 	unsigned portSHORT usIndex;
 
+	//initialise management arrary
 	for (usIndex = 0; usIndex < NUM_TASKID; usIndex++)
 	{
 		xTaskQueueHandles[usIndex]		= NULL;
@@ -37,33 +45,34 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 				SERV_STACK_SIZE, 
 				vCommandTask);
 
-	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE, sizeof(Cmd_Message));
+	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE);
 }
 
 static portTASK_FUNCTION(vCommandTask, pvParameters)
 {
 	(void) pvParameters;
 	signed portBASE_TYPE xResult;
-	Cmd_Message incoming_message;
+	MessagePacket incoming_packet;
 
 	for ( ; ; )
 	{
-		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_message, portMAX_DELAY);
+		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_packet, portMAX_DELAY);
 
 		if (xResult == pdTRUE)
 		{
-			if (incoming_message.Dest == TASK_COMMAND)
+			if (incoming_packet.Dest == TASK_COMMAND)
 			{
 				//TODO msg for command task
 			}
-			else if (incoming_message.Dest < NUM_TASKID && xTaskQueueHandles[incoming_message.Dest] != NULL)
+			else if (incoming_packet.Dest < NUM_TASKID && xTaskQueueHandles[incoming_packet.Dest] != NULL)
 			// forward msg to destination task Q
 			{
-				xResult = xQueueSend(xTaskQueueHandles[incoming_message.Dest], &incoming_message, NO_BLOCK);
+				xResult = xQueueSend(xTaskQueueHandles[incoming_packet.Dest], &incoming_packet, NO_BLOCK);
 
 				if (xResult != pdTRUE)
 				{
-					vCompleteRequest(incoming_message.Token, URC_FAIL);
+					//return request fail
+					vCompleteRequest(incoming_packet.Token, URC_FAIL);
 				}
 			}
 			else
@@ -74,21 +83,25 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	}
 }
 
-UnivRetCode enCommand_Push (Cmd_Message *pMessage, portTickType block_time)
+UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_time)
 {
-	switch (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessage, block_time))
+	//insert quest into command task queue
+	switch (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessagePacket, block_time))
 	{
-		case pdTRUE	:	xSemaphoreTake((pMessage->Token)->TaskSemphr, portMAX_DELAY);
-						return (pMessage->Token)->enRetVal;
+		//put request task into sleep
+		case pdTRUE	:	xSemaphoreTake((pMessagePacket->Token)->TaskSemphr, portMAX_DELAY);
+						//return processed request result
+						return (pMessagePacket->Token)->enRetVal;
 		default		:	return URC_FAIL;
 	}
 }
 
-UnivRetCode enGet_Message (TaskToken taskToken,
-									void *pMessageBuffer,
-									portTickType block_time)
+UnivRetCode enGetRequest (TaskToken taskToken,
+						MessagePacket *pMessagePacket,
+						portTickType block_time)
 {
-	switch (xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessageBuffer, block_time))
+	//retrieve request from queue and copy into given buffer
+	switch (xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessagePacket, block_time))
 	{
 		case pdTRUE	:	return URC_SUCCESS;
 		default		:	return URC_FAIL;
@@ -97,7 +110,9 @@ UnivRetCode enGet_Message (TaskToken taskToken,
 
 void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal)
 {
+	//store result value inside request task token
 	taskToken->enRetVal = enRetVal;
+	//wake request task from sleep
 	xSemaphoreGive(taskToken->TaskSemphr);
 }
 
@@ -108,20 +123,35 @@ TaskToken ActivateTask(TaskID enTaskID,
 						unsigned portSHORT usStackSize,
 						pdTASK_CODE pvTaskFunction)
 {
+	//create task in memory
 	xTaskCreate(pvTaskFunction, pcTaskName, usStackSize, NULL, uxPriority, NULL);
-
+	//store task profile in array
 	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
 	TaskTokens[enTaskID].enTaskType		= enTaskType;
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
+	//create semaphore for task
 	vSemaphoreCreateBinary(TaskTokens[enTaskID].TaskSemphr);
+	//exhuast task semaphore
 	xSemaphoreTake(TaskTokens[enTaskID].TaskSemphr, NO_BLOCK);
-
+	
+	//return pointer to taks profile
 	return &TaskTokens[enTaskID];
 }
 
-void vActivateQueue(TaskToken taskToken,
-					unsigned portSHORT usNumElement,
-					unsigned portSHORT usElementSize)
+void vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement)
 {
-	xTaskQueueHandles[taskToken->enTaskID] = xQueueCreate(usNumElement, usElementSize);
+	//create task queue memory
+	xTaskQueueHandles[taskToken->enTaskID] = xQueueCreate(usNumElement, sizeof(MessagePacket));
+}
+
+const signed portCHAR *pcGetTaskName(TaskToken taskToken)
+{
+	//get task name from profile
+	return taskToken->pcTaskName;
+}
+
+TaskID enGetTaskName(TaskToken taskToken)
+{
+	//get task ID from profile
+	return taskToken->enTaskID;
 }

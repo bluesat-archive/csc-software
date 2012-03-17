@@ -21,12 +21,11 @@
 //debug task message format
 typedef struct
 {
-	MESSAGE_HEADER;
 	signed portCHAR *pcDebugString;
 	unsigned portSHORT usLength;
-} Debug_Message;
+} DebugContent;
 
-#define DEBUG_MSG_SIZE sizeof(Debug_Message) - sizeof(MESSAGE_HEADER)
+#define DEBUG_CONTENT_SIZE	sizeof(DebugContent)
 
 //task token for accessing services
 static TaskToken Debug_TaskToken;
@@ -35,7 +34,7 @@ static TaskToken Debug_TaskToken;
 static portTASK_FUNCTION(vDebugTask, pvParameters);
 
 /**
- * \brief Writes a single character onto the port
+ * \brief Writes string to UART 1 char at a time
  *
  * \param[in] pcDebugString Pointer to debug string.
  * \param[in] usLength Length of debug string.
@@ -51,25 +50,29 @@ void vDebug_Init(unsigned portBASE_TYPE uxPriority)
 								SERV_STACK_SIZE, 
 								vDebugTask);
 								
-	vActivateQueue(Debug_TaskToken, DEBUG_Q_SIZE, sizeof(Debug_Message));
+	vActivateQueue(Debug_TaskToken, DEBUG_Q_SIZE);
 }
 
 static portTASK_FUNCTION(vDebugTask, pvParameters)
 {
 	(void) pvParameters;
 	UnivRetCode enResult;
-	Debug_Message incoming_message;
+	MessagePacket incoming_packet;
+	DebugContent *pContentHandle;
 
 	for ( ; ; )
 	{
-		enResult = enGet_Message(Debug_TaskToken, &incoming_message, portMAX_DELAY);
+		enResult = enGetRequest(Debug_TaskToken, &incoming_packet, portMAX_DELAY);
 
 		if (enResult == URC_SUCCESS)
 		{
-			vPrintString((signed portCHAR *)(incoming_message.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
+			//print string to UART
+			vPrintString((signed portCHAR *)(incoming_packet.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
 			vPrintString((signed portCHAR *)">", 1);
-			vPrintString(incoming_message.pcDebugString, incoming_message.usLength);
-			vCompleteRequest(incoming_message.Token, URC_SUCCESS);
+			pContentHandle = (DebugContent *)incoming_packet.Data;
+			vPrintString(pContentHandle->pcDebugString, pContentHandle->usLength);
+			//complete request by passing the status to the sender
+			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		}
 	}
 }
@@ -78,23 +81,30 @@ UnivRetCode enDebug_Print(TaskToken taskToken,
 						signed portCHAR *pcDebugString,
 						unsigned portSHORT usLength)
 {
-	Cmd_Message	outgoing_message;
-	Debug_Message *pMessageHandle = (Debug_Message *)&outgoing_message;
+	MessagePacket outgoing_packet;
+	DebugContent debugContent;
 
+	//identify requester
 	switch (taskToken->enTaskType)
 	{
-		case TYPE_SERVICE		:	vPrintString((signed portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
+		//services' debug message always get printed first
+		case TYPE_SERVICE		:	//print message to UART
+									vPrintString((signed portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
 									vPrintString((signed portCHAR *)">", 1);
 									vPrintString(pcDebugString, usLength);
 									return URC_SUCCESS;
 
-		case TYPE_APPLICATION	:	pMessageHandle->Src				= taskToken->enTaskID;
-									pMessageHandle->Dest			= TASK_DEBUG;
-									pMessageHandle->Token			= taskToken;
-									pMessageHandle->Length			= DEBUG_MSG_SIZE;
-									pMessageHandle->pcDebugString	= pcDebugString;
-									pMessageHandle->usLength		= usLength;
-									return enCommand_Push(&outgoing_message, portMAX_DELAY);
+		//applications' debug message always gets queued
+		case TYPE_APPLICATION	:	//create request packet
+									outgoing_packet.Src				= taskToken->enTaskID;
+									outgoing_packet.Dest			= TASK_DEBUG;
+									outgoing_packet.Token			= taskToken;
+									outgoing_packet.Length			= DEBUG_CONTENT_SIZE;
+									outgoing_packet.Data			= (unsigned portLONG)&debugContent;
+									//create tag along data
+									debugContent.pcDebugString		= pcDebugString;
+									debugContent.usLength			= usLength;
+									return enProcessRequest(&outgoing_packet, portMAX_DELAY);
 
 		default					:	return URC_FAIL;
 	}

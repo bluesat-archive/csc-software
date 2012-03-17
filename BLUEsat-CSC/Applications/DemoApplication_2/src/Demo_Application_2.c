@@ -1,26 +1,34 @@
-/**
- * Demo_Application_2.c - An application to demonstrating
- * 						  how an application should operate
+ /**
+ *  \file Demo_Application_2.c
  *
- * Create by: James Qin
+ *  \brief An application demonstrating how an application operate
+ *
+ *  \author $Author: James Qin $
+ *  \version 1.0
+ *
+ *  $Date: 2010-10-24 23:35:54 +1100 (Sun, 24 Oct 2010) $
+ *  \warning No Warnings for now
+ *  \bug No Bugs for now
+ *  \note No Notes for now
  */
 
 #include "application.h"
 #include "Demo_Application_2.h"
-#include "command.h"
+#include "Demo_Application_1.h"
 #include "debug.h"
 
 #define DEMO_Q_SIZE	1
+#define MESSAGE_WAIT_TIME 500
 
 typedef struct
 {
-	MESSAGE_HEADER;
-	signed portCHAR *pMsg;
-	unsigned portSHORT usLength;
-} Demo_Message;
+	signed portCHAR *pMsg;			//pointer to message
+	unsigned portSHORT usLength;	//message length	
+} DemoContent;
 
-#define DEMOAPP_MSG_SIZE sizeof(Demo_Message) - sizeof(MESSAGE_HEADER)
+#define DEMO_CONTENT_SIZE	sizeof(DemoContent)
 
+//task token for accessing services and other applications
 static TaskToken DEMO_TaskToken;
 
 static portTASK_FUNCTION(vDemoTask, pvParameters);
@@ -34,24 +42,31 @@ void vDemoApp2_Init(unsigned portBASE_TYPE uxPriority)
 								APP_STACK_SIZE, 
 								vDemoTask);
 
-	vActivateQueue(DEMO_TaskToken, DEMO_Q_SIZE, sizeof(Demo_Message));
+	vActivateQueue(DEMO_TaskToken, DEMO_Q_SIZE);
 }
 
 static portTASK_FUNCTION(vDemoTask, pvParameters)
 {
 	(void) pvParameters;
 	UnivRetCode enResult;
-	Demo_Message incoming_message;
+	MessagePacket incoming_packet;
+	DemoContent *pContentHandle;
 
 	for ( ; ; )
 	{
-		enResult = enGet_Message(DEMO_TaskToken, &incoming_message, portMAX_DELAY);
+		enResult = enGetRequest(DEMO_TaskToken, &incoming_packet, MESSAGE_WAIT_TIME);
 
 		if (enResult == URC_SUCCESS)
 		{
-			enResult = enDebug_Print(DEMO_TaskToken, incoming_message.pMsg, incoming_message.usLength);
-			vCompleteRequest(incoming_message.Token, enResult);
+			//access tagged data
+			pContentHandle = (DemoContent *)incoming_packet.Data;
+			//print message
+			enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
+			//complete request by passing the status to the sender
+			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		}
+		
+		enMessage_To_Q(DEMO_TaskToken, (signed portCHAR *)"Hello!\n\r", 50);
 	}
 }
 
