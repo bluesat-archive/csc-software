@@ -20,6 +20,8 @@
 #ifndef UART_H_
 #define UART_H_
 
+#include "FreeRTOS.h"
+
 enum UART_CHANNEL_ID
 {
 	READ0,

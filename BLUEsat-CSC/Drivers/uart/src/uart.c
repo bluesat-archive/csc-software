@@ -13,12 +13,11 @@
  *  \note No Notes for now
  */
 
-#include "FreeRTOS.h"
+#include "uart.h"
 #include "queue.h"
 #include "task.h"
 #include "irq.h"
 #include "semphr.h"
-#include "uart.h"
 
 #define UART_PWR_CTRL		PCONP
 #define UART_PWR_EN			( ( unsigned portLONG ) 1)
@@ -33,9 +32,9 @@
 #define UART_CLK_EIGHTH		( ( unsigned portLONG ) 3)
 
 #define UART_DIV_LATCH_EN	( ( unsigned portLONG ) 0x00000080) /*DLAB =1 enables DLL and DLM Registers, DLAB =0 enables interrupts*/
-#define UART0_DLL			   U0DLL /*Lower 8 divisor bits*/
-#define UART0_DLM			   U0DLM /*Upper 8 divisor bits*/
-#define UART0_FDIV			U0FDR /*Fractional divisor bits*/
+#define UART0_DLL				U0DLL /*Lower 8 divisor bits*/
+#define UART0_DLM				U0DLM /*Upper 8 divisor bits*/
+#define UART0_FDIV				U0FDR /*Fractional divisor bits*/
 #define UART_WRD_LEN_8CHR	( ( unsigned portLONG ) 0x00000003)
 #define UART_STOP_BIT_1		( ( unsigned portLONG ) 0x00000000)
 #define UART_RBR_INT_EN		( ( unsigned portLONG ) 0x00000001)
@@ -43,7 +42,7 @@
 #define UART_RX_STAT_INT_EN ( ( unsigned portLONG ) 0x00000004)
 
 #define ser_BAUD_RATE					( ( unsigned portLONG ) 115200 )
-#define serCLEAR_VIC_INTERRUPT		( ( unsigned portLONG ) 0 )
+#define serCLEAR_VIC_INTERRUPT			( ( unsigned portLONG ) 0 )
 #define serBUFF_LENGTH					( ( unsigned portLONG ) 100)
 
 /* Constants to determine the ISR source. */

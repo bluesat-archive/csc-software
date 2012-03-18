@@ -35,7 +35,7 @@ C			=gcc
 CC			=arm-elf-gcc
 OBJCOPY	=arm-elf-objcopy
 WARNINGS =-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
--Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused
+-Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Werror
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
 CFLAGS	=$(WARNINGS) -D GCC_ARM7 -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
 -fno-strict-aliasing -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
