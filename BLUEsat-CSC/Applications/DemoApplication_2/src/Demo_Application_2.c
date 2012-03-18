@@ -66,7 +66,7 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		}
 		
-		enMessage_To_Q(DEMO_TaskToken, (signed portCHAR *)"Hello!\n\r", 50);
+		enMessage_To_Q(DEMO_TaskToken, (signed portCHAR *)"Hello from DemoApp2!\n\r", 50);
 	}
 }
 

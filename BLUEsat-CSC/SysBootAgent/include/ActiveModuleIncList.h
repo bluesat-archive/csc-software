@@ -1,4 +1,5 @@
 #include "uart.h"
+#include "emc.h"
 #include "debug.h"
 #include "command.h"
 #include "Demo_Application_1.h"

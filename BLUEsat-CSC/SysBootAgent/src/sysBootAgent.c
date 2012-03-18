@@ -15,6 +15,10 @@ unsigned int initDrivers(void)
 		Comms_UART_Init();
 	#endif
 
+	#ifdef EMC_H_
+		EMC_Init();
+	#endif
+
 	return 0;
 }
 
