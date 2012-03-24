@@ -36,4 +36,6 @@ UnivRetCode enDebug_Print(TaskToken taskToken,
 						signed portCHAR *pcDebugString,
 						unsigned portSHORT usLength);
 
+//void vPrintHex(unsigned portCHAR *pcDebugString, unsigned portSHORT usLength);
+
 #endif /* DEBUG_H_ */

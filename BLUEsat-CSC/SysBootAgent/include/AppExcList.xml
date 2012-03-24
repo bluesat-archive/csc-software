@@ -4,7 +4,7 @@
    BLUESAT Application Isolation List
    ----------------------------------
 
-This file is manualy updated with application information 
+This file is manually updated with application information 
 and is used to remove applications from the compilation
 process, thus removing them from the image.
 
@@ -33,8 +33,8 @@ Example
 <applist>
    <Demo_Application1>
       <name>Demo Application1</name>
-      <desc>Demo application 1to test out the uart</desc>
-      <disable>YES</disable>
+      <desc>Demo application to test out the uart</desc>
+      <disable>NO</disable>
       <files>Demo_Application1.c</files>
    </Demo_Application1>
    <Demo_Application2>

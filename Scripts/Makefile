@@ -17,9 +17,9 @@ include ../Burner/lpcburn/Makefile
 #------------- 
 # Directories
 #-------------
-CSC_DIR           =../BLUEsat-CSC
+CSC_DIR           	=../BLUEsat-CSC
 APP_SOURCE_DIR		=$(CSC_DIR)/Applications
-CORE_SOURCE_DIR	=$(CSC_DIR)/FreeRTOS/post_src
+CORE_SOURCE_DIR		=$(CSC_DIR)/FreeRTOS/post_src
 BURNER_DIR			=../Burner/lpcburn
 BUILDS_DIR			=../Builds
 IMAGE_DIR			=../Dist
@@ -30,7 +30,7 @@ TEST_SUITES			=$(UNIT_TESTS_DIR)/Test_Suites
 #---------------
 # Utility Files
 #---------------
-EXCLUSION_FILE 	=$(CSC_DIR)/SysBootAgent/include/AppExcList.xml
+EXCLUSION_FILE 		=$(CSC_DIR)/SysBootAgent/include/AppExcList.xml
 INCLUSION_LIST		=$(CSC_DIR)/SysBootAgent/include/ActiveModuleIncList.h
 
 #---------------------
@@ -110,8 +110,8 @@ $(ALL_POST_PRE): %.i : %.c
 	$(PP) $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 	
 burn:
-#	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
-	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex com5 115200 14746
+	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
+#	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex com5 115200 14746
 	
 burner:
 	$(MAKE) --directory=$(BURNER_DIR) -f Makefile lpc21isp

@@ -71,15 +71,15 @@ void EMC_Init(void)
 
 	//D[0..15], mode = 10
 	PINSEL6  =  0x55555555;
-	PINMODE6 =  0xAAAAAAAA;
+	//PINMODE6 =  0xAAAAAAAA;
 
 	//A[0..15], mode = 10
 	PINSEL8  =  0x55555555;
-	PINMODE8 =  0xAAAAAAAA;
+	//PINMODE8 =  0xAAAAAAAA;
 
 	//A[16..23], !OE, !WE, !CS0, !CS1, BLS0-BLS3, mode = 10
 	PINSEL9  =  0x50555155;
-	PINMODE9 =  0xA0AAA2AA;
+	//PINMODE9 =  0xA0AAA2AA;
 
 	// enable EMC power
 	PCONP 	|= 	PCEMC_SET;
@@ -91,24 +91,24 @@ void EMC_Init(void)
 	vInitStaticMemoryBanks();
 }
 
-//(FRAM - FM22L16)
-#define FM22L16_WWEN			0xf
-#define FM22L16_WOEN			0x4
+/* (FRAM - FM22L16) */
+#define FM22L16_WWEN			0x2
+#define FM22L16_WOEN			0x2
 #define FM22L16_WRD				0x1f
-#define FM22L16_WPAGE			0x7
+#define FM22L16_WPAGE			0x1f
 #define FM22L16_WWR				0x1f
 #define FM22L16_WTURN			0xf
-//(SRAM - CY62167DV30)
-#define CY62167DV30_WWEN		0x3;
-#define CY62167DV30_WOEN		0x1;
-#define CY62167DV30_WRD			0x4;
-#define CY62167DV30_WPAGE		0x0;
-#define CY62167DV30_WWR			0x4;
-#define CY62167DV30_WTURN		0x1;
+/* (SRAM - CY62167DV30) */
+#define CY62167DV30_WWEN		0x2
+#define CY62167DV30_WOEN		0x2
+#define CY62167DV30_WRD			0x1f
+#define CY62167DV30_WPAGE		0x1f
+#define CY62167DV30_WWR			0x1f
+#define CY62167DV30_WTURN		0xf
 
 void vInitStaticMemoryBanks(void)
 {
-#if STATIC_BANK_0_ENABLED == TRUE
+#if STATIC_BANK_0_ENABLED == 1
 	//static memory bank general configuration
 	EMC_STA_CFG0 		= MEM_WIDTH_16 | R_LOW_W_LOW;
 	//static memory bank timing configuration
@@ -120,7 +120,7 @@ void vInitStaticMemoryBanks(void)
 	EMC_STA_WAITTURN0	= CY62167DV30_WTURN;
 
 #endif
-#if STATIC_BANK_1_ENABLED == TRUE
+#if STATIC_BANK_1_ENABLED == 1
 	//static memory bank general configuration
 	EMC_STA_CFG1 		= MEM_WIDTH_8 | R_LOW_W_LOW;
 	//static memory bank timing configuration
@@ -132,7 +132,7 @@ void vInitStaticMemoryBanks(void)
 	EMC_STA_WAITTURN1	= FM22L16_WTURN;
 
 #endif
-#if STATIC_BANK_2_ENABLED == TRUE
+#if STATIC_BANK_2_ENABLED == 1
 	//static memory bank general configuration
 	EMC_STA_CFG2 		= MEM_WIDTH_16 | R_LOW_W_LOW;
 	//static memory bank timing configuration
@@ -144,7 +144,7 @@ void vInitStaticMemoryBanks(void)
 	EMC_STA_WAITTURN2	= CY62167DV30_WTURN;
 
 #endif
-#if STATIC_BANK_3_ENABLED == TRUE
+#if STATIC_BANK_3_ENABLED == 1
 	//static memory bank general configuration
 	EMC_STA_CFG3 		= MEM_WIDTH_16 | R_LOW_W_LOW;
 	//static memory bank timing configuration

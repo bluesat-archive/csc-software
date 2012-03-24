@@ -15,6 +15,7 @@
 #ifndef DEMO_APPLICATION_1_H_
 #define DEMO_APPLICATION_1_H_
 
+#include "command.h"
 #include "UniversalReturnCode.h"
 
 /**

@@ -17,17 +17,17 @@
 	#ifdef APPLICATION_H_
 		#error "Task can only be application or service"
 	#endif
-#endif
 
-#ifndef SERVICE_H_
-#define SERVICE_H_
+	#ifndef SERVICE_H_
+	#define SERVICE_H_
 
-#include "FreeRTOS.h"
-#include "semphr.h"
-#include "command.h"
+		#include "FreeRTOS.h"
+		#include "semphr.h"
+		#include "command.h"
 
-/* Service unique defines */
-#define NO_BLOCK			0
-#define SERV_STACK_SIZE		configMINIMAL_STACK_SIZE
+		/* Service unique defines */
+		#define NO_BLOCK			0
+		#define SERV_STACK_SIZE		configMINIMAL_STACK_SIZE
 
-#endif /* SERVICE_H_ */
+	#endif /* SERVICE_H_ */
+#endif /* SYSBOOTAGENT_H_ */

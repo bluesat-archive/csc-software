@@ -15,6 +15,10 @@
 #include "service.h"
 #include "debug.h"
 #include "uart.h"
+#include "lib_string.h"
+
+#define MSN(x)							   (x >> 0x4)	//Most Significant Nibble
+#define LSN(x)							   (x &  0xf)	//Least Significant Nibble
 
 #define DEBUG_Q_SIZE	5
 
@@ -109,7 +113,20 @@ UnivRetCode enDebug_Print(TaskToken taskToken,
 		default					:	return URC_FAIL;
 	}
 }
-
+/*
+void vPrintHex(unsigned portCHAR *pcDebugString, unsigned portSHORT usLength)
+{
+	vAcquireUARTChannel(WRITE0, portMAX_DELAY);
+	{
+		for (; usLength-- > 0;)
+		{
+			Comms_UART_Write_Char(cValToHex(MSN(pcDebugString[usLength])), portMAX_DELAY);
+			Comms_UART_Write_Char(cValToHex(LSN(pcDebugString[usLength])), portMAX_DELAY);
+		}
+	}
+	vReleaseUARTChannel(WRITE0);
+}
+*/
 void vPrintString(signed portCHAR *pcDebugString, unsigned portSHORT usLength)
 {
 	unsigned portSHORT usIndex;
