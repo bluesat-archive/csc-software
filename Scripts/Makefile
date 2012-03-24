@@ -19,7 +19,7 @@ include ../Burner/lpcburn/Makefile
 #-------------
 CSC_DIR           =../BLUEsat-CSC
 APP_SOURCE_DIR		=$(CSC_DIR)/Applications
-CORE_SOURCE_DIR	=$(CSC_DIR)/FreeRTOS/src
+CORE_SOURCE_DIR	=$(CSC_DIR)/FreeRTOS/post_src
 BURNER_DIR			=../Burner/lpcburn
 BUILDS_DIR			=../Builds
 IMAGE_DIR			=../Dist
@@ -43,7 +43,7 @@ OBJCOPY	=arm-elf-objcopy
 WARNINGS =-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
 -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Werror
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
-CFLAGS	=$(WARNINGS) -D GCC_ARM7 -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
+CFLAGS	= $(WARNINGS) -D GCC_ARM7 -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
 -fno-strict-aliasing -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
 #TODO: use -nostdlib but have to implement some stdlib functions
 LINKER_FLAGS=-Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
@@ -56,7 +56,7 @@ TESTOUT			=-o $(IMAGE_DIR)/$(<F).exe
 #--------------
 # files which should not be compiled need to be of another type instead of *.c/*.h
 # it is suggested changing to *.c.ignore/*.h.ignore
-
+#
 TEST_CODE_TEMPLATE =test_*.c
 CODE_TEMPLATE		 =*.c
 EXEC_FILES    = $(shell  ls $(IMAGE_DIR)/test_*.exe)
@@ -69,8 +69,10 @@ POST_FIND_CODE   =/usr/bin/find .. -name $(CODE_TEMPLATE) | grep $(POST_CODE_SUB
 INC_SUBDIRS   =include
 FIND_INCLUDES =/usr/bin/find .. -type d -name $(INC_SUBDIRS)
 
-ALL_SRC = $(shell $(FIND_CODE))
 ALL_POST_SRC = $(shell $(POST_FIND_CODE))
+ALL_PRE_SRC = $(shell $(FIND_CODE))
+ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
+
 INC_DIRS = $(shell $(FIND_INCLUDES))
 TESTS  = $(shell  $(FIND_TESTS))
 
@@ -92,18 +94,22 @@ ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
 
 
 
-ALL_PRE = $(ALL_SRC:.c=.i)
+ALL_PRE = $(ALL_PRE_SRC:.c=.i)
 ALL_POST_PRE = $(ALL_POST_SRC:.c=.i)
-preprocess: $(ALL_POST_PRE)
+preprocess: preprocess_stage1 $(ALL_POST_PRE)
+	cd $(BUILDS_DIR); $(CC) -c *.i
+	$(CC) $(CFLAGS)  $(BUILDS_DIR)/*.o -nostartfiles $(CRT0) $(LINKER_FLAGS)
+
+
 
 preprocess_stage1:$(ALL_PRE)
-	perl $(SCRIPTS_DIR)/preprocess.pl $(EXCLUSION_FILE), $(BUILDS_DIR),$(INCLUSION_LIST)
+	$(shell perl $(SCRIPTS_DIR)/preprocess.pl $(EXCLUSION_FILE) $(BUILDS_DIR) $(INCLUSION_LIST))
 
 $(ALL_PRE): %.i : %.c
-	$(PP) $(CFLAGS) $< > $(BUILDS_DIR)/$(@F)
+	$(PP) $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 
 $(ALL_POST_PRE): %.i : %.c
-	$(PP) $(CFLAGS) $< > $(BUILDS_DIR)/$(@F)
+	$(PP) $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 
 
 
