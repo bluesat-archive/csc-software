@@ -17,6 +17,9 @@
 static unsigned portLONG command[5];
 static unsigned portLONG result[5];
 
+// Function pointer declaration for in built IAP function
+typedef void (*IAP)(unsigned portLONG *,unsigned portLONG *);
+
 static IAP iap_entry = (IAP) IAP_LOCATION;
 
 static void In_App_Prog(unsigned portLONG * ulpCmd, unsigned portLONG * ulpResult)

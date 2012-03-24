@@ -177,9 +177,6 @@ typedef enum{
    COMPARE_ADDRS     	= 56
 }IAP_CMD_CODES;
 
-// Function pointer declaration for in built IAP function
-typedef void (*IAP)(unsigned portLONG *,unsigned portLONG *);
-
 /**
  * \brief Binary Search to determine the flash block to use
  *
