@@ -129,7 +129,8 @@ $(ALL_TESTS) : %.o : %.c
 	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)	
 	
 burn:
-	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
+#	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
+	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex com4 115200 14746
 	
 burner:
 	$(MAKE) --directory=$(BURNER_DIR) -f Makefile lpc21isp

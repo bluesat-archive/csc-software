@@ -44,6 +44,11 @@ unsigned int initServices(void)
 	vDebug_Init(SERV_TASK_PRIORITY);
 #endif
 
+#ifdef MEMORY_H_
+	//memory task
+	vMemory_Init(SERV_TASK_PRIORITY);
+#endif
+
 	return 0;
 }
 
