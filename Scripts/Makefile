@@ -70,10 +70,10 @@ INC_SUBDIRS   =include
 FIND_INCLUDES =/usr/bin/find .. -type d -name $(INC_SUBDIRS)
 
 ALL_POST_SRC = $(shell $(POST_FIND_CODE))
-ALL_PRE_SRC = $(shell $(FIND_CODE))
+ALL_PRE_SRC  = $(shell $(FIND_CODE))
 
 INC_DIRS = $(shell $(FIND_INCLUDES))
-TESTS  = $(shell  $(FIND_TESTS))
+TESTS    = $(shell  $(FIND_TESTS))
 
 CUTEST = $(shell ls $(UNIT_TESTS_DIR)/*.c) 
 SUITES = $(shell ls $(TEST_SUITES)/*.c) 
@@ -87,8 +87,8 @@ $(SUITES)
 #--------------------------
 
 # Define all object files
-ALL_TESTS = $(TESTS:.c=.o)
-ALL_PRE = $(ALL_PRE_SRC:.c=.i)
+ALL_TESTS 	 = $(TESTS:.c=.o)
+ALL_PRE      = $(ALL_PRE_SRC:.c=.i)
 ALL_POST_PRE = $(ALL_POST_SRC:.c=.i)
 
 default: clean hex
