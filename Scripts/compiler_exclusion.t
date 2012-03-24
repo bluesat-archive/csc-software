@@ -6,7 +6,7 @@ use File::Path;
 use Test::More 'no_plan';
 use compiler_exclusion 'SUCCESS';
 use compiler_exclusion 'FAIL';
-my @subs = qw ();
+my @subs = qw (process);
 use_ok( 'compiler_exclusion',@subs) or exit;
 
 # Deletion Tests
@@ -76,9 +76,9 @@ $expected =<<MOO_SQUID;
    files required to build the system. This file is used as a step 
    in the conditional build system.
 */
-#include aaa.h
-#include bbb.h
-#include ccc.h
+#include "aaa.h"
+#include "bbb.h"
+#include "ccc.h"
 
 MOO_SQUID
 
@@ -139,10 +139,6 @@ my @expDelRef  = qw (a/b/d/aaa.i s/d/f/bbb.i);
 my ($actKeepRef, $actDelRef) = compiler_exclusion::get_exc_keep_lists(\@L1, \@L2);
 is_deeply($actKeepRef,\@expKeepRef,'remove_excluded_files: Check keep list');
 is_deeply($actDelRef,\@expDelRef,'remove_excluded_files: Check deletion list');
-
-
-compiler_exclusion::process('..\BLUEsat-CSC\SysBootAgent\include\AppExcList.xml', '..\Builds',
-'..\BLUEsat-CSC\SysBootAgent\include\ActiveModuleIncList.h' );
 
 
 #Helper Functions

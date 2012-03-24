@@ -1,21 +1,18 @@
 package compiler_exclusion;
 
 use strict;
-use Exporter;
+use warnings;
 use XML::Simple;
 use Data::Dumper;
-use vars qw($VERSION @ISA @EXPORT @EXPORT_OK %EXPORT_TAGS);
 use constant {
         SUCCESS   => 1,
         FAIL      => 0
     };   
-$VERSION     = 1.00;
-@ISA         = qw(Exporter);
-@EXPORT      = ();
-@EXPORT_OK   = qw(SUCCESS FAIL);
-
-
-
+use Exporter;
+our $VERSION     = 1.00;
+our @ISA = qw(Exporter);
+our @EXPORT = qw();
+our @EXPORT_OK = qw(process SUCCESS FAIL);
 
 
 my $iFiles = {};
@@ -150,8 +147,8 @@ sub generate_includes_list
    
    return FAIL unless (defined $outputFile );
    return FAIL unless ($outputFile =~ /\w+/);
-   @pathlessIncFiles = () unless (defined  @pathlessIncFiles);
-   my @includes = map {'#include '.$_} @pathlessIncFiles;
+   @pathlessIncFiles = () unless (@pathlessIncFiles);
+   my @includes = map {"#include \"$_\""} @pathlessIncFiles;
    my $list  = join ("\n",@includes);
    my $output =<<MOO_SQUID;
 /*
@@ -175,7 +172,7 @@ sub clean_up_unused_files
 {
    my @unwantedFiles = @_;
    my $summary_deleted = 0;
-   return unless (defined @unwantedFiles);
+   return unless (@unwantedFiles);
    foreach my $tempFile (@unwantedFiles)
    {
       # Do not delete directories

@@ -27,12 +27,18 @@ SCRIPTS_DIR			=.
 UNIT_TESTS_DIR		=../Unit_Tests
 TEST_SUITES			=$(UNIT_TESTS_DIR)/Test_Suites
 
+#---------------
+# Utility Files
+#---------------
+EXCLUSION_FILE 	=$(CSC_DIR)/SysBootAgent/include/AppExcList.xml
+INCLUSION_LIST		=$(CSC_DIR)/SysBootAgent/include/ActiveModuleIncList.h
 
 #---------------------
 # Compiler / Settings
 #---------------------
 C			=gcc
 CC			=arm-elf-gcc
+PP			=arm-elf-cpp
 OBJCOPY	=arm-elf-objcopy
 WARNINGS =-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
 -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Werror
@@ -58,10 +64,13 @@ TEST_SUBDIRS  =/test/
 FIND_TESTS    =/usr/bin/find .. -name $(TEST_CODE_TEMPLATE) | grep $(TEST_SUBDIRS)
 CODE_SUBDIRS  =/src/
 FIND_CODE     =/usr/bin/find .. -name $(CODE_TEMPLATE) | grep $(CODE_SUBDIRS)
+POST_CODE_SUBDIR =/post_src/
+POST_FIND_CODE   =/usr/bin/find .. -name $(CODE_TEMPLATE) | grep $(POST_CODE_SUBDIR)
 INC_SUBDIRS   =include
 FIND_INCLUDES =/usr/bin/find .. -type d -name $(INC_SUBDIRS)
 
 ALL_SRC = $(shell $(FIND_CODE))
+ALL_POST_SRC = $(shell $(POST_FIND_CODE))
 INC_DIRS = $(shell $(FIND_INCLUDES))
 TESTS  = $(shell  $(FIND_TESTS))
 
@@ -80,6 +89,24 @@ $(SUITES)
 ALL_OBJ = $(ALL_SRC:.c=.o)
 ALL_TESTS = $(TESTS:.c=.o)
 ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
+
+
+
+ALL_PRE = $(ALL_SRC:.c=.i)
+ALL_POST_PRE = $(ALL_POST_SRC:.c=.i)
+preprocess: $(ALL_POST_PRE)
+
+preprocess_stage1:$(ALL_PRE)
+	perl $(SCRIPTS_DIR)/preprocess.pl $(EXCLUSION_FILE), $(BUILDS_DIR),$(INCLUSION_LIST)
+
+$(ALL_PRE): %.i : %.c
+	$(PP) $(CFLAGS) $< > $(BUILDS_DIR)/$(@F)
+
+$(ALL_POST_PRE): %.i : %.c
+	$(PP) $(CFLAGS) $< > $(BUILDS_DIR)/$(@F)
+
+
+
 
 default: hex
 
@@ -123,9 +150,12 @@ runAllTests:
 # Clean Up
 #----------
 
-clean: cleanTests
+clean: cleantests
 	rm -f $(BUILDS_DIR)/*
 	rm -f $(IMAGE_DIR)/csc.*
 	
-cleanTests:
+cleantests:
 	rm -f $(IMAGE_DIR)/test_*.exe
+
+cleanpreprocess:
+	rm -f $(BUILDS_DIR)/*.i
