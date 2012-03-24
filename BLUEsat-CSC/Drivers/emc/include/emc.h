@@ -20,7 +20,7 @@
 
 //static banks initialise control
 #define STATIC_BANK_0_ENABLED		TRUE
-#define STATIC_BANK_1_ENABLED		FALSE
+#define STATIC_BANK_1_ENABLED		TRUE
 #define STATIC_BANK_2_ENABLED		FALSE
 #define STATIC_BANK_3_ENABLED		FALSE
 
@@ -33,8 +33,8 @@
 //static banks size
 #define STATIC_BANK_0_SIZE			0x200000
 #define STATIC_BANK_1_SIZE			0x80000
-#define STATIC_BANK_2_SIZE			0x82000000
-#define STATIC_BANK_3_SIZE			0x83000000
+#define STATIC_BANK_2_SIZE			0x00000000
+#define STATIC_BANK_3_SIZE			0x00000000
 
 /**
  * \brief Initialise External Memory Controller.
