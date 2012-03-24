@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!--
+   ----------------------------------
+   BLUESAT Application Isolation List
+   ----------------------------------
+
+This file is manualy updated with application information 
+and is used to remove applications from the compilation
+process, thus removing them from the image.
+
+name:    Name of the application
+
+desc:    Description of the application and its purpose
+
+disable: [YES|NO] The files in the list are not included in
+         the compilation process if YES is specified
+
+files:   A list of space seperated files to ignore from the
+         compilation process.
+
+Example
+----------         
+<applist>
+   <app>
+      <name>MOO</name>
+      <desc>Moo printer application to flood screen</desc>
+      <disable>YES</disable>
+      <files>Moo_print.c Cow_push.c patty.c</files>
+   </app>
+</applist>
+
+-->
+<applist>
+   <app>
+      <name>Demo Application1</name>
+      <desc>Demo application 1to test out the uart</desc>
+      <disable>YES</disable>
+      <files>Demo_Application1.c</files>
+   </app>
+</applist>
