@@ -12,9 +12,11 @@
  *  \bug No Bugs for now
  *  \note No Notes for now
  */
- 
-#ifdef APPLICATION_H_
-	error "Task can only be application or service"
+
+#ifndef SYSBOOTAGENT_H_
+	#ifdef APPLICATION_H_
+		#error "Task can only be application or service"
+	#endif
 #endif
 
 #ifndef SERVICE_H_
