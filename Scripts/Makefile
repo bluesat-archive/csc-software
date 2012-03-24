@@ -71,7 +71,6 @@ FIND_INCLUDES =/usr/bin/find .. -type d -name $(INC_SUBDIRS)
 
 ALL_POST_SRC = $(shell $(POST_FIND_CODE))
 ALL_PRE_SRC = $(shell $(FIND_CODE))
-ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
 
 INC_DIRS = $(shell $(FIND_INCLUDES))
 TESTS  = $(shell  $(FIND_TESTS))
@@ -88,19 +87,19 @@ $(SUITES)
 #--------------------------
 
 # Define all object files
-ALL_OBJ = $(ALL_SRC:.c=.o)
 ALL_TESTS = $(TESTS:.c=.o)
-ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
-
-
 
 ALL_PRE = $(ALL_PRE_SRC:.c=.i)
 ALL_POST_PRE = $(ALL_POST_SRC:.c=.i)
-preprocess: preprocess_stage1 $(ALL_POST_PRE)
+
+default: clean hex
+
+hex: elf
+	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
+
+elf: preprocess_stage1 $(ALL_POST_PRE)
 	cd $(BUILDS_DIR); $(CC) -c *.i
 	$(CC) $(CFLAGS)  $(BUILDS_DIR)/*.o -nostartfiles $(CRT0) $(LINKER_FLAGS)
-
-
 
 preprocess_stage1:$(ALL_PRE)
 	$(shell perl $(SCRIPTS_DIR)/preprocess.pl $(EXCLUSION_FILE) $(BUILDS_DIR) $(INCLUSION_LIST))
@@ -110,23 +109,6 @@ $(ALL_PRE): %.i : %.c
 
 $(ALL_POST_PRE): %.i : %.c
 	$(PP) $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
-
-
-
-
-default: hex
-
-elf: $(ALL_OBJ) $(CRT0)
-	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
-
-hex: elf
-	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
-	
-$(ALL_OBJ): %.o : %.c
-	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
-
-$(ALL_TESTS) : %.o : %.c
-	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)	
 	
 burn:
 #	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
@@ -144,7 +126,8 @@ keys:
 combo:
 	$(MAKE) default burn
 
-	
+$(ALL_TESTS) : %.o : %.c
+	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
 	
 unitTests: tests runAllTests
 
@@ -152,6 +135,16 @@ tests: $(ALL_TESTS)
 	
 runAllTests: 
 	sh run_tests.sh $(IMAGE_DIR)
+
+
+
+#ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
+#ALL_OBJ = $(ALL_SRC:.c=.o)
+#ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
+#old_elf: $(ALL_OBJ) $(CRT0)
+#	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
+#$(ALL_OBJ): %.o : %.c
+#	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 
 #----------
 # Clean Up
@@ -163,6 +156,3 @@ clean: cleantests
 	
 cleantests:
 	rm -f $(IMAGE_DIR)/test_*.exe
-
-cleanpreprocess:
-	rm -f $(BUILDS_DIR)/*.i
