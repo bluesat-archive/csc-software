@@ -1,3 +1,4 @@
+#
 # BLUESAT Critical Systems Computer Builder Script
 # Copyright BLUESAT Project 2011
 # Version 2.0 
@@ -81,10 +82,9 @@ SUITES = $(shell ls $(TEST_SUITES)/*.c)
 TEST_CORE = $(CUTEST)\
 $(SUITES)
 
-
-#--------------------------
-# Compilation and Linking
-#--------------------------
+#-------------------------------------------
+# Start of Selective Compilation and Linking
+#-------------------------------------------
 
 # Define all object files
 ALL_TESTS 	 = $(TESTS:.c=.o)
@@ -109,6 +109,50 @@ $(ALL_PRE): %.i : %.c
 $(ALL_POST_PRE): %.i : %.c
 	$(PP) $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 	
+#-------------------------------------------
+# End of Selective Compilation and Linking
+#-------------------------------------------
+
+#-------------------------------------------
+# Start of Do All Compilation and Linking
+#-------------------------------------------
+
+ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
+ALL_OBJ = $(ALL_SRC:.c=.o)
+ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
+
+compile_all: clean $(ALL_OBJ) $(CRT0)
+	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
+	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
+	
+$(ALL_OBJ): %.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
+
+#-------------------------------------------
+# End of Do All Compilation and Linking
+#-------------------------------------------
+
+#-------------------------------------------
+# Start of Unit Testing
+#-------------------------------------------
+$(ALL_TESTS) : %.o : %.c
+	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
+	
+unitTests: tests runAllTests
+
+tests: $(ALL_TESTS)	
+	
+runAllTests: 
+	sh run_tests.sh $(IMAGE_DIR)
+
+#-------------------------------------------
+# End of Unit Testing
+#-------------------------------------------
+
+#-----------
+# Utilities
+#-----------
+
 burn:
 	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
 #	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex com5 115200 14746
@@ -125,27 +169,6 @@ keys:
 combo:
 	$(MAKE) default burn
 
-$(ALL_TESTS) : %.o : %.c
-	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
-	
-unitTests: tests runAllTests
-
-tests: $(ALL_TESTS)	
-	
-runAllTests: 
-	sh run_tests.sh $(IMAGE_DIR)
-
-
-
-ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
-ALL_OBJ = $(ALL_SRC:.c=.o)
-ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
-old_elf: clean $(ALL_OBJ) $(CRT0)
-	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
-	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
-$(ALL_OBJ): %.o : %.c
-	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
-
 #----------
 # Clean Up
 #----------
@@ -156,3 +179,4 @@ clean: cleantests
 	
 cleantests:
 	rm -f $(IMAGE_DIR)/test_*.exe
+	rm -f $(IMAGE_DIR)/AutoTestResults.txt
