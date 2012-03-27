@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!--
-   ----------------------------------
+   ==================================
    BLUESAT Application Isolation List
-   ----------------------------------
+   ==================================
 
 This file is manually updated with application information 
 and is used to remove applications from the compilation
@@ -18,8 +18,8 @@ disable: [YES|NO] The files in the list are not included in
 files:   A list of space seperated files to ignore from the
          compilation process.
 
-Example
-----------         
+Example:
+==========         
 <applist>
    <app>
       <name>MOO</name>
@@ -40,7 +40,7 @@ Example
    <Demo_Application2>
       <name>Demo Application2</name>
       <desc>Demo application to test out the uart</desc>
-      <disable>YES</disable>
+      <disable>NO</disable>
       <files>Demo_Application2.c</files>
    </Demo_Application2>
 </applist>
