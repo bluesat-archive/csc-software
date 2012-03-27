@@ -97,7 +97,7 @@ hex: elf
 	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
 
 elf: preprocess_stage1 $(ALL_POST_PRE)
-	cd $(BUILDS_DIR); $(CC) -c *.i
+	cd $(BUILDS_DIR); $(CC) $(CFLAGS) -c *.i
 	$(CC) $(CFLAGS)  $(BUILDS_DIR)/*.o -nostartfiles $(CRT0) $(LINKER_FLAGS)
 
 preprocess_stage1:$(ALL_PRE)
@@ -137,13 +137,14 @@ runAllTests:
 
 
 
-#ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
-#ALL_OBJ = $(ALL_SRC:.c=.o)
-#ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
-#old_elf: $(ALL_OBJ) $(CRT0)
-#	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
-#$(ALL_OBJ): %.o : %.c
-#	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
+ALL_SRC = $(shell $(FIND_CODE)) $(ALL_POST_SRC)
+ALL_OBJ = $(ALL_SRC:.c=.o)
+ALL_TARGET_OBJ=$(patsubst %,$(BUILDS_DIR)/%,$(notdir $(ALL_OBJ)))
+old_elf: clean $(ALL_OBJ) $(CRT0)
+	$(CC) $(CFLAGS) $(ALL_TARGET_OBJ) -nostartfiles $(CRT0) $(LINKER_FLAGS)
+	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
+$(ALL_OBJ): %.o : %.c
+	$(CC) -c $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 
 #----------
 # Clean Up

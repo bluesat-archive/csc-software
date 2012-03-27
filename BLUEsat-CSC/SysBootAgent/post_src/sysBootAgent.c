@@ -24,6 +24,8 @@ unsigned int initDrivers(void)
 #ifdef INTERNAL_FLASH_H_
 	//Internal Flash Memory driver
 	/* NO INITIALISATION REQUIRED */
+	//WARNING: TEMPORARY SOLUTION BELOW - REMOVE ASAP
+	(void)FlashSecAdds;		/* STOP COMPILER COMPLAIN ABOUT FlashSecAdds NOT USED*/
 #endif
 
 	return 0;
