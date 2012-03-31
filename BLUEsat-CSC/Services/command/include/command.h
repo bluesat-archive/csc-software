@@ -124,7 +124,7 @@ void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal);
  */
 
 TaskToken ActivateTask(TaskID 		enTaskID,
-						const portCHAR 	*pcTaskName,
+						portCHAR 	*pcTaskName,
 						TASK_TYPE 	enTaskType,
 						unsigned 	portBASE_TYPE uxPriority,
 						unsigned 	portSHORT usStackSize,

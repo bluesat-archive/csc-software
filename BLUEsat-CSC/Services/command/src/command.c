@@ -39,7 +39,7 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 	}
 
 	ActivateTask(TASK_COMMAND, 
-				(portCHAR*)&usIndex,
+				"Command",
 				TYPE_SERVICE, 
 				uxPriority, 
 				SERV_STACK_SIZE, 
@@ -117,7 +117,7 @@ void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal)
 }
 
 TaskToken ActivateTask(TaskID 		enTaskID,
-						const portCHAR 	*pcTaskName,
+						portCHAR 	*pcTaskName,
 						TASK_TYPE 	enTaskType,
 						unsigned 	portBASE_TYPE uxPriority,
 						unsigned 	portSHORT usStackSize,
@@ -126,7 +126,7 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 	//create task in memory
 	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, NULL);
 	//store task profile in array
-	TaskTokens[enTaskID].pcTaskName		= (portCHAR *)pcTaskName;
+	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
 	TaskTokens[enTaskID].enTaskType		= enTaskType;
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
 	//create semaphore for task
