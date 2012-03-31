@@ -21,7 +21,7 @@
 
 typedef struct
 {
-	signed portCHAR *pMsg;			//pointer to message
+	portCHAR *pMsg;			//pointer to message
 	unsigned portSHORT usLength;	//message length
 } DemoContent;
 
@@ -35,7 +35,7 @@ static portTASK_FUNCTION(vDemoTask, pvParameters);
 void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority)
 {
 	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_1, 
-								(const signed char *)"DemoApp1", 
+								"DemoApp1",
 								TYPE_APPLICATION, 
 								uxPriority, 
 								APP_STACK_SIZE, 
@@ -68,14 +68,14 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 }
 
 UnivRetCode enMessage_To_Q(TaskToken taskToken,
-							signed portCHAR *pcDebugString,
+							portCHAR *pcDebugString,
 							unsigned portSHORT usLength)
 {
 	MessagePacket outgoing_packet;
 	DemoContent domeContent;
 	
 	//create packet with printing request information
-	outgoing_packet.Src			= enGetTaskName(taskToken);
+	outgoing_packet.Src			= enGetTaskID(taskToken);
 	outgoing_packet.Dest		= TASK_DEMO_APP_1;
 	outgoing_packet.Token		= taskToken;
 	outgoing_packet.Length		= DEMO_CONTENT_SIZE;

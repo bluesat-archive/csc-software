@@ -22,7 +22,7 @@
 
 typedef struct
 {
-	signed portCHAR *pMsg;			//pointer to message
+	portCHAR *pMsg;			//pointer to message
 	unsigned portSHORT usLength;	//message length	
 } DemoContent;
 
@@ -36,7 +36,7 @@ static portTASK_FUNCTION(vDemoTask, pvParameters);
 void vDemoApp2_Init(unsigned portBASE_TYPE uxPriority)
 {
 	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_2, 
-								(const signed char *)"DemoApp2", 
+								"DemoApp2",
 								TYPE_APPLICATION, 
 								uxPriority, 
 								APP_STACK_SIZE, 
@@ -66,7 +66,7 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		}
 		
-		enMessage_To_Q(DEMO_TaskToken, (signed portCHAR *)"Hello from DemoApp2!\n\r", 50);
+		enMessage_To_Q(DEMO_TaskToken, "Hello from DemoApp2!\n\r", 50);
 	}
 }
 

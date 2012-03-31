@@ -25,7 +25,7 @@
 //debug task message format
 typedef struct
 {
-	signed portCHAR *pcDebugString;
+	portCHAR *pcDebugString;
 	unsigned portSHORT usLength;
 } DebugContent;
 
@@ -43,12 +43,12 @@ static portTASK_FUNCTION(vDebugTask, pvParameters);
  * \param[in] pcDebugString Pointer to debug string.
  * \param[in] usLength Length of debug string.
  */
-void vPrintString(signed portCHAR *pcDebugString, unsigned portSHORT usLength);
+void vPrintString(portCHAR *pcDebugString, unsigned portSHORT usLength);
 
 void vDebug_Init(unsigned portBASE_TYPE uxPriority)
 {
 	Debug_TaskToken = ActivateTask(TASK_DEBUG, 
-								(const signed portCHAR *)"Debug", 
+								"Debug",
 								TYPE_SERVICE, 
 								uxPriority, 
 								SERV_STACK_SIZE, 
@@ -71,8 +71,8 @@ static portTASK_FUNCTION(vDebugTask, pvParameters)
 		if (enResult == URC_SUCCESS)
 		{
 			//print string to UART
-			vPrintString((signed portCHAR *)(incoming_packet.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
-			vPrintString((signed portCHAR *)">", 1);
+			vPrintString((portCHAR *)(incoming_packet.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
+			vPrintString(">", 1);
 			pContentHandle = (DebugContent *)incoming_packet.Data;
 			vPrintString(pContentHandle->pcDebugString, pContentHandle->usLength);
 			//complete request by passing the status to the sender
@@ -82,7 +82,7 @@ static portTASK_FUNCTION(vDebugTask, pvParameters)
 }
 
 UnivRetCode enDebug_Print(TaskToken taskToken,
-						signed portCHAR *pcDebugString,
+						portCHAR *pcDebugString,
 						unsigned portSHORT usLength)
 {
 	MessagePacket outgoing_packet;
@@ -93,8 +93,8 @@ UnivRetCode enDebug_Print(TaskToken taskToken,
 	{
 		//services' debug message always get printed first
 		case TYPE_SERVICE		:	//print message to UART
-									vPrintString((signed portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
-									vPrintString((signed portCHAR *)">", 1);
+									vPrintString((portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
+									vPrintString(">", 1);
 									vPrintString(pcDebugString, usLength);
 									return URC_SUCCESS;
 
@@ -114,7 +114,7 @@ UnivRetCode enDebug_Print(TaskToken taskToken,
 	}
 }
 /*
-void vPrintHex(unsigned portCHAR *pcDebugString, unsigned portSHORT usLength)
+void vPrintHex(portCHAR *pcDebugString, unsigned portSHORT usLength)
 {
 	vAcquireUARTChannel(WRITE0, portMAX_DELAY);
 	{
@@ -127,7 +127,7 @@ void vPrintHex(unsigned portCHAR *pcDebugString, unsigned portSHORT usLength)
 	vReleaseUARTChannel(WRITE0);
 }
 */
-void vPrintString(signed portCHAR *pcDebugString, unsigned portSHORT usLength)
+void vPrintString(portCHAR *pcDebugString, unsigned portSHORT usLength)
 {
 	unsigned portSHORT usIndex;
 

@@ -42,7 +42,7 @@ static portTASK_FUNCTION(vMemoryTask, pvParameters);
 void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 {
 	Memory_TaskToken = ActivateTask(TASK_MEMORY, 
-								(const signed portCHAR *)"Memory", 
+								"Memory",
 								TYPE_SERVICE, 
 								uxPriority, 
 								SERV_STACK_SIZE, 
@@ -83,7 +83,7 @@ static portTASK_FUNCTION(vMemoryTask, pvParameters)
 
 		//SRAM test
 		//8 bits test
-		enDebug_Print(Memory_TaskToken, (signed portCHAR *)"SRAM 8 bits test...\n\r", 50);
+		enDebug_Print(Memory_TaskToken, "SRAM 8 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_0_START_ADDR, ucValue = 3;
 			ulAddress < STATIC_BANK_0_START_ADDR + STATIC_BANK_0_SIZE;
 			ulAddress += sizeof(unsigned portCHAR), ++ucValue)
@@ -97,14 +97,14 @@ static portTASK_FUNCTION(vMemoryTask, pvParameters)
 		{
 			if (*(unsigned portCHAR *)ulAddress != ucValue)
 			{
-				enDebug_Print(Memory_TaskToken, (signed portCHAR *)"SRAM 8 bits test failed!\n\r", 50);
+				enDebug_Print(Memory_TaskToken, "SRAM 8 bits test failed!\n\r", 50);
 				break;
 			}
 		}
 
 		//FRAM test
 		//8 bits test
-		enDebug_Print(Memory_TaskToken, (signed portCHAR *)"FRAM 8 bits test...\n\r", 50);
+		enDebug_Print(Memory_TaskToken, "FRAM 8 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_1_START_ADDR, ucValue = 3;
 			ulAddress < STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE;
 			ulAddress += sizeof(unsigned portCHAR), ++ucValue)
@@ -118,13 +118,13 @@ static portTASK_FUNCTION(vMemoryTask, pvParameters)
 		{
 			if (*(unsigned portCHAR *)ulAddress != ucValue)
 			{
-				enDebug_Print(Memory_TaskToken, (signed portCHAR *)"FRAM 8 bits test failed!\n\r", 50);
+				enDebug_Print(Memory_TaskToken, "FRAM 8 bits test failed!\n\r", 50);
 				break;
 			}
 		}
 
 		//16 bits test
-		enDebug_Print(Memory_TaskToken, (signed portCHAR *)"FRAM 16 bits test...\n\r", 50);
+		enDebug_Print(Memory_TaskToken, "FRAM 16 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_1_START_ADDR, usValue = 3;
 			ulAddress < STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE;
 			ulAddress += sizeof(unsigned portSHORT), ++usValue)
@@ -138,13 +138,13 @@ static portTASK_FUNCTION(vMemoryTask, pvParameters)
 		{
 			if (*(unsigned portSHORT *)ulAddress != usValue)
 			{
-				enDebug_Print(Memory_TaskToken, (signed portCHAR *)"FRAM 16 bits test failed!\n\r", 50);
+				enDebug_Print(Memory_TaskToken, "FRAM 16 bits test failed!\n\r", 50);
 				break;
 			}
 		}
 
 		//32 bits test
-		enDebug_Print(Memory_TaskToken, (signed portCHAR *)"FRAM 32 bits test...\n\r", 50);
+		enDebug_Print(Memory_TaskToken, "FRAM 32 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_1_START_ADDR;
 			ulAddress < STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE;
 			ulAddress += sizeof(unsigned portLONG))
@@ -158,7 +158,7 @@ static portTASK_FUNCTION(vMemoryTask, pvParameters)
 		{
 			if (*(unsigned portLONG *)ulAddress != ulAddress + 1)
 			{
-				enDebug_Print(Memory_TaskToken, (signed portCHAR *)"FRAM 32 bits test failed!\n\r", 50);
+				enDebug_Print(Memory_TaskToken, "FRAM 32 bits test failed!\n\r", 50);
 				break;
 			}
 		}

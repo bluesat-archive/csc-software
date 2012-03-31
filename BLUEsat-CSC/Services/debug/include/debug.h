@@ -33,7 +33,7 @@ void vDebug_Init(unsigned portBASE_TYPE uxPriority);
  * \returns enum Universal return code
  */
 UnivRetCode enDebug_Print(TaskToken taskToken,
-						signed portCHAR *pcDebugString,
+						portCHAR *pcDebugString,
 						unsigned portSHORT usLength);
 
 //void vPrintHex(unsigned portCHAR *pcDebugString, unsigned portSHORT usLength);

@@ -41,12 +41,12 @@ C			=gcc
 CC			=arm-elf-gcc
 PP			=arm-elf-cpp
 OBJCOPY	=arm-elf-objcopy
-WARNINGS =-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
--Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Werror
+WARNINGS =-Wall -Werror -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
+-Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Wformat-security
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
 CFLAGS	= $(WARNINGS) -D GCC_ARM7 -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
--fno-strict-aliasing -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
-#TODO: use -nostdlib but have to implement some stdlib functions
+-fno-strict-aliasing -nostdlib -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
+
 LINKER_FLAGS=-Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
 
 TESTWARNINGS 	=-Wall

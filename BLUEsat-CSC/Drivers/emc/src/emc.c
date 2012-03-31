@@ -14,6 +14,8 @@
  */
 
 #include "emc.h"
+#include "FreeRTOS.h"
+#include "task.h"
 
 //EMC power bit
 #define PCEMC_SET 			0x800

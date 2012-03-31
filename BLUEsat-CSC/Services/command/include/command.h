@@ -44,7 +44,7 @@ typedef enum
 	//only exposed to services
 	struct taskToken
 	{
-		const signed portCHAR 	*pcTaskName;
+		portCHAR  				*pcTaskName;
 		TASK_TYPE				enTaskType;
 		TaskID					enTaskID;
 		xSemaphoreHandle		TaskSemphr;
@@ -123,11 +123,11 @@ void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal);
  * \returns Task token for accessing services and applications
  */
 
-TaskToken ActivateTask(TaskID enTaskID,
-						const signed portCHAR* const pcTaskName,
-						TASK_TYPE enTaskType,
-						unsigned portBASE_TYPE uxPriority,
-						unsigned portSHORT usStackSize,
+TaskToken ActivateTask(TaskID 		enTaskID,
+						const portCHAR 	*pcTaskName,
+						TASK_TYPE 	enTaskType,
+						unsigned 	portBASE_TYPE uxPriority,
+						unsigned 	portSHORT usStackSize,
 						pdTASK_CODE pvTaskFunction);
 
 /**
@@ -146,7 +146,7 @@ void vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement);
  *			
  * \returns Task name
  */
-const signed portCHAR *pcGetTaskName(TaskToken taskToken);
+portCHAR *pcGetTaskName(TaskToken taskToken);
 
 /**
  * \brief Return Task token owner's taskID
@@ -155,6 +155,6 @@ const signed portCHAR *pcGetTaskName(TaskToken taskToken);
  *			
  * \returns Task name
  */
-TaskID enGetTaskName(TaskToken taskToken);
+TaskID enGetTaskID(TaskToken taskToken);
 
 #endif /* COMMAND_H_ */

@@ -35,7 +35,7 @@ void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority);
  * \param[in] usLength Length of message.
  */
 UnivRetCode enMessage_To_Q(TaskToken taskToken,
-							signed portCHAR *pcDebugString,
+							portCHAR *pcDebugString,
 							unsigned portSHORT usLength);
 
 #endif /* DEMO_APPLICATION_1_H_ */

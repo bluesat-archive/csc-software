@@ -39,7 +39,7 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 	}
 
 	ActivateTask(TASK_COMMAND, 
-				(const signed char *)"Command", 
+				(portCHAR*)&usIndex,
 				TYPE_SERVICE, 
 				uxPriority, 
 				SERV_STACK_SIZE, 
@@ -116,17 +116,17 @@ void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal)
 	xSemaphoreGive(taskToken->TaskSemphr);
 }
 
-TaskToken ActivateTask(TaskID enTaskID,
-						const signed portCHAR* const pcTaskName,
-						TASK_TYPE enTaskType,
-						unsigned portBASE_TYPE uxPriority,
-						unsigned portSHORT usStackSize,
+TaskToken ActivateTask(TaskID 		enTaskID,
+						const portCHAR 	*pcTaskName,
+						TASK_TYPE 	enTaskType,
+						unsigned 	portBASE_TYPE uxPriority,
+						unsigned 	portSHORT usStackSize,
 						pdTASK_CODE pvTaskFunction)
 {
 	//create task in memory
-	xTaskCreate(pvTaskFunction, pcTaskName, usStackSize, NULL, uxPriority, NULL);
+	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, NULL);
 	//store task profile in array
-	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
+	TaskTokens[enTaskID].pcTaskName		= (portCHAR *)pcTaskName;
 	TaskTokens[enTaskID].enTaskType		= enTaskType;
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
 	//create semaphore for task
@@ -144,13 +144,13 @@ void vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement)
 	xTaskQueueHandles[taskToken->enTaskID] = xQueueCreate(usNumElement, sizeof(MessagePacket));
 }
 
-const signed portCHAR *pcGetTaskName(TaskToken taskToken)
+portCHAR *pcGetTaskName(TaskToken taskToken)
 {
 	//get task name from profile
 	return taskToken->pcTaskName;
 }
 
-TaskID enGetTaskName(TaskToken taskToken)
+TaskID enGetTaskID(TaskToken taskToken)
 {
 	//get task ID from profile
 	return taskToken->enTaskID;
