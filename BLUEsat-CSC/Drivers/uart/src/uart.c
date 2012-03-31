@@ -182,7 +182,7 @@ unsigned portLONG Comms_UART_Init(void)
 /*---------------------------------------------------------------------------------*/
 // UART access functions
 
-signed portBASE_TYPE Comms_UART_Read_Char( signed portCHAR *pcRxedChar, portTickType xBlockTime )
+signed portBASE_TYPE Comms_UART_Read_Char( portCHAR *pcRxedChar, portTickType xBlockTime )
 {
 	if( xQueueReceive( RX_BUFF, pcRxedChar, xBlockTime ) )
 	{
@@ -196,7 +196,7 @@ signed portBASE_TYPE Comms_UART_Read_Char( signed portCHAR *pcRxedChar, portTick
 
 /*-----------------------------------------------------------*/
 
-signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickType xBlockTime )
+signed portBASE_TYPE Comms_UART_Write_Char( portCHAR cOutChar, portTickType xBlockTime )
 {
 	signed portBASE_TYPE xReturn;
 

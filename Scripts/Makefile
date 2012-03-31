@@ -18,9 +18,9 @@ include ../Burner/lpcburn/Makefile
 #------------- 
 # Directories
 #-------------
-CSC_DIR           =../BLUEsat-CSC
+CSC_DIR           	=../BLUEsat-CSC
 APP_SOURCE_DIR		=$(CSC_DIR)/Applications
-CORE_SOURCE_DIR	=$(CSC_DIR)/FreeRTOS/post_src
+CORE_SOURCE_DIR		=$(CSC_DIR)/FreeRTOS/post_src
 BURNER_DIR			=../Burner/lpcburn
 BUILDS_DIR			=../Builds
 IMAGE_DIR			=../Dist
@@ -31,8 +31,8 @@ TEST_SUITES			=$(UNIT_TESTS_DIR)/Test_Suites
 #---------------
 # Utility Files
 #---------------
-EXCLUSION_FILE    =$(CSC_DIR)/SysBootAgent/include/AppExcList.xml
-INCLUSION_LIST	   =$(CSC_DIR)/SysBootAgent/include/ActiveModuleIncList.h
+EXCLUSION_FILE    	=$(CSC_DIR)/SysBootAgent/include/AppExcList.xml
+INCLUSION_LIST	  	=$(CSC_DIR)/SysBootAgent/include/ActiveModuleIncList.h
 
 #---------------------
 # Compiler / Settings

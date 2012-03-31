@@ -18,7 +18,6 @@
 //EMC power bit
 #define PCEMC_SET 			0x800
 
-/********* Static Memory **********/
 	/* EMC Control register */
 //EMC enable
 #define EMC_EN 				0x00000001
@@ -27,6 +26,7 @@
 //Low power mode
 #define LOW_POW				0x00000004
 
+/********* Static Memory **********/
 	/* EMC Status register */
 //Bit position
 #define BUSY				0
@@ -67,28 +67,32 @@ void vInitStaticMemoryBanks(void);
 
 void EMC_Init(void)
 {
-	// Pin connect block setup
+	portENTER_CRITICAL();
+	{
+		// Pin connect block setup
 
-	//D[0..15], mode = 10
-	PINSEL6  =  0x55555555;
-	//PINMODE6 =  0xAAAAAAAA;
+		//D[0..15], mode = 10
+		PINSEL6  =  0x55555555;
+		//PINMODE6 =  0xAAAAAAAA;
 
-	//A[0..15], mode = 10
-	PINSEL8  =  0x55555555;
-	//PINMODE8 =  0xAAAAAAAA;
+		//A[0..15], mode = 10
+		PINSEL8  =  0x55555555;
+		//PINMODE8 =  0xAAAAAAAA;
 
-	//A[16..23], !OE, !WE, !CS0, !CS1, BLS0-BLS3, mode = 10
-	PINSEL9  =  0x50555155;
-	//PINMODE9 =  0xA0AAA2AA;
+		//A[16..23], !OE, !WE, !CS0, !CS1, BLS0-BLS3, mode = 10
+		PINSEL9  =  0x50555155;
+		//PINMODE9 =  0xA0AAA2AA;
 
-	// enable EMC power
-	PCONP 	|= 	PCEMC_SET;
+		// enable EMC power
+		PCONP 	|= 	PCEMC_SET;
 
-	// enable EMC
-	EMC_CTRL = 	EMC_EN;
+		// enable EMC
+		EMC_CTRL = 	EMC_EN;
 
-	//initialise static memories
-	vInitStaticMemoryBanks();
+		//initialise static memories
+		vInitStaticMemoryBanks();
+	}
+	portEXIT_CRITICAL();
 }
 
 /* (FRAM - FM22L16) */

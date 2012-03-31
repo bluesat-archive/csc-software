@@ -42,7 +42,7 @@ unsigned portLONG Comms_UART_Init(void);
  *
  * \returns pdTrue for success or pdFalse for failure
  */
-signed portBASE_TYPE Comms_UART_Read_Char( signed portCHAR *pcRxedChar, portTickType xBlockTime );
+signed portBASE_TYPE Comms_UART_Read_Char( portCHAR *pcRxedChar, portTickType xBlockTime );
 
 /**
  * \brief Writes a single character onto the port
@@ -52,7 +52,7 @@ signed portBASE_TYPE Comms_UART_Read_Char( signed portCHAR *pcRxedChar, portTick
  *
  * \returns pdTrue for success or pdFalse for failure
  */
-signed portBASE_TYPE Comms_UART_Write_Char( signed portCHAR cOutChar, portTickType xBlockTime );
+signed portBASE_TYPE Comms_UART_Write_Char( portCHAR cOutChar, portTickType xBlockTime );
 
 /**
  * \brief Acquire UART channel
