@@ -34,17 +34,37 @@ MOO_SQUID
 sub process
 {
    my ($excFile, $iDir, $outFile) = @_;
+   print <<'MOO_SQUID';
+
+> Running Preprocess Parser System for Conditional Building <
+-------------------------------------------------------------
+
+MOO_SQUID
    # Read in exclude files
-   my @ignoreList = get_exclusion_list($excFile);   
+   my @ignoreList = get_exclusion_list($excFile);  
+   print <<'MOO_SQUID';
+- Exclusion List Extracted
+MOO_SQUID
+   
    # read in i files
    my @iFiles = get_i_files($iDir); 
    my ($keepList, $removeList) = get_exc_keep_lists(\@iFiles, \@ignoreList );
    # delete unnecessare i files
    clean_up_unused_files(@$removeList);
+   print <<'MOO_SQUID';
+- Unnecessary i Files Removed
+MOO_SQUID
    # process remaining i files and pull .h out into hash
    my @hFiles = get_unique_h_files(@$keepList);  
    #produce output list
-   generate_includes_list($outFile, @hFiles);
+   if (FAIL == generate_includes_list($outFile, @hFiles))
+   {
+      fatal_error("generate_includes_list: Unable to generate include list file $outFile");
+   }
+   print <<MOO_SQUID;
+- Conditional Include File $outFile Created
+
+MOO_SQUID
 }
 
 sub get_unique_h_files

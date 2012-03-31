@@ -13,7 +13,9 @@ my $exc_file   = dir_slash_fix( shift @ARGV);
 my $build_dir  = dir_slash_fix( shift @ARGV);
 my $out_file   = dir_slash_fix( shift @ARGV);
 
+
 process($exc_file,$build_dir,$out_file);
+exit 0;
 
 sub dir_slash_fix
 {
