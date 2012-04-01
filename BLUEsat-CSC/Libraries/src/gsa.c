@@ -14,6 +14,12 @@
 
 #include "gsa.h"
 
+#define HEADER_SIZE 6
+#define EXT_HEADER_SIZE 8
+#define TRAILING_BLOCK_HEADER_SIZE 4
+#define HEADER_HALFWORD_SIZE (EXT_HEADER_SIZE / 2)
+#define HEADER_WORD_SIZE (EXT_HEADER_SIZE / 4)
+
 typedef union
 {
 	struct
