@@ -11,3 +11,10 @@
  *  \bug No Bugs for now
  *  \note No Notes for now
  */
+
+#ifndef GSA_H_
+#define GSA_H_
+
+#include "FreeRTOS.h"
+
+#endif	/* GSA_H_ */
