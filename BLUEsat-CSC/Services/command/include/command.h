@@ -27,7 +27,8 @@ typedef enum
 	TASK_DEMO_APP_1,
 	TASK_DEMO_APP_2,
 	/*****************/
-	NUM_TASKID
+	NUM_TASKID,
+	NO_TASK
 } TaskID;
 
 //task type identifier
@@ -54,12 +55,13 @@ typedef enum
 
 typedef struct taskToken *TaskToken;
 
-#define MESSAGE_HEADER struct {unsigned portCHAR Src; unsigned portCHAR Dest; TaskToken Token; unsigned portSHORT Length;}
-
 //general message packet format for IPC
 typedef struct
 {
-	MESSAGE_HEADER;
+	unsigned portCHAR 	Src;
+	unsigned portCHAR 	Dest;
+	TaskToken 			Token;
+	unsigned portSHORT 	Length;
 	unsigned portLONG 	Data;	//can be used as a pointer
 } MessagePacket;
 
@@ -136,8 +138,10 @@ TaskToken ActivateTask(TaskID 		enTaskID,
  * \param[in] taskToken Task token of a task.
  *
  * \param[in] usNumElement Number of element in queue
+ *
+ * \returns Size of queue been created
  */
-void vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement);
+unsigned portSHORT vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement);
 
 /**
  * \brief Return Task token owner's task name

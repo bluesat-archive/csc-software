@@ -21,6 +21,8 @@
 #define CMD_Q_SIZE			1
 #define CMD_PUSH_BLK_TIME	0
 
+#define MAX_QUEUE_REQ_SIZE	10
+
 static xQueueHandle xTaskQueueHandles[NUM_TASKID];
 static struct taskToken TaskTokens[NUM_TASKID];
 
@@ -78,6 +80,7 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 			else
 			{
 				//TODO return task missing msg
+				//	   log error
 			}
 		}
 	}
@@ -85,14 +88,20 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 
 UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_time)
 {
+	//catch NO message packet input input
+	if (pMessagePacket == NULL) return URC_FAIL;
+
 	//insert quest into command task queue
-	switch (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessagePacket, block_time))
+	if (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessagePacket, block_time) == pdTRUE)
 	{
 		//put request task into sleep
-		case pdTRUE	:	xSemaphoreTake((pMessagePacket->Token)->TaskSemphr, portMAX_DELAY);
-						//return processed request result
-						return (pMessagePacket->Token)->enRetVal;
-		default		:	return URC_FAIL;
+		xSemaphoreTake((pMessagePacket->Token)->TaskSemphr, portMAX_DELAY);
+		//return processed request result
+		return (pMessagePacket->Token)->enRetVal;
+	}
+	else
+	{
+		return URC_BUSY;
 	}
 }
 
@@ -100,16 +109,24 @@ UnivRetCode enGetRequest (TaskToken taskToken,
 						MessagePacket *pMessagePacket,
 						portTickType block_time)
 {
+	//catch NO token and NO message packet input input
+	if (taskToken == NULL || pMessagePacket == NULL) return URC_FAIL;
+
 	//retrieve request from queue and copy into given buffer
-	switch (xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessagePacket, block_time))
+	if (xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessagePacket, block_time) == pdTRUE)
 	{
-		case pdTRUE	:	return URC_SUCCESS;
-		default		:	return URC_FAIL;
+		return URC_SUCCESS;
+	}
+	else
+	{
+		return URC_FAIL;
 	}
 }
 
 void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal)
 {
+	//catch NO token input
+	if (taskToken == NULL) return;
 	//store result value inside request task token
 	taskToken->enRetVal = enRetVal;
 	//wake request task from sleep
@@ -123,14 +140,20 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 						unsigned 	portSHORT usStackSize,
 						pdTASK_CODE pvTaskFunction)
 {
+	//catch NO task name input
+	if (pcTaskName == NULL) return NULL;
+
 	//create task in memory
 	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, NULL);
+
 	//store task profile in array
 	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
 	TaskTokens[enTaskID].enTaskType		= enTaskType;
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
+
 	//create semaphore for task
 	vSemaphoreCreateBinary(TaskTokens[enTaskID].TaskSemphr);
+
 	//exhuast task semaphore
 	xSemaphoreTake(TaskTokens[enTaskID].TaskSemphr, NO_BLOCK);
 	
@@ -138,20 +161,31 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 	return &TaskTokens[enTaskID];
 }
 
-void vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement)
+unsigned portSHORT vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement)
 {
+	//trim requested queue size
+	usNumElement = (usNumElement > MAX_QUEUE_REQ_SIZE) ? MAX_QUEUE_REQ_SIZE : usNumElement;
+
 	//create task queue memory
 	xTaskQueueHandles[taskToken->enTaskID] = xQueueCreate(usNumElement, sizeof(MessagePacket));
+
+	return usNumElement;
 }
 
 portCHAR *pcGetTaskName(TaskToken taskToken)
 {
+	//catch NO token input
+	if (taskToken == NULL) return NULL;
+
 	//get task name from profile
 	return taskToken->pcTaskName;
 }
 
 TaskID enGetTaskID(TaskToken taskToken)
 {
+	//catch NO token input
+	if (taskToken == NULL) return NO_TASK;
+
 	//get task ID from profile
 	return taskToken->enTaskID;
 }

@@ -15,10 +15,13 @@
  #ifndef UNIVERSALRETURNCODE_H_
  #define UNIVERSALRETURNCODE_H_
  
+#include "FreeRTOS.h"
+
 typedef enum
 {
-	URC_SUCCESS,
-	URC_FAIL
+	URC_SUCCESS = pdPASS,
+	URC_FAIL	= pdFAIL,
+	URC_BUSY
 } UnivRetCode;
 
 #endif /* UNIVERSALRETURNCODE_H_ */
