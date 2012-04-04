@@ -17,14 +17,29 @@
 #include "debug.h"
 #include "emc.h"
 
-#define MEMORY_TEST		1
+#define MEMORY_TEST		0
 #define MEMORY_Q_SIZE	2
+
+typedef enum
+{
+    MEM_STORE,      	//store and overwrite previous data
+    MEM_APPEND,     	//append to previous data
+    MEM_DELETE,     	//remove data
+    MEM_SIZE,       	//get size of data currently stored
+    MEM_READ,    		//read stored data
+	//temp op code
+	MEM_FLASH_FORMAT, 	//format flash sectors
+	MEM_FLASH_STATUS 	//print flash status
+} MEM_OPERATIONS;
 
 //debug task message format
 typedef struct
 {
-	signed portCHAR *pcString;
-	unsigned portSHORT usLength;
+	unsigned portLONG Operation	:	 3;		//operation to be performed
+	unsigned portLONG DID		:	 6;		//start offset for reading
+	unsigned portLONG Offset	:	23;		//start offset for reading
+	unsigned portLONG Data;					//pointer to data
+	unsigned portLONG Size;					//data size/buffer size
 } MemoryContent;
 
 #define MEMORY_CONTENT_SIZE	sizeof(MemoryContent)

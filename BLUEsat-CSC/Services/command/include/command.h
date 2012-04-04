@@ -20,14 +20,15 @@
 //list of tasks
 typedef enum
 {
+	/* Task ID start */
 	TASK_COMMAND,
 	TASK_DEBUG,
 	TASK_MEMORY,
-	/* DEMO APP TASK */
 	TASK_DEMO_APP_1,
 	TASK_DEMO_APP_2,
-	/*****************/
-	NUM_TASKID,
+	/** Task ID end **/
+	NUM_TASKID,		/* <--- task ID list size */
+	/* Virtual task IDs */
 	NO_TASK
 } TaskID;
 
@@ -48,7 +49,6 @@ typedef enum
 		portCHAR  				*pcTaskName;
 		TASK_TYPE				enTaskType;
 		TaskID					enTaskID;
-		xSemaphoreHandle		TaskSemphr;
 		UnivRetCode				enRetVal;
 	};
 #endif
@@ -58,9 +58,9 @@ typedef struct taskToken *TaskToken;
 //general message packet format for IPC
 typedef struct
 {
+	TaskToken 			Token;
 	unsigned portCHAR 	Src;
 	unsigned portCHAR 	Dest;
-	TaskToken 			Token;
 	unsigned portSHORT 	Length;
 	unsigned portLONG 	Data;	//can be used as a pointer
 } MessagePacket;

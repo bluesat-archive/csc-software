@@ -18,13 +18,14 @@ disable: [YES|NO] The files in the list are not included in
 files:   A list of space seperated files to ignore from the
          compilation process.
 
-Example:
+==========
+ Example:
 ==========         
 <applist>
    <app>
       <name>MOO</name>
       <desc>Moo printer application to flood screen</desc>
-      <disable>YES</disable>
+      <disable>NO</disable>
       <files>Moo_print.c Cow_push.c patty.c</files>
    </app>
 </applist>
@@ -40,7 +41,7 @@ Example:
    <Demo_Application2>
       <name>Demo Application2</name>
       <desc>Demo application to test out the uart</desc>
-      <disable>NO</disable>
+      <disable>YES</disable>
       <files>Demo_Application2.c</files>
    </Demo_Application2>
 </applist>

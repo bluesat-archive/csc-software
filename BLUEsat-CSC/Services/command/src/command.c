@@ -23,8 +23,9 @@
 
 #define MAX_QUEUE_REQ_SIZE	10
 
-static xQueueHandle xTaskQueueHandles[NUM_TASKID];
-static struct taskToken TaskTokens[NUM_TASKID];
+static xQueueHandle 	xTaskQueueHandles	[NUM_TASKID];
+static struct taskToken TaskTokens			[NUM_TASKID];
+static xSemaphoreHandle	TaskSemphrs			[NUM_TASKID];
 
 static portTASK_FUNCTION(vCommandTask, pvParameters);
 
@@ -86,6 +87,7 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	}
 }
 
+//TODO (1)review whether application specified block time be allowed while waiting for committed request
 UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_time)
 {
 	//catch NO message packet input input
@@ -95,7 +97,7 @@ UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_
 	if (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessagePacket, block_time) == pdTRUE)
 	{
 		//put request task into sleep
-		xSemaphoreTake((pMessagePacket->Token)->TaskSemphr, portMAX_DELAY);
+		xSemaphoreTake(TaskSemphrs[(pMessagePacket->Token)->enTaskID], portMAX_DELAY);  //(1)
 		//return processed request result
 		return (pMessagePacket->Token)->enRetVal;
 	}
@@ -130,7 +132,7 @@ void vCompleteRequest(TaskToken taskToken, UnivRetCode enRetVal)
 	//store result value inside request task token
 	taskToken->enRetVal = enRetVal;
 	//wake request task from sleep
-	xSemaphoreGive(taskToken->TaskSemphr);
+	xSemaphoreGive(TaskSemphrs[taskToken->enTaskID]);
 }
 
 TaskToken ActivateTask(TaskID 		enTaskID,
@@ -152,10 +154,10 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 	TaskTokens[enTaskID].enTaskID		= enTaskID;
 
 	//create semaphore for task
-	vSemaphoreCreateBinary(TaskTokens[enTaskID].TaskSemphr);
+	vSemaphoreCreateBinary(TaskSemphrs[enTaskID]);
 
 	//exhuast task semaphore
-	xSemaphoreTake(TaskTokens[enTaskID].TaskSemphr, NO_BLOCK);
+	xSemaphoreTake(TaskSemphrs[enTaskID], NO_BLOCK);
 	
 	//return pointer to taks profile
 	return &TaskTokens[enTaskID];
