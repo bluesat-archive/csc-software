@@ -15,8 +15,6 @@
 #include "application.h"
 #include "Demo_Application_1.h"
 #include "debug.h"
-#include "memory.h"
-
 
 #define DEMO_Q_SIZE	1
 

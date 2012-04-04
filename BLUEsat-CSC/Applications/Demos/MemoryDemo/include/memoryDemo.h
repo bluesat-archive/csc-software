@@ -12,14 +12,14 @@
  *  \note No Notes for now
  */
 
-#ifndef DEMO_APPLICATION_2_H_
-#define DEMO_APPLICATION_2_H_
+#ifndef MEMORYDEMO_H_
+#define MEMORYDEMO_H_
 
 /**
- * \brief Initialise Demo application
+ * \brief Initialise Memory Demo application
  *
- * \param[in] uxPriority Priority for Demo application.
+ * \param[in] uxPriority Priority for Memory Demo application.
  */
-void vDemoApp2_Init(unsigned portBASE_TYPE uxPriority);
+void vMemDemo_Init(unsigned portBASE_TYPE uxPriority);
 
-#endif /* DEMO_APPLICATION_2_H_ */
+#endif /* MEMORYDEMO_H_ */

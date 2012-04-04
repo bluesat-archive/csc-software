@@ -26,6 +26,7 @@ typedef enum
 	TASK_MEMORY,
 	TASK_DEMO_APP_1,
 	TASK_DEMO_APP_2,
+	TASK_MEMORY_DEMO,
 	/** Task ID end **/
 	NUM_TASKID,		/* <--- task ID list size */
 	/* Virtual task IDs */
@@ -39,7 +40,7 @@ typedef enum
 	TYPE_SERVICE
 } TASK_TYPE;
 
-#define TASK_NAME_MAX_CHAR	10
+#define TASK_NAME_MAX_CHAR	16
 
 #ifdef SERVICE_H_
 	//definition of TaskToken

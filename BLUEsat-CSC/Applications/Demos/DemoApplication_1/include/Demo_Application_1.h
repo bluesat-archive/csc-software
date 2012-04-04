@@ -21,7 +21,7 @@
 /**
  * \brief Initialise Demo application
  *
- * \param[in] uxPriority Priority for debug service.
+ * \param[in] uxPriority Priority for Demo application.
  */
 void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority);
 

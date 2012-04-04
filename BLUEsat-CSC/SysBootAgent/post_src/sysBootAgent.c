@@ -69,5 +69,10 @@ unsigned int initApplications(void)
 	vDemoApp2_Init(APP_TASK_PRIORITY);
 #endif
 
+#ifdef MEMORYDEMO_H_
+	//Demonstration application memory
+	vMemDemo_Init(APP_TASK_PRIORITY);
+#endif
+
 	return 0;
 }
