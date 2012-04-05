@@ -61,28 +61,43 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	{
 		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_packet, portMAX_DELAY);
 
-		if (xResult == pdTRUE)
-		{
-			if (incoming_packet.Dest == TASK_COMMAND)
-			{
-				//TODO msg for command task
-			}
-			else if (incoming_packet.Dest < NUM_TASKID && xTaskQueueHandles[incoming_packet.Dest] != NULL)
-			// forward msg to destination task Q
-			{
-				xResult = xQueueSend(xTaskQueueHandles[incoming_packet.Dest], &incoming_packet, NO_BLOCK);
+		if (xResult != pdTRUE) continue;
 
-				if (xResult != pdTRUE)
-				{
-					//return request fail
-					vCompleteRequest(incoming_packet.Token, URC_FAIL);
-				}
-			}
-			else
+		if (incoming_packet.Dest == TASK_COMMAND)
+		{
+			//TODO msg for command task
+		}
+		else
+		{
+			//TODO log error for exceptions
+			/***** exception check *****/
+			if (incoming_packet.Dest >= NUM_TASKID)
 			{
-				//TODO return task missing msg
-				//	   log error
+				//return invalid task
+				vCompleteRequest(incoming_packet.Token, URC_CMD_INVALID_TASK);
+				continue;
 			}
+			else if (TaskTokens[incoming_packet.Dest].pcTaskName == NULL)
+			{
+				//return no task
+				vCompleteRequest(incoming_packet.Token, URC_CMD_NO_TASK);
+				continue;
+			}
+			else if (xTaskQueueHandles[incoming_packet.Dest] == NULL)
+			{
+				//return no queue
+				vCompleteRequest(incoming_packet.Token, URC_CMD_NO_QUEUE);
+				continue;
+			}
+			/***************************/
+
+			// forward msg to destination task Q
+			xResult = xQueueSend(xTaskQueueHandles[incoming_packet.Dest], &incoming_packet, NO_BLOCK);
+
+			if (xResult == pdTRUE) continue;
+
+			//return request fail
+			vCompleteRequest(incoming_packet.Token, URC_BUSY);
 		}
 	}
 }
@@ -113,6 +128,8 @@ UnivRetCode enGetRequest (TaskToken taskToken,
 {
 	//catch NO token and NO message packet input input
 	if (taskToken == NULL || pMessagePacket == NULL) return URC_FAIL;
+	//catch NO queue
+	if (xTaskQueueHandles[taskToken->enTaskID] == NULL) return URC_CMD_NO_QUEUE;
 
 	//retrieve request from queue and copy into given buffer
 	if (xQueueReceive(xTaskQueueHandles[taskToken->enTaskID], pMessagePacket, block_time) == pdTRUE)

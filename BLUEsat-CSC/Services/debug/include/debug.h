@@ -28,7 +28,9 @@ void vDebug_Init(unsigned portBASE_TYPE uxPriority);
 /**
  * \brief Write debug message string
  *
- * \param[in] uxPriority Priority for debug service.
+ * \param[in] taskToken Task token from request task
+ * \param[in] pcDebugString String to be printed.
+ * \param[in] usLength Size of string.
  *
  * \returns enum Universal return code
  */

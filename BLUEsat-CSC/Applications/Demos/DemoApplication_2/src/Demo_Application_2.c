@@ -54,19 +54,18 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 
 	for ( ; ; )
 	{
+		enMessage_To_Q(DEMO_TaskToken, "Hello from DemoApp2!\n\r", 50);
+
 		enResult = enGetRequest(DEMO_TaskToken, &incoming_packet, MESSAGE_WAIT_TIME);
 
-		if (enResult == URC_SUCCESS)
-		{
-			//access tagged data
-			pContentHandle = (DemoContent *)incoming_packet.Data;
-			//print message
-			enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
-			//complete request by passing the status to the sender
-			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
-		}
-		
-		enMessage_To_Q(DEMO_TaskToken, "Hello from DemoApp2!\n\r", 50);
+		if (enResult != URC_SUCCESS) continue;
+
+		//access tagged data
+		pContentHandle = (DemoContent *)incoming_packet.Data;
+		//print message
+		enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
+		//complete request by passing the status to the sender
+		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 	}
 }
 

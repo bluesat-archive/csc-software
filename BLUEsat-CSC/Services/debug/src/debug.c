@@ -68,16 +68,16 @@ static portTASK_FUNCTION(vDebugTask, pvParameters)
 	{
 		enResult = enGetRequest(Debug_TaskToken, &incoming_packet, portMAX_DELAY);
 
-		if (enResult == URC_SUCCESS)
-		{
-			//print string to UART
-			vPrintString((portCHAR *)(incoming_packet.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
-			vPrintString(">", 1);
-			pContentHandle = (DebugContent *)incoming_packet.Data;
-			vPrintString(pContentHandle->pcDebugString, pContentHandle->usLength);
-			//complete request by passing the status to the sender
-			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
-		}
+		if (enResult != URC_SUCCESS) continue;
+
+		//print string to UART
+		vPrintString((portCHAR *)(incoming_packet.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
+		vPrintString(">", 1);
+		pContentHandle = (DebugContent *)incoming_packet.Data;
+		vPrintString(pContentHandle->pcDebugString, pContentHandle->usLength);
+		//complete request by passing the status to the sender
+		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
+
 	}
 }
 

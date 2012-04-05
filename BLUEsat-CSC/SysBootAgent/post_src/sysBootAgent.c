@@ -38,7 +38,7 @@ unsigned int initServices(void)
 {
 #ifdef COMMAND_H_
 	//Command task
-	vCommand_Init(SERV_TASK_PRIORITY);
+	vCommand_Init(SERV_TASK_PRIORITY + 1);
 #endif
 
 #ifdef DEBUG_H_

@@ -39,19 +39,26 @@ void vMemDemo_Init(unsigned portBASE_TYPE uxPriority)
 static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 {
 	(void) pvParameters;
-	UnivRetCode enResult;
-	MessagePacket incoming_packet;
+	UnivRetCode 	enResult;
+	MessagePacket 	incoming_packet;
+	portCHAR		cBuffer[10];
 
 	enDebug_Print(MemDEMO_TaskToken, "Hello!\n\r", 50);
+
+	if (enDataDelete(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 1!\n\r", 50);
+	if (enDataSize(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 2!\n\r", 50);
+	if (enDataRead(MemDEMO_TaskToken, 16, 0, 10, cBuffer) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 3!\n\r", 50);
+	if (enDataStore(MemDEMO_TaskToken, 16, 10, cBuffer) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 4!\n\r", 50);
+	if (enDataAppend(MemDEMO_TaskToken, 64, 10, cBuffer) == URC_MEM_INVALID_DID) enDebug_Print(MemDEMO_TaskToken, "Pass 5!\n\r", 50);
 
 	for ( ; ; )
 	{
 		enResult = enGetRequest(MemDEMO_TaskToken, &incoming_packet, portMAX_DELAY);
 
-		if (enResult == URC_SUCCESS)
-		{
-			//TODO implement memory demo
-		}
+		if (enResult == URC_SUCCESS) continue;
+
+		//TODO implement memory demo
+
 	}
 }
 

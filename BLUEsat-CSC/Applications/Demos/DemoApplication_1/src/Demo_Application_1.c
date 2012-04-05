@@ -54,15 +54,14 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 	{
 		enResult = enGetRequest(DEMO_TaskToken, &incoming_packet, portMAX_DELAY);
 
-		if (enResult == URC_SUCCESS)
-		{
-			//access tagged data
-			pContentHandle = (DemoContent *)incoming_packet.Data;
-			//print message
-			enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
-			//complete request by passing the status to the sender
-			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
-		}
+		if (enResult != URC_SUCCESS) continue;
+
+		//access tagged data
+		pContentHandle = (DemoContent *)incoming_packet.Data;
+		//print message
+		enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
+		//complete request by passing the status to the sender
+		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 	}
 }
 
@@ -71,14 +70,14 @@ UnivRetCode enMessage_To_Q(TaskToken taskToken,
 							unsigned portSHORT usLength)
 {
 	MessagePacket outgoing_packet;
-	DemoContent domeContent;
+	DemoContent demoContent;
 	
 	//create packet with printing request information
 	outgoing_packet.Src			= enGetTaskID(taskToken);
 	outgoing_packet.Dest		= TASK_DEMO_APP_1;
 	outgoing_packet.Token		= taskToken;
 	outgoing_packet.Length		= DEMO_CONTENT_SIZE;
-	outgoing_packet.Data		= (unsigned portLONG)&domeContent;	
+	outgoing_packet.Data		= (unsigned portLONG)&demoContent;
 	//store message in a struct and tag along with the request packet
 	domeContent.pMsg			= pcDebugString;
 	domeContent.usLength		= usLength;
