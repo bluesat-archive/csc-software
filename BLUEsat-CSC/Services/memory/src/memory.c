@@ -90,7 +90,7 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 		case	TASK_MEMORY_DEMO:	outgoing_packet.Dest = TASK_MEM_FLASH;
 									break;
 
-		default					:	return URC_FAIL;
+		default					:	return URC_MEM_NOT_ON_STORAGE_LIST;
 	}
 
 	return enProcessRequest(&outgoing_packet, portMAX_DELAY);

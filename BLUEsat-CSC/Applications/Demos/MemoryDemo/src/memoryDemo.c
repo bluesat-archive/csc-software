@@ -16,13 +16,16 @@
 #include "memoryDemo.h"
 #include "memory.h"
 #include "debug.h"
+#include "lib_string.h"
 
-#define MEM_DEMO_Q_SIZE	1
+#define MEM_DEMO_Q_SIZE		1
+#define MAX_READ_BUF_SIZE	50
 
 //task token for accessing services and other applications
 static TaskToken MemDEMO_TaskToken;
 
 static portTASK_FUNCTION(vMemDemoTask, pvParameters);
+void vPrintMenu(void);
 
 void vMemDemo_Init(unsigned portBASE_TYPE uxPriority)
 {
@@ -39,31 +42,112 @@ void vMemDemo_Init(unsigned portBASE_TYPE uxPriority)
 static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 {
 	(void) pvParameters;
-	UnivRetCode 	enResult;
-	MessagePacket 	incoming_packet;
-	portCHAR		pcBuffer[21];
+	UnivRetCode 		enResult;
+	//MessagePacket 	incoming_packet;
+	portCHAR			pcInputBuf[MAX_READ_BUF_SIZE+1];
+	unsigned portSHORT	usReadLen;
 
-	enDebugPrint(MemDEMO_TaskToken, "Hello!\n\r", 0, 0, 0);
-
-	if (enDataDelete(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 1!\n\r", 0, 0, 0);
-	if (enDataSize(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 2!\n\r", 0, 0, 0);
-	if (enDataRead(MemDEMO_TaskToken, 16, 0, 10, pcBuffer) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 3!\n\r", 0, 0, 0);
-	if (enDataStore(MemDEMO_TaskToken, 16, 10, pcBuffer) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 4!\n\r", 0, 0, 0);
-	if (enDataAppend(MemDEMO_TaskToken, 64, 10, pcBuffer) == URC_MEM_INVALID_DID) enDebugPrint(MemDEMO_TaskToken, "Pass 5!\n\r", 0, 0, 0);
-
-	usDebugRead(pcBuffer, 49);
-
-	enDebugPrint(MemDEMO_TaskToken, "%20s %h %10s %10x\n\r", (unsigned portLONG)pcBuffer, 0x12345678, (unsigned portLONG)"Good");
+	vPrintMenu();
 
 	for ( ; ; )
 	{
-		enResult = enGetRequest(MemDEMO_TaskToken, &incoming_packet, portMAX_DELAY);
+		//enResult = enGetRequest(MemDEMO_TaskToken, &incoming_packet, portMAX_DELAY);
 
-		if (enResult == URC_SUCCESS) continue;
+		usReadLen = usDebugRead(pcInputBuf, MAX_READ_BUF_SIZE);
 
-		//TODO implement memory demo
+		if ((pcInputBuf[0] == 'S' && pcInputBuf[1] == 'D') && usReadLen > 4)
+		{
+			enResult = enDataStore(MemDEMO_TaskToken,
+									ulDeciStringToVal(&pcInputBuf[2], 2),
+									usReadLen-4,
+									&pcInputBuf[4]);
+		}
+		else if ((pcInputBuf[0] == 'A' && pcInputBuf[1] == 'D') && usReadLen > 4)
+		{
+			enResult = enDataAppend(MemDEMO_TaskToken,
+									ulDeciStringToVal(&pcInputBuf[2], 2),
+									usReadLen-4,
+									&pcInputBuf[4]);
+		}
+		else if ((pcInputBuf[0] == 'R' && pcInputBuf[1] == 'D') && usReadLen == 12)
+		{
+			enResult = enDataRead(MemDEMO_TaskToken,
+								ulDeciStringToVal(&pcInputBuf[2], 2),
+								ulDeciStringToVal(&pcInputBuf[8], 4),
+								ulDeciStringToVal(&pcInputBuf[4], 4),
+								pcInputBuf);
+		}
+		else if ((pcInputBuf[0] == 'C' && pcInputBuf[1] == 'S') && usReadLen == 4)
+		{
+			enResult = enDataSize(MemDEMO_TaskToken,
+								ulDeciStringToVal(&pcInputBuf[2], 2));
+		}
+		else if ((pcInputBuf[0] == 'D' && pcInputBuf[1] == 'D') && usReadLen == 4)
+		{
+			enResult = enDataDelete(MemDEMO_TaskToken,
+									ulDeciStringToVal(&pcInputBuf[2], 2));
+		}
+		else if ((pcInputBuf[0] == 'F' && pcInputBuf[1] == 'F') && usReadLen == 2)
+		{
+			enResult = enDebugPrint(MemDEMO_TaskToken,
+									"FF not implemented!\n\r",
+									NO_INSERT,
+									NO_INSERT,
+									NO_INSERT);
+			continue;
+		}
+		else if ((pcInputBuf[0] == 'P' && pcInputBuf[1] == 'T') && usReadLen == 2)
+		{
+			enResult = enDebugPrint(MemDEMO_TaskToken,
+									"PT not implemented!\n\r",
+									NO_INSERT,
+									NO_INSERT,
+									NO_INSERT);
+			continue;
+		}
+		else if ((pcInputBuf[0] == 'M' && pcInputBuf[1] == 'U') && usReadLen == 2)
+		{
+			vPrintMenu();
+			continue;
+		}
+		else
+		{
+			enResult = enDebugPrint(MemDEMO_TaskToken,
+									"Invalid command!\n\r",
+									NO_INSERT,
+									NO_INSERT,
+									NO_INSERT);
+			vPrintMenu();
+			continue;
+		}
 
+		enDebugPrint(MemDEMO_TaskToken,
+					"Result = %h\n\r",
+					enResult,
+					NO_INSERT,
+					NO_INSERT);
 	}
 }
 
+#define MENU_L00 " ----------------------------------- Menu -----------------------------------\n\r
+#define MENU_L01 SD@@(Data)\t- Store Data @@(DID)\n\r
+#define MENU_L02 AD@@(Data)\t- Append Data @@(DID)\n\r
+#define MENU_L03 RD@@$$$$%%%%\t- Read Data @@(DID), $$$$(Size), %%%%(offset)\n\r
+#define MENU_L04 CS@@\t\t- Check Size @@(DID)\n\r
+#define MENU_L05 DD@@\t\t- Delete slot @@(DID)\n\r
+#define MENU_L06 FF\t\t- Format\n\r
+#define MENU_L07 PT\t\t- Print FMT Table\n\r
+#define MENU_L08 MU\t\t- Display this menu\n\r
+#define MENU_L09 Note: All value in decimal\n\r
+#define MENU_L10 ----------------------------------------------------------------------------\n\r"
+#define MENU MENU_L00 MENU_L01 MENU_L02 MENU_L03 MENU_L04 MENU_L05 MENU_L06 MENU_L07 MENU_L08 MENU_L09 MENU_L10
+
+void vPrintMenu(void)
+{
+	enDebugPrint(MemDEMO_TaskToken,
+				"\n\r%1000s\n\r",
+				(unsigned portLONG)MENU,
+				NO_INSERT,
+				NO_INSERT);
+}
 

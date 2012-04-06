@@ -44,4 +44,10 @@ void * memcpy(void * dest, const void *src, unsigned long count);
  */
 char cValToHex(unsigned char ucValue);
 
+/**
+ * Convert Decimal value string to value
+ */
+unsigned long ulDeciStringToVal(char *			pcString,
+								unsigned char 	ucLength);
+
 #endif /* LIB_STRING_H_ */

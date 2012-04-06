@@ -19,8 +19,8 @@
 
 typedef enum
 {
-	URC_SUCCESS = pdPASS,
 	URC_FAIL	= pdFAIL,
+	URC_SUCCESS = pdPASS,
 	URC_BUSY,
 	//debug service
 	URC_DEB_UNKNOWN_TASK_TYPE,
@@ -30,6 +30,7 @@ typedef enum
 	URC_DEB_MAXED_INSERTION,
 	//memory service
 	URC_MEM_INVALID_DID,
+	URC_MEM_NOT_ON_STORAGE_LIST,
 	//command
 	URC_CMD_NO_QUEUE,
 	URC_CMD_INVALID_TASK,

@@ -49,3 +49,20 @@ char cValToHex(unsigned char ucValue)
 		return ALPHA_ASCII_OFFSET + (ucValue - DECIMAL_BASE);
 	}
 }
+
+unsigned long ulDeciStringToVal(char *			pcString,
+								unsigned char 	ucLength)
+{
+	unsigned long ulFactor;
+	unsigned long ulConvertedValue;
+
+	for (ulFactor = 1, pcString--, ulConvertedValue = 0;
+		ucLength > 0;
+		ucLength--, ulFactor *= DECIMAL_BASE)
+	{
+		ulConvertedValue += (pcString[ucLength] - '0') * ulFactor;
+	}
+
+	return ulConvertedValue;
+}
+
