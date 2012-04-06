@@ -20,13 +20,15 @@
 #define MSN(x)							   (x >> 0x4)	//Most Significant Nibble
 #define LSN(x)							   (x &  0xf)	//Least Significant Nibble
 
-#define DEBUG_Q_SIZE	5
+#define DEBUG_Q_SIZE		5
+#define MAX_INSERTIONS		3
+#define MAX_ERROR_MSG_LEN	100
 
 //debug task message format
 typedef struct
 {
-	portCHAR *pcDebugString;
-	unsigned portSHORT usLength;
+	portCHAR *			pcFormat;
+	unsigned portLONG *	pulInsertions;
 } DebugContent;
 
 #define DEBUG_CONTENT_SIZE	sizeof(DebugContent)
@@ -38,12 +40,53 @@ static TaskToken Debug_TaskToken;
 static portTASK_FUNCTION(vDebugTask, pvParameters);
 
 /**
- * \brief Writes string to UART 1 char at a time
+ * \brief Compose and print message string
  *
- * \param[in] pcDebugString Pointer to debug string.
- * \param[in] usLength Length of debug string.
+ * \param[in] taskToken Task token from request task
+ * \param[in] pcFormat Print format.
+ * \param[in] pcInsertions Pointer to insertion data.
+ *
+ * \returns enum Universal return code
  */
-void vPrintString(portCHAR *pcDebugString, unsigned portSHORT usLength);
+UnivRetCode enJPrint(TaskToken 			taskToken,
+					portCHAR const *	pcFormat,
+					unsigned portLONG *	pulInsertions);
+
+/**
+ * \brief Print insertion data
+ *
+ * \param[in] pcFormat Format string
+ * \param[in] pulFormatIndex Insertion format location.
+ * \param[in] ulInsertion Insertion data.
+ *
+ * \returns enum Universal return code
+ */
+UnivRetCode enPrintInsertion(portCHAR const *pcFormat,
+							unsigned portLONG *pulFormatIndex,
+							unsigned portLONG ulInsertion);
+
+/**
+ * \brief Print data in decimal (REQUIRE standard library)
+ *
+ * \param[in] ulValue Value to be printed
+ */
+//void vPrintDecimal(unsigned portLONG ulValue);
+
+/**
+ * \brief Print data in hex decimal
+ *
+ * \param[in] pcPtr Pointer to location to be printed
+ * \param[in] usLength Number of bytes to be printed.
+ */
+void vPrintHex(portCHAR const *pcPtr, unsigned portSHORT usLength);
+
+/**
+ * \brief Print data as a string
+ *
+ * \param[in] pcPtr Pointer to location to be printed
+ * \param[in] usLength Number of bytes to be printed.
+ */
+void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength);
 
 void vDebug_Init(unsigned portBASE_TYPE uxPriority)
 {
@@ -70,33 +113,54 @@ static portTASK_FUNCTION(vDebugTask, pvParameters)
 
 		if (enResult != URC_SUCCESS) continue;
 
-		//print string to UART
-		vPrintString((portCHAR *)(incoming_packet.Token)->pcTaskName, TASK_NAME_MAX_CHAR);
-		vPrintString(">", 1);
 		pContentHandle = (DebugContent *)incoming_packet.Data;
-		vPrintString(pContentHandle->pcDebugString, pContentHandle->usLength);
+
 		//complete request by passing the status to the sender
-		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
+		vCompleteRequest(incoming_packet.Token, enJPrint((incoming_packet.Token),
+														pContentHandle->pcFormat,
+														pContentHandle->pulInsertions));
 
 	}
 }
 
-UnivRetCode enDebug_Print(TaskToken taskToken,
-						portCHAR *pcDebugString,
-						unsigned portSHORT usLength)
+unsigned portSHORT	usDebugRead(portCHAR *			pcBuffer,
+								unsigned portSHORT 	usMaxSize)
+{
+	unsigned portSHORT usIndex;
+
+	vAcquireUARTChannel(READ0, portMAX_DELAY);
+	{
+		for (usIndex = 0; usIndex < usMaxSize; ++usIndex)
+		{
+			Comms_UART_Read_Char(&pcBuffer[usIndex], portMAX_DELAY);
+
+			if (pcBuffer[usIndex] == '\r') break;
+		}
+		pcBuffer[usIndex] = '\0';
+	}
+	vReleaseUARTChannel(READ0);
+
+	return usIndex;
+}
+
+UnivRetCode enDebugPrint(TaskToken 			taskToken,
+						portCHAR *			pcFormat,
+						unsigned portLONG 	pcInsertion_1,
+						unsigned portLONG 	pcInsertion_2,
+						unsigned portLONG 	pcInsertion_3)
 {
 	MessagePacket outgoing_packet;
 	DebugContent debugContent;
-
+	unsigned portLONG pulInsertions[MAX_INSERTIONS] =	{pcInsertion_1,
+														pcInsertion_2,
+														pcInsertion_3};
 	//identify requester
 	switch (taskToken->enTaskType)
 	{
 		//services' debug message always get printed first
-		case TYPE_SERVICE		:	//print message to UART
-									vPrintString((portCHAR *)taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
-									vPrintString(">", 1);
-									vPrintString(pcDebugString, usLength);
-									return URC_SUCCESS;
+		case TYPE_SERVICE		:	return enJPrint(taskToken,
+													pcFormat,
+													pulInsertions);
 
 		//applications' debug message always gets queued
 		case TYPE_APPLICATION	:	//create request packet
@@ -106,37 +170,158 @@ UnivRetCode enDebug_Print(TaskToken taskToken,
 									outgoing_packet.Length			= DEBUG_CONTENT_SIZE;
 									outgoing_packet.Data			= (unsigned portLONG)&debugContent;
 									//create tag along data
-									debugContent.pcDebugString		= pcDebugString;
-									debugContent.usLength			= usLength;
+									debugContent.pcFormat			= pcFormat;
+									debugContent.pulInsertions		= pulInsertions;
 									return enProcessRequest(&outgoing_packet, portMAX_DELAY);
 
-		default					:	return URC_FAIL;
+		default					:	return URC_DEB_UNKNOWN_TASK_TYPE;
 	}
 }
-/*
-void vPrintHex(portCHAR *pcDebugString, unsigned portSHORT usLength)
+
+UnivRetCode enJPrint(TaskToken 			taskToken,
+					portCHAR const *	pcFormat,
+					unsigned portLONG *	pulInsertions)
 {
+	unsigned portCHAR 	ucInsertIndex;
+	unsigned portLONG 	ulFormatIndex;
+	UnivRetCode			enResult = URC_SUCCESS;
+
 	vAcquireUARTChannel(WRITE0, portMAX_DELAY);
 	{
-		for (; usLength-- > 0;)
+		//print request task name
+		vPrintString(taskToken->pcTaskName, TASK_NAME_MAX_CHAR);
+		Comms_UART_Write_Char('>', portMAX_DELAY);
+
+		//read through format
+		for (ulFormatIndex = 0, ucInsertIndex = 0; pcFormat[ulFormatIndex] != '\0'; ++ulFormatIndex)
 		{
-			Comms_UART_Write_Char(cValToHex(MSN(pcDebugString[usLength])), portMAX_DELAY);
-			Comms_UART_Write_Char(cValToHex(LSN(pcDebugString[usLength])), portMAX_DELAY);
+			//insertion detected
+			if (pcFormat[ulFormatIndex] == '%')
+			{
+				//set index to start of insertion format
+				++ulFormatIndex;
+
+				//%% == %
+				if (pcFormat[ulFormatIndex] == '%')
+				{
+					Comms_UART_Write_Char('%', portMAX_DELAY);
+					continue;
+				}
+
+				//check MAX_INSERTIONS reached
+				if (ucInsertIndex == MAX_INSERTIONS)
+				{
+					vPrintString(" - Max insertions reached!\n\r", MAX_ERROR_MSG_LEN);
+					enResult = URC_DEB_MAXED_INSERTION;
+					break;
+				}
+
+				 //defer to insertion printing subroutine
+				enResult = enPrintInsertion(pcFormat, &ulFormatIndex, pulInsertions[ucInsertIndex]);
+
+				//insertion failed stopping printing and release failure value
+				if (enResult != URC_SUCCESS) break;
+
+				//move onto next insertion value
+				++ucInsertIndex;
+			}
+			else
+			{
+				//write character to UART
+				Comms_UART_Write_Char(pcFormat[ulFormatIndex], portMAX_DELAY);
+			}
 		}
 	}
 	vReleaseUARTChannel(WRITE0);
+
+	return enResult;
+}
+
+UnivRetCode enPrintInsertion(portCHAR const *	pcFormat,
+							unsigned portLONG *	pulFormatIndex,
+							unsigned portLONG 	ulInsertion)
+{
+	const portCHAR MAX_LENGTH_SIZE = 4;
+	unsigned portCHAR	ucLengthIndex;
+	unsigned portSHORT	usLength;
+
+	//read length value
+	for (usLength = 0, ucLengthIndex = 0;
+		pcFormat[*pulFormatIndex] >= '0' && pcFormat[*pulFormatIndex] <= '9';
+		++(*pulFormatIndex), ++ucLengthIndex)
+	{
+		if (ucLengthIndex < MAX_LENGTH_SIZE)
+		{
+			usLength *= 10;	//shift left by 1 in base decimal
+			usLength += pcFormat[*pulFormatIndex] - '0';
+		}
+		else
+		{
+			vPrintString(" - Insertion length value too long!\n\r", MAX_ERROR_MSG_LEN);
+
+			return URC_DEB_INSERT_LEN_VAL_LONG;
+		}
+	}
+
+	//check pointer value is not NULL
+	if (ulInsertion == (unsigned portLONG)NULL && pcFormat[*pulFormatIndex] != 'h')
+	{
+		vPrintString(" - Missing insertion!\n\r", MAX_ERROR_MSG_LEN);
+		return URC_DEB_MISSING_INSERTION;
+	}
+
+	//identify output type
+	switch (pcFormat[*pulFormatIndex])
+	{
+		case 's':	vPrintString((portCHAR const *)ulInsertion, usLength);
+					break;
+		case 'x':	vPrintHex((portCHAR const *)ulInsertion, usLength);
+					break;
+		case 'h':	vPrintHex((portCHAR const *)&ulInsertion, sizeof(unsigned portLONG));
+					break;
+		default:
+					vPrintString(" - Bad format!\n\r", MAX_ERROR_MSG_LEN);
+					return URC_DEB_BAD_FORMAT;
+	}
+
+	return URC_SUCCESS;
+}
+
+
+/* REQUIRE standard library
+#define LONG_TO_DECIMAL_BYTE_SIZE	10
+void vPrintDecimal(unsigned portLONG ulValue)
+{
+	portCHAR pcBuffer[LONG_TO_DECIMAL_BYTE_SIZE];
+	unsigned portSHORT usIndex;
+
+	for (usIndex = LONG_TO_DECIMAL_BYTE_SIZE - 1; ulValue > 0; usIndex++)
+	{
+		pcBuffer[usIndex] = ulValue % 10 + '0';
+		ulValue -= pcBuffer[usIndex];
+		ulValue /= 10;
+	}
 }
 */
-void vPrintString(portCHAR *pcDebugString, unsigned portSHORT usLength)
+
+void vPrintHex(portCHAR const *pcPtr, unsigned portSHORT usLength)
+{
+	vPrintString("0x", sizeof("0x"));
+
+	for (; usLength-- > 0;)
+	{
+		Comms_UART_Write_Char(cValToHex(MSN(pcPtr[usLength])), portMAX_DELAY);
+		Comms_UART_Write_Char(cValToHex(LSN(pcPtr[usLength])), portMAX_DELAY);
+	}
+}
+
+void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength)
 {
 	unsigned portSHORT usIndex;
 
-	vAcquireUARTChannel(WRITE0, portMAX_DELAY);
+	for (usIndex = 0; usIndex < usLength && pcPtr[usIndex] != '\0'; usIndex++)
 	{
-		for (usIndex = 0; usIndex < usLength && pcDebugString[usIndex] != '\0'; usIndex++)
-		{
-			Comms_UART_Write_Char(pcDebugString[usIndex], portMAX_DELAY);
-		}
+		Comms_UART_Write_Char(pcPtr[usIndex], portMAX_DELAY);
 	}
-	vReleaseUARTChannel(WRITE0);
 }
+

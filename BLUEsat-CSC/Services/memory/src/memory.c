@@ -77,7 +77,7 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 {
 	MessagePacket outgoing_packet;
 
-	enDebug_Print(Memory_TaskToken, "Forward!\n\r", 50);
+	enDebugPrint(Memory_TaskToken, "Forward!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	outgoing_packet.Src			= enGetTaskID(taskToken);
 	outgoing_packet.Token		= taskToken;
@@ -101,7 +101,7 @@ UnivRetCode enDataDelete(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebug_Print(taskToken, "Delete!\n\r", 50);
+	enDebugPrint(taskToken, "Delete!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -116,7 +116,7 @@ UnivRetCode enDataSize(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebug_Print(taskToken, "Size!\n\r", 50);
+	enDebugPrint(taskToken, "Size!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -134,7 +134,7 @@ UnivRetCode enDataRead(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebug_Print(taskToken, "Read!\n\r", 50);
+	enDebugPrint(taskToken, "Read!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -154,7 +154,7 @@ UnivRetCode enDataStore(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebug_Print(taskToken, "Store!\n\r", 50);
+	enDebugPrint(taskToken, "Store!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -173,7 +173,7 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebug_Print(taskToken, "Append!\n\r", 50);
+	enDebugPrint(taskToken, "Append!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 

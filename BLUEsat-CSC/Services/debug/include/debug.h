@@ -18,6 +18,8 @@
 #include "command.h"
 #include "UniversalReturnCode.h"
 
+#define NO_INSERT	0
+
 /**
  * \brief Initialise debug service
  *
@@ -26,18 +28,31 @@
 void vDebug_Init(unsigned portBASE_TYPE uxPriority);
 
 /**
+ * \brief Read from UART
+ *
+ * \param[in] pcBuffer Pointer to buffer
+ * \param[in] usMaxSize Max number of bytes to be read
+ *
+ * \returns Number of bytes read
+ */
+unsigned portSHORT	usDebugRead(portCHAR *			pcBuffer,
+								unsigned portSHORT 	usMaxSize);
+
+/**
  * \brief Write debug message string
  *
  * \param[in] taskToken Task token from request task
- * \param[in] pcDebugString String to be printed.
- * \param[in] usLength Size of string.
+ * \param[in] pcFormat Print format.
+ * \param[in] pcInsertion_1 Insertion data 1.
+ * \param[in] pcInsertion_2 Insertion data 2.
+ * \param[in] pcInsertion_3 Insertion data 3.
  *
  * \returns enum Universal return code
  */
-UnivRetCode enDebug_Print(TaskToken taskToken,
-						portCHAR *pcDebugString,
-						unsigned portSHORT usLength);
-
-//void vPrintHex(unsigned portCHAR *pcDebugString, unsigned portSHORT usLength);
+UnivRetCode enDebugPrint(TaskToken 			taskToken,
+						portCHAR *			pcFormat,
+						unsigned portLONG 	pcInsertion_1,
+						unsigned portLONG 	pcInsertion_2,
+						unsigned portLONG 	pcInsertion_3);
 
 #endif /* DEBUG_H_ */

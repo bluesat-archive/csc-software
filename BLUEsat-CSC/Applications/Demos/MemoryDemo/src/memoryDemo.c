@@ -41,15 +41,19 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 	(void) pvParameters;
 	UnivRetCode 	enResult;
 	MessagePacket 	incoming_packet;
-	portCHAR		cBuffer[10];
+	portCHAR		pcBuffer[21];
 
-	enDebug_Print(MemDEMO_TaskToken, "Hello!\n\r", 50);
+	enDebugPrint(MemDEMO_TaskToken, "Hello!\n\r", 0, 0, 0);
 
-	if (enDataDelete(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 1!\n\r", 50);
-	if (enDataSize(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 2!\n\r", 50);
-	if (enDataRead(MemDEMO_TaskToken, 16, 0, 10, cBuffer) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 3!\n\r", 50);
-	if (enDataStore(MemDEMO_TaskToken, 16, 10, cBuffer) == URC_CMD_NO_TASK) enDebug_Print(MemDEMO_TaskToken, "Pass 4!\n\r", 50);
-	if (enDataAppend(MemDEMO_TaskToken, 64, 10, cBuffer) == URC_MEM_INVALID_DID) enDebug_Print(MemDEMO_TaskToken, "Pass 5!\n\r", 50);
+	if (enDataDelete(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 1!\n\r", 0, 0, 0);
+	if (enDataSize(MemDEMO_TaskToken, 16) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 2!\n\r", 0, 0, 0);
+	if (enDataRead(MemDEMO_TaskToken, 16, 0, 10, pcBuffer) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 3!\n\r", 0, 0, 0);
+	if (enDataStore(MemDEMO_TaskToken, 16, 10, pcBuffer) == URC_CMD_NO_TASK) enDebugPrint(MemDEMO_TaskToken, "Pass 4!\n\r", 0, 0, 0);
+	if (enDataAppend(MemDEMO_TaskToken, 64, 10, pcBuffer) == URC_MEM_INVALID_DID) enDebugPrint(MemDEMO_TaskToken, "Pass 5!\n\r", 0, 0, 0);
+
+	usDebugRead(pcBuffer, 49);
+
+	enDebugPrint(MemDEMO_TaskToken, "%20s %h %10s %10x\n\r", (unsigned portLONG)pcBuffer, 0x12345678, (unsigned portLONG)"Good");
 
 	for ( ; ; )
 	{
