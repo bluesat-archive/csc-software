@@ -25,9 +25,9 @@
 	#error "Applications should access drivers via services!"
 #endif
 
-#ifndef COMMS_I2C_H_
-#define COMMS_I2C_H_
-
+#ifndef I2C_H_
+#define I2C_H_
+#include "semphr.h"
 
 /*
  * Address of Devices
@@ -181,4 +181,4 @@ signed portBASE_TYPE Comms_I2C_Slave(I2C_SLAVE_MODE mode, volatile portCHAR * lo
 signed portBASE_TYPE Comms_I2C_Slave_Clear(I2C_BUS_CHOICE bus , I2C_SLAVE_MODE mode);
 
 
-#endif /* COMMS_I2C_H_ */
+#endif /* I2C_H_ */

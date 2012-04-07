@@ -55,7 +55,7 @@ MOO_SQUID
 - Unnecessary i Files Removed
 MOO_SQUID
    # process remaining i files and pull .h out into hash
-   my @hFiles = get_unique_h_files(@$keepList);  
+   my @hFiles = rename_itoh(@$keepList);  
    #produce output list
    if (FAIL == generate_includes_list($outFile, @hFiles))
    {
@@ -89,6 +89,24 @@ sub extract_h_files
    my @lines = <$fh>;
    close $fh;
    for my $temp_line (@lines)
+   {
+      if ($temp_line =~ /(\w+\.h)/)
+      {
+         push (@result, $1);
+      }
+   }
+   return @result;
+}
+
+sub rename_itoh
+{
+   my @files = @_;
+   return unless @files;
+   foreach my $temp (@files){
+      $temp =~s/\.i/\.h/g;
+   } 
+   my @result = ();
+   for my $temp_line (@files)
    {
       if ($temp_line =~ /(\w+\.h)/)
       {

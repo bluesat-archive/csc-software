@@ -141,6 +141,13 @@ is_deeply($actKeepRef,\@expKeepRef,'remove_excluded_files: Check keep list');
 is_deeply($actDelRef,\@expDelRef,'remove_excluded_files: Check deletion list');
 
 
+
+my @in_files = qw(a.i b.i c.i);
+my @exp_files = qw(a.h b.h c.h);
+my @act_files = compiler_exclusion::rename_itoh(@in_files);
+is_deeply(\@act_files,\@exp_files,'rename_itoh: Check Convert .i to .h in names');
+
+
 #Helper Functions
 #----------------
 sub read_in_file

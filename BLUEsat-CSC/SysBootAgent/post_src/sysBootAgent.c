@@ -21,6 +21,10 @@ unsigned int initDrivers(void)
 	EMC_Init();
 #endif
 
+#ifdef I2C_H_
+	Comms_I2C_Init();
+#endif
+
 #ifdef INTERNAL_FLASH_H_
 	//Internal Flash Memory driver
 	/* NO INITIALISATION REQUIRED */

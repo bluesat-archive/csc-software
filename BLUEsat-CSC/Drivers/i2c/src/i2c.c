@@ -15,7 +15,6 @@
  * the driver to be given after execution.
  */
 #include "FreeRTOS.h"
-#include "semphr.h"
 #include "task.h"
 #include "queue.h"
 #include "irq.h"
