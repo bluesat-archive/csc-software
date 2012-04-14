@@ -20,8 +20,7 @@
 
 typedef struct
 {
-	portCHAR *pMsg;			//pointer to message
-	unsigned portSHORT usLength;	//message length
+	portCHAR *pMsg;					//pointer to message
 } DemoContent;
 
 #define DEMO_CONTENT_SIZE	sizeof(DemoContent)
@@ -59,15 +58,14 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 		//access tagged data
 		pContentHandle = (DemoContent *)incoming_packet.Data;
 		//print message
-		enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
+		vDebugPrint(DEMO_TaskToken, pContentHandle->pMsg, NO_INSERT, NO_INSERT, NO_INSERT);
 		//complete request by passing the status to the sender
 		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 	}
 }
 
 UnivRetCode enMessage_To_Q(TaskToken taskToken,
-							portCHAR *pcDebugString,
-							unsigned portSHORT usLength)
+							portCHAR *pcString)
 {
 	MessagePacket outgoing_packet;
 	DemoContent demoContent;
@@ -79,8 +77,7 @@ UnivRetCode enMessage_To_Q(TaskToken taskToken,
 	outgoing_packet.Length		= DEMO_CONTENT_SIZE;
 	outgoing_packet.Data		= (unsigned portLONG)&demoContent;
 	//store message in a struct and tag along with the request packet
-	domeContent.pMsg			= pcDebugString;
-	domeContent.usLength		= usLength;
+	demoContent.pMsg			= pcString;
 	
 	return enProcessRequest(&outgoing_packet, portMAX_DELAY);
 }

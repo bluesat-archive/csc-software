@@ -1,7 +1,7 @@
  /**
- *  \file MemIntSharedDef.h
+ *  \file StorageOpControl.h
  *
- *  \brief Memory Internal Shared defines
+ *  \brief Translate storage operations to GSA operations
  *
  *  \author $Author: James Qin $
  *  \version 1.0
@@ -11,6 +11,12 @@
  *  \bug No Bugs for now
  *  \note No Notes for now
  */
+
+#ifndef STORAGE_OP_CONTROL_H_
+#define STORAGE_OP_CONTROL_H_
+
+#include "gsa.h"
+#include "UniversalReturnCode.h"
 
 typedef enum
 {
@@ -37,3 +43,16 @@ typedef struct
 } MemoryContent;
 
 #define MEMORY_CONTENT_SIZE	sizeof(MemoryContent)
+
+/**
+ * \brief Process storage message received by different memory tasks
+ *
+ * \param[in] pGSACore Core for GSA.
+ *
+ * \param[in] pMemoryContent Storage request message.
+ *
+ * \returns SUCCESS or FAIL
+ */
+UnivRetCode enProcessStorageReq(GSACore *pGSACore, MemoryContent *pMemoryContent);
+
+#endif /* STORAGE_OP_CONTROL_H_ */

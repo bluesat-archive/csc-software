@@ -1,21 +1,24 @@
 /*
- * \file internal_flash.h
+ * \file iap.h
  *
- * \brief Flash memory driver utilising the internal in application
- * programming routines to effect flash memory alteration operations.
+ * \brief In-Application (IAP) programming is performing erase
+ *        and write operation on the on-chip Flash memory.
  *
- * \author $Author: Colin Tan $
+ * \author $Author: James Qin $
  * \version 1.0
  *
  * $Date: 2011-02-26 13:22:30 +1100 (Sat, 26 Feb 2011) $
  *
  */
 
-#ifndef INTERNAL_FLASH_H_
-#define INTERNAL_FLASH_H_
+#ifndef IAP_H_
+#define IAP_H_
 
 #include "FreeRTOS.h"
 #include "UC_Selection.h"
+
+#define MAX_COMMAND_SIZE	5
+#define MAX_RESULT_SIZE		5
 
 #ifdef __LPC24xx_H
 
@@ -270,4 +273,4 @@ FLASH_STATUS_CODES Check_Blank (SECTORS enStart, SECTORS enLast, unsigned portLO
  */
 FLASH_STATUS_CODES Compare_Data (const void * vpDest_c, const void * vpSrc_c, unsigned portLONG uiSize, unsigned portLONG * uipMismatchOff);
 
-#endif /* INTERNAL_FLASH_H_ */
+#endif /* IAP_H_ */

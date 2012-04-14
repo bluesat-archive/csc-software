@@ -34,13 +34,13 @@ files:   A list of space seperated files to ignore from the
 <applist>
    <Demo_Application1>
       <name>Demo Application1</name>
-      <desc>Demo application to test out the uart</desc>
+      <desc>Demo application to demonstrate an featured application setup</desc>
       <disable>YES</disable>
       <files>Demo_Application1.c</files>
    </Demo_Application1>
    <Demo_Application2>
       <name>Demo Application2</name>
-      <desc>Demo application to test out the uart</desc>
+      <desc>Demo application to demonstrate a pure application setup</desc>
       <disable>YES</disable>
       <files>Demo_Application2.c</files>
    </Demo_Application2>

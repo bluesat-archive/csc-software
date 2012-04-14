@@ -17,16 +17,7 @@
 #include "Demo_Application_1.h"
 #include "debug.h"
 
-#define DEMO_Q_SIZE	1
 #define MESSAGE_WAIT_TIME 500
-
-typedef struct
-{
-	portCHAR *pMsg;			//pointer to message
-	unsigned portSHORT usLength;	//message length	
-} DemoContent;
-
-#define DEMO_CONTENT_SIZE	sizeof(DemoContent)
 
 //task token for accessing services and other applications
 static TaskToken DEMO_TaskToken;
@@ -41,31 +32,16 @@ void vDemoApp2_Init(unsigned portBASE_TYPE uxPriority)
 								uxPriority, 
 								APP_STACK_SIZE, 
 								vDemoTask);
-
-	vActivateQueue(DEMO_TaskToken, DEMO_Q_SIZE);
 }
 
 static portTASK_FUNCTION(vDemoTask, pvParameters)
 {
 	(void) pvParameters;
 	UnivRetCode enResult;
-	MessagePacket incoming_packet;
-	DemoContent *pContentHandle;
 
 	for ( ; ; )
 	{
-		enMessage_To_Q(DEMO_TaskToken, "Hello from DemoApp2!\n\r", 50);
-
-		enResult = enGetRequest(DEMO_TaskToken, &incoming_packet, MESSAGE_WAIT_TIME);
-
-		if (enResult != URC_SUCCESS) continue;
-
-		//access tagged data
-		pContentHandle = (DemoContent *)incoming_packet.Data;
-		//print message
-		enDebug_Print(DEMO_TaskToken, pContentHandle->pMsg, pContentHandle->usLength);
-		//complete request by passing the status to the sender
-		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
+		enResult = enMessage_To_Q(DEMO_TaskToken, "Hello from DemoApp2!\n\r");
 	}
 }
 

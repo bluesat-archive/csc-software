@@ -44,8 +44,9 @@ OBJCOPY	=arm-elf-objcopy
 WARNINGS =-Wall -Werror -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
 -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Wformat-security
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
-CFLAGS	= $(WARNINGS) -D GCC_ARM7 -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
--fno-strict-aliasing -nostdlib -Os -D RUN_FROM_ROM -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
+CDEFINES	= -D GCC_ARM7 -D RUN_FROM_ROM #-D NO_DEBUG ###[NO_DEBUG] remember to check for functions uses usDebugRead()
+CFLAGS	= $(WARNINGS) $(CDEFINES) -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
+-fno-strict-aliasing -nostdlib -Os -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
 
 LINKER_FLAGS=-Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
 
@@ -92,7 +93,7 @@ ALL_PRE      = $(ALL_PRE_SRC:.c=.i)
 ALL_POST_PRE = $(ALL_POST_SRC:.c=.i)
 
 default: clean hex
-
+	
 hex: elf
 	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex
 

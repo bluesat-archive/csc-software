@@ -1,21 +1,21 @@
 /*
- * \file internal_flash.c
+ * \file iap.c
  *
- * \brief Flash memory driver utilising the portLONGernal in application
- * programming routines to effect flash memory alteration operations.
+ * \brief In-Application (IAP) programming is performing erase
+ *        and write operation on the on-chip Flash memory.
  *
- * \author $Author: Colin Tan $
+ * \author $Author: James Qin $
  * \version 1.0
  *
- * $Date: 2010-10-04 13:25:34 +1100 (Mon, 04 Oct 2010) $
+ * $Date: 2011-02-26 13:22:30 +1100 (Sat, 26 Feb 2011) $
  *
  */
 
-#include "internal_flash.h"
+#include "iap.h"
 #include "task.h"
 
-static unsigned portLONG command[5];
-static unsigned portLONG result[5];
+static unsigned portLONG command[MAX_COMMAND_SIZE];
+static unsigned portLONG result[MAX_RESULT_SIZE];
 
 // Function pointer declaration for in built IAP function
 typedef void (*IAP)(unsigned portLONG *,unsigned portLONG *);

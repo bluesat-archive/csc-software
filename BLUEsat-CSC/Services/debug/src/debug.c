@@ -33,11 +33,14 @@ typedef struct
 
 #define DEBUG_CONTENT_SIZE	sizeof(DebugContent)
 
-//task token for accessing services
-static TaskToken Debug_TaskToken;
+//all static declaration goes in here
+#ifndef NO_DEBUG
+	//task token for accessing services
+	static TaskToken Debug_TaskToken;
 
-//prototype for task function
-static portTASK_FUNCTION(vDebugTask, pvParameters);
+	//prototype for task function
+	static portTASK_FUNCTION(vDebugTask, pvParameters);
+#endif /* NO_DEBUG */
 
 /**
  * \brief Compose and print message string
@@ -88,95 +91,97 @@ void vPrintHex(portCHAR const *pcPtr, unsigned portSHORT usLength);
  */
 void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength);
 
-void vDebug_Init(unsigned portBASE_TYPE uxPriority)
-{
-	Debug_TaskToken = ActivateTask(TASK_DEBUG, 
-								"Debug",
-								TYPE_SERVICE, 
-								uxPriority, 
-								SERV_STACK_SIZE, 
-								vDebugTask);
-								
-	vActivateQueue(Debug_TaskToken, DEBUG_Q_SIZE);
-}
+#ifndef NO_DEBUG
 
-static portTASK_FUNCTION(vDebugTask, pvParameters)
-{
-	(void) pvParameters;
-	UnivRetCode enResult;
-	MessagePacket incoming_packet;
-	DebugContent *pContentHandle;
-
-	for ( ; ; )
+	void vDebug_Init(unsigned portBASE_TYPE uxPriority)
 	{
-		enResult = enGetRequest(Debug_TaskToken, &incoming_packet, portMAX_DELAY);
+		Debug_TaskToken = ActivateTask(TASK_DEBUG,
+									"Debug",
+									TYPE_SERVICE,
+									uxPriority,
+									SERV_STACK_SIZE,
+									vDebugTask);
 
-		if (enResult != URC_SUCCESS) continue;
-
-		pContentHandle = (DebugContent *)incoming_packet.Data;
-
-		//complete request by passing the status to the sender
-		vCompleteRequest(incoming_packet.Token, enJPrint((incoming_packet.Token),
-														pContentHandle->pcFormat,
-														pContentHandle->pulInsertions));
-
+		vActivateQueue(Debug_TaskToken, DEBUG_Q_SIZE);
 	}
-}
 
-unsigned portSHORT	usDebugRead(portCHAR *			pcBuffer,
-								unsigned portSHORT 	usMaxSize)
-{
-	unsigned portSHORT usIndex;
-
-	vAcquireUARTChannel(READ0, portMAX_DELAY);
+	static portTASK_FUNCTION(vDebugTask, pvParameters)
 	{
-		for (usIndex = 0; usIndex < usMaxSize; ++usIndex)
+		(void) pvParameters;
+		UnivRetCode enResult;
+		MessagePacket incoming_packet;
+		DebugContent *pContentHandle;
+
+		for ( ; ; )
 		{
-			Comms_UART_Read_Char(&pcBuffer[usIndex], portMAX_DELAY);
+			enResult = enGetRequest(Debug_TaskToken, &incoming_packet, portMAX_DELAY);
 
-			if (pcBuffer[usIndex] == '\r') break;
+			if (enResult != URC_SUCCESS) continue;
+
+			pContentHandle = (DebugContent *)incoming_packet.Data;
+
+			//complete request by passing the status to the sender
+			vCompleteRequest(incoming_packet.Token, enJPrint((incoming_packet.Token),
+															pContentHandle->pcFormat,
+															pContentHandle->pulInsertions));
+
 		}
-		pcBuffer[usIndex] = '\0';
 	}
-	vReleaseUARTChannel(READ0);
 
-	return usIndex;
-}
-
-UnivRetCode enDebugPrint(TaskToken 			taskToken,
-						portCHAR *			pcFormat,
-						unsigned portLONG 	pcInsertion_1,
-						unsigned portLONG 	pcInsertion_2,
-						unsigned portLONG 	pcInsertion_3)
-{
-	MessagePacket outgoing_packet;
-	DebugContent debugContent;
-	unsigned portLONG pulInsertions[MAX_INSERTIONS] =	{pcInsertion_1,
-														pcInsertion_2,
-														pcInsertion_3};
-	//identify requester
-	switch (taskToken->enTaskType)
+	unsigned portSHORT	usDebugRead(portCHAR *			pcBuffer,
+									unsigned portSHORT 	usMaxSize)
 	{
-		//services' debug message always get printed first
-		case TYPE_SERVICE		:	return enJPrint(taskToken,
-													pcFormat,
-													pulInsertions);
+		unsigned portSHORT usIndex;
 
-		//applications' debug message always gets queued
-		case TYPE_APPLICATION	:	//create request packet
-									outgoing_packet.Src				= taskToken->enTaskID;
-									outgoing_packet.Dest			= TASK_DEBUG;
-									outgoing_packet.Token			= taskToken;
-									outgoing_packet.Length			= DEBUG_CONTENT_SIZE;
-									outgoing_packet.Data			= (unsigned portLONG)&debugContent;
-									//create tag along data
-									debugContent.pcFormat			= pcFormat;
-									debugContent.pulInsertions		= pulInsertions;
-									return enProcessRequest(&outgoing_packet, portMAX_DELAY);
+		vAcquireUARTChannel(READ0, portMAX_DELAY);
+		{
+			for (usIndex = 0; usIndex < usMaxSize; ++usIndex)
+			{
+				Comms_UART_Read_Char(&pcBuffer[usIndex], portMAX_DELAY);
 
-		default					:	return URC_DEB_UNKNOWN_TASK_TYPE;
+				if (pcBuffer[usIndex] == '\r') break;
+			}
+			pcBuffer[usIndex] = '\0';
+		}
+		vReleaseUARTChannel(READ0);
+
+		return usIndex;
 	}
-}
+
+	void vDebugPrint(TaskToken 			taskToken,
+					portCHAR *			pcFormat,
+					unsigned portLONG 	pcInsertion_1,
+					unsigned portLONG 	pcInsertion_2,
+					unsigned portLONG 	pcInsertion_3)
+	{
+		MessagePacket outgoing_packet;
+		DebugContent debugContent;
+		unsigned portLONG pulInsertions[MAX_INSERTIONS] =	{pcInsertion_1,
+															pcInsertion_2,
+															pcInsertion_3};
+		//identify requester
+		if (taskToken->enTaskType == TYPE_SERVICE)
+		{
+			//services' debug message always get printed first
+			enJPrint(taskToken, pcFormat, pulInsertions);
+		}
+		else if (taskToken->enTaskType == TYPE_APPLICATION)
+		{
+			//applications' debug message always gets queued
+			//create request packet
+			outgoing_packet.Src				= taskToken->enTaskID;
+			outgoing_packet.Dest			= TASK_DEBUG;
+			outgoing_packet.Token			= taskToken;
+			outgoing_packet.Length			= DEBUG_CONTENT_SIZE;
+			outgoing_packet.Data			= (unsigned portLONG)&debugContent;
+			//create tag along data
+			debugContent.pcFormat			= pcFormat;
+			debugContent.pulInsertions		= pulInsertions;
+			enProcessRequest(&outgoing_packet, portMAX_DELAY);
+		}
+	}
+
+#endif /* NO_DEBUG */
 
 UnivRetCode enJPrint(TaskToken 			taskToken,
 					portCHAR const *	pcFormat,

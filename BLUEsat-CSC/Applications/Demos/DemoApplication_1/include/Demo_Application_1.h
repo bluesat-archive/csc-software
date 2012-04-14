@@ -32,10 +32,9 @@ void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority);
  *
  * \param[in] pcDebugString Pointer to message.
  *
- * \param[in] usLength Length of message.
+ * \returns SUCCESS or FAIL
  */
 UnivRetCode enMessage_To_Q(TaskToken taskToken,
-							portCHAR *pcDebugString,
-							unsigned portSHORT usLength);
+							portCHAR *pcString);
 
 #endif /* DEMO_APPLICATION_1_H_ */

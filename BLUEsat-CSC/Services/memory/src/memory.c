@@ -16,7 +16,9 @@
 #include "memory.h"
 #include "debug.h"
 #include "emc.h"
-#include "MemIntSharedDef.h"
+#include "Int_Flash.h"
+#include "fram.h"
+#include "StorageOpControl.h"
 
 #define MEMORY_TEST		0
 #define MEMORY_Q_SIZE	1
@@ -51,6 +53,12 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 								vMemoryTask);
 								
 	vActivateQueue(Memory_TaskToken, MEMORY_Q_SIZE);
+
+	//initialise internal flash memory management
+	vIntFlash_Init(uxPriority);
+
+	//initialise FRAM management
+	vFRAM_Init(uxPriority);
 }
 
 static portTASK_FUNCTION(vMemoryTask, pvParameters)
@@ -77,7 +85,7 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 {
 	MessagePacket outgoing_packet;
 
-	enDebugPrint(Memory_TaskToken, "Forward!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	vDebugPrint(Memory_TaskToken, "Forward!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	outgoing_packet.Src			= enGetTaskID(taskToken);
 	outgoing_packet.Token		= taskToken;
@@ -87,7 +95,7 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 	//forward to different memory type
 	switch (outgoing_packet.Src)
 	{
-		case	TASK_MEMORY_DEMO:	outgoing_packet.Dest = TASK_MEM_FLASH;
+		case	TASK_MEMORY_DEMO:	outgoing_packet.Dest = TASK_MEM_INT_FLASH;
 									break;
 
 		default					:	return URC_MEM_NOT_ON_STORAGE_LIST;
@@ -101,7 +109,7 @@ UnivRetCode enDataDelete(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebugPrint(taskToken, "Delete!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	vDebugPrint(taskToken, "Delete!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -116,7 +124,7 @@ UnivRetCode enDataSize(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebugPrint(taskToken, "Size!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	vDebugPrint(taskToken, "Size!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -134,7 +142,7 @@ UnivRetCode enDataRead(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebugPrint(taskToken, "Read!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	vDebugPrint(taskToken, "Read!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -154,7 +162,7 @@ UnivRetCode enDataStore(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebugPrint(taskToken, "Store!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	vDebugPrint(taskToken, "Store!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -173,7 +181,7 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	enDebugPrint(taskToken, "Append!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	vDebugPrint(taskToken, "Append!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
@@ -195,7 +203,7 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 
 		//SRAM test
 		//8 bits test
-		enDebug_Print(Memory_TaskToken, "SRAM 8 bits test...\n\r", 50);
+		vDebugPrint(Memory_TaskToken, "SRAM 8 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_0_START_ADDR, ucValue = 3;
 			ulAddress < STATIC_BANK_0_START_ADDR + STATIC_BANK_0_SIZE;
 			ulAddress += sizeof(unsigned portCHAR), ++ucValue)
@@ -209,14 +217,14 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 		{
 			if (*(unsigned portCHAR *)ulAddress != ucValue)
 			{
-				enDebug_Print(Memory_TaskToken, "SRAM 8 bits test failed!\n\r", 50);
+				vDebugPrint(Memory_TaskToken, "SRAM 8 bits test failed!\n\r", 50);
 				break;
 			}
 		}
 
 		//FRAM test
 		//8 bits test
-		enDebug_Print(Memory_TaskToken, "FRAM 8 bits test...\n\r", 50);
+		vDebugPrint(Memory_TaskToken, "FRAM 8 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_1_START_ADDR, ucValue = 3;
 			ulAddress < STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE;
 			ulAddress += sizeof(unsigned portCHAR), ++ucValue)
@@ -230,13 +238,13 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 		{
 			if (*(unsigned portCHAR *)ulAddress != ucValue)
 			{
-				enDebug_Print(Memory_TaskToken, "FRAM 8 bits test failed!\n\r", 50);
+				vDebugPrint(Memory_TaskToken, "FRAM 8 bits test failed!\n\r", 50);
 				break;
 			}
 		}
 
 		//16 bits test
-		enDebug_Print(Memory_TaskToken, "FRAM 16 bits test...\n\r", 50);
+		vDebugPrint(Memory_TaskToken, "FRAM 16 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_1_START_ADDR, usValue = 3;
 			ulAddress < STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE;
 			ulAddress += sizeof(unsigned portSHORT), ++usValue)
@@ -250,13 +258,13 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 		{
 			if (*(unsigned portSHORT *)ulAddress != usValue)
 			{
-				enDebug_Print(Memory_TaskToken, "FRAM 16 bits test failed!\n\r", 50);
+				vDebugPrint(Memory_TaskToken, "FRAM 16 bits test failed!\n\r", 50);
 				break;
 			}
 		}
 
 		//32 bits test
-		enDebug_Print(Memory_TaskToken, "FRAM 32 bits test...\n\r", 50);
+		vDebugPrint(Memory_TaskToken, "FRAM 32 bits test...\n\r", 50);
 		for (ulAddress = STATIC_BANK_1_START_ADDR;
 			ulAddress < STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE;
 			ulAddress += sizeof(unsigned portLONG))
@@ -270,7 +278,7 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 		{
 			if (*(unsigned portLONG *)ulAddress != ulAddress + 1)
 			{
-				enDebug_Print(Memory_TaskToken, "FRAM 32 bits test failed!\n\r", 50);
+				vDebugPrint(Memory_TaskToken, "FRAM 32 bits test failed!\n\r", 50);
 				break;
 			}
 		}

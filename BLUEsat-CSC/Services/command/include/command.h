@@ -24,7 +24,8 @@ typedef enum
 	TASK_COMMAND,
 	TASK_DEBUG,
 	TASK_MEMORY,
-	TASK_MEM_FLASH,
+	TASK_MEM_INT_FLASH,
+	TASK_MEM_FRAM,
 	TASK_DEMO_APP_1,
 	TASK_DEMO_APP_2,
 	TASK_MEMORY_DEMO,
@@ -70,7 +71,7 @@ typedef struct
 /**
  * \brief Initialise command service
  *
- * \param[in] uxPriority Priority for debug service.
+ * \param[in] uxPriority Priority for command service.
  */
 void vCommand_Init(unsigned portBASE_TYPE uxPriority);
 

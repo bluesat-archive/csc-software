@@ -15,44 +15,50 @@
 #ifndef DEBUG_H_
 #define DEBUG_H_
 
+#define NO_INSERT	0
+
 #include "command.h"
 #include "UniversalReturnCode.h"
 
-#define NO_INSERT	0
+	#ifndef NO_DEBUG
+		/**
+		 * \brief Initialise debug service
+		 *
+		 * \param[in] uxPriority Priority for debug service.
+		 */
+		void vDebug_Init(unsigned portBASE_TYPE uxPriority);
 
-/**
- * \brief Initialise debug service
- *
- * \param[in] uxPriority Priority for debug service.
- */
-void vDebug_Init(unsigned portBASE_TYPE uxPriority);
+		/**
+		 * \brief Read from UART
+		 *
+		 * \param[in] pcBuffer Pointer to buffer
+		 * \param[in] usMaxSize Max number of bytes to be read
+		 *
+		 * \returns Number of bytes read
+		 */
+		unsigned portSHORT	usDebugRead(portCHAR *			pcBuffer,
+										unsigned portSHORT 	usMaxSize);
 
-/**
- * \brief Read from UART
- *
- * \param[in] pcBuffer Pointer to buffer
- * \param[in] usMaxSize Max number of bytes to be read
- *
- * \returns Number of bytes read
- */
-unsigned portSHORT	usDebugRead(portCHAR *			pcBuffer,
-								unsigned portSHORT 	usMaxSize);
-
-/**
- * \brief Write debug message string
- *
- * \param[in] taskToken Task token from request task
- * \param[in] pcFormat Print format.
- * \param[in] pcInsertion_1 Insertion data 1.
- * \param[in] pcInsertion_2 Insertion data 2.
- * \param[in] pcInsertion_3 Insertion data 3.
- *
- * \returns enum Universal return code
- */
-UnivRetCode enDebugPrint(TaskToken 			taskToken,
+		/**
+		 * \brief Write debug message string
+		 *
+		 * \param[in] taskToken Task token from request task
+		 * \param[in] pcFormat Print format.
+		 * \param[in] pcInsertion_1 Insertion data 1.
+		 * \param[in] pcInsertion_2 Insertion data 2.
+		 * \param[in] pcInsertion_3 Insertion data 3.
+		 */
+		void vDebugPrint(TaskToken 			taskToken,
 						portCHAR *			pcFormat,
 						unsigned portLONG 	pcInsertion_1,
 						unsigned portLONG 	pcInsertion_2,
 						unsigned portLONG 	pcInsertion_3);
+	#else
 
+		//catch and nullify function calls
+		#define vDebug_Init(a)
+		#define usDebugRead(a, b)	0
+		#define vDebugPrint(a, b, c, d, e)
+
+	#endif /* NO_DEBUG */
 #endif /* DEBUG_H_ */

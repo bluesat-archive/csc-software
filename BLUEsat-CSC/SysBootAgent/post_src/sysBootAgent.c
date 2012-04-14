@@ -25,8 +25,8 @@ unsigned int initDrivers(void)
 	Comms_I2C_Init();
 #endif
 
-#ifdef INTERNAL_FLASH_H_
-	//Internal Flash Memory driver
+#ifdef IAP_H_
+	//Internal Flash Memory driver (IAP)
 	/* NO INITIALISATION REQUIRED */
 	//WARNING: TEMPORARY SOLUTION BELOW - REMOVE ASAP
 	(void)FlashSecAdds;		/* STOP COMPILER COMPLAIN ABOUT FlashSecAdds NOT USED*/

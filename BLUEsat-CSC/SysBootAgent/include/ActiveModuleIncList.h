@@ -6,13 +6,15 @@
    files required to build the system. This file is used as a step 
    in the conditional build system.
 */
-#include "command.h"
-#include "debug.h"
-#include "emc.h"
-#include "i2c.h"
-#include "internal_flash.h"
-#include "lib_string.h"
-#include "memory.h"
-#include "memoryDemo.h"
 #include "uart.h"
+#include "debug.h"
+#include "command.h"
+#include "fram.h"
+#include "memoryDemo.h"
+#include "memory.h"
+#include "lib_string.h"
+#include "StorageOpControl.h"
+#include "i2c.h"
+#include "Int_Flash.h"
+#include "emc.h"
 

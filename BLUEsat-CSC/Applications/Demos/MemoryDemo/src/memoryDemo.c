@@ -89,20 +89,20 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 		}
 		else if ((pcInputBuf[0] == 'F' && pcInputBuf[1] == 'F') && usReadLen == 2)
 		{
-			enResult = enDebugPrint(MemDEMO_TaskToken,
-									"FF not implemented!\n\r",
-									NO_INSERT,
-									NO_INSERT,
-									NO_INSERT);
+			vDebugPrint(MemDEMO_TaskToken,
+						"FF not implemented!\n\r",
+						NO_INSERT,
+						NO_INSERT,
+						NO_INSERT);
 			continue;
 		}
 		else if ((pcInputBuf[0] == 'P' && pcInputBuf[1] == 'T') && usReadLen == 2)
 		{
-			enResult = enDebugPrint(MemDEMO_TaskToken,
-									"PT not implemented!\n\r",
-									NO_INSERT,
-									NO_INSERT,
-									NO_INSERT);
+			vDebugPrint(MemDEMO_TaskToken,
+						"PT not implemented!\n\r",
+						NO_INSERT,
+						NO_INSERT,
+						NO_INSERT);
 			continue;
 		}
 		else if ((pcInputBuf[0] == 'M' && pcInputBuf[1] == 'U') && usReadLen == 2)
@@ -112,16 +112,16 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 		}
 		else
 		{
-			enResult = enDebugPrint(MemDEMO_TaskToken,
-									"Invalid command!\n\r",
-									NO_INSERT,
-									NO_INSERT,
-									NO_INSERT);
+			vDebugPrint(MemDEMO_TaskToken,
+						"Invalid command!\n\r",
+						NO_INSERT,
+						NO_INSERT,
+						NO_INSERT);
 			vPrintMenu();
 			continue;
 		}
 
-		enDebugPrint(MemDEMO_TaskToken,
+		vDebugPrint(MemDEMO_TaskToken,
 					"Result = %h\n\r",
 					enResult,
 					NO_INSERT,
@@ -144,7 +144,7 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 
 void vPrintMenu(void)
 {
-	enDebugPrint(MemDEMO_TaskToken,
+	vDebugPrint(MemDEMO_TaskToken,
 				"\n\r%1000s\n\r",
 				(unsigned portLONG)MENU,
 				NO_INSERT,
