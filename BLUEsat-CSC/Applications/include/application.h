@@ -13,20 +13,18 @@
  *  \note No Notes for now
  */
 
-#ifndef SYSBOOTAGENT_H_
-	#ifdef SERVICE_H_
-		#error "Task can only be application or service"
-	#endif
+#ifdef SERVICE_H_
+	#error "Task can only be application or service"
+#endif
 
-	#ifndef APPLICATION_H_
-	#define APPLICATION_H_
+#ifndef APPLICATION_H_
+#define APPLICATION_H_
 
-		#include "FreeRTOS.h"
-		#include "command.h"
+	#include "FreeRTOS.h"
+	#include "command.h"
 
-		/* Application unique defines */
-		#define NO_BLOCK			0
-		#define APP_STACK_SIZE		configMINIMAL_STACK_SIZE
+	/* Application unique defines */
+	#define APP_STACK_SIZE		configMINIMAL_STACK_SIZE
+	#define APP_TASK_TYPE		TYPE_APPLICATION
 
-	#endif /* APPLICATION_H_ */
-#endif /* SYSBOOTAGENT_H_ */
+#endif /* APPLICATION_H_ */

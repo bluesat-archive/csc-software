@@ -68,6 +68,8 @@ typedef struct
 	unsigned portLONG 	Data;	//can be used as a pointer
 } MessagePacket;
 
+#define NO_BLOCK			0
+
 /**
  * \brief Initialise command service
  *

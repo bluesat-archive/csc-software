@@ -31,7 +31,7 @@ void vMemDemo_Init(unsigned portBASE_TYPE uxPriority)
 {
 	MemDEMO_TaskToken = ActivateTask(TASK_MEMORY_DEMO,
 									"MemoryDemo",
-									TYPE_APPLICATION,
+									APP_TASK_TYPE,
 									uxPriority,
 									APP_STACK_SIZE,
 									vMemDemoTask);

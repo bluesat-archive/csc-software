@@ -34,7 +34,7 @@ void vDemoApp1_Init(unsigned portBASE_TYPE uxPriority)
 {
 	DEMO_TaskToken = ActivateTask(TASK_DEMO_APP_1, 
 								"DemoApp1",
-								TYPE_APPLICATION, 
+								APP_TASK_TYPE,
 								uxPriority, 
 								APP_STACK_SIZE, 
 								vDemoTask);

@@ -32,7 +32,7 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 {
 	Flash_TaskToken = ActivateTask(TASK_MEM_INT_FLASH,
 								"IntFlash",
-								TYPE_SERVICE,
+								SEV_TASK_TYPE,
 								uxPriority,
 								SERV_STACK_SIZE,
 								vFlashTask);

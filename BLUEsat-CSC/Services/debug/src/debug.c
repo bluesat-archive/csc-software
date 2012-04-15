@@ -97,7 +97,7 @@ void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength);
 	{
 		Debug_TaskToken = ActivateTask(TASK_DEBUG,
 									"Debug",
-									TYPE_SERVICE,
+									SEV_TASK_TYPE,
 									uxPriority,
 									SERV_STACK_SIZE,
 									vDebugTask);

@@ -32,7 +32,7 @@ void vFRAM_Init(unsigned portBASE_TYPE uxPriority)
 {
 	FRAM_TaskToken = ActivateTask(TASK_MEM_FRAM,
 								"FRAM",
-								TYPE_SERVICE,
+								SEV_TASK_TYPE,
 								uxPriority,
 								SERV_STACK_SIZE,
 								vFRAMTask);

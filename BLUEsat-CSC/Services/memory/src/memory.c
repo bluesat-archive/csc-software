@@ -47,7 +47,7 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 {
 	Memory_TaskToken = ActivateTask(TASK_MEMORY, 
 								"Memory",
-								TYPE_SERVICE, 
+								SEV_TASK_TYPE,
 								uxPriority, 
 								SERV_STACK_SIZE, 
 								vMemoryTask);

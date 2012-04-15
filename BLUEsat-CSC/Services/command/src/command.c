@@ -43,7 +43,7 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 
 	ActivateTask(TASK_COMMAND, 
 				"Command",
-				TYPE_SERVICE, 
+				SEV_TASK_TYPE,
 				uxPriority, 
 				SERV_STACK_SIZE, 
 				vCommandTask);
