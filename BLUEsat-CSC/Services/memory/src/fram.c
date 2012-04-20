@@ -28,6 +28,13 @@ static GSACore FRAMCore;
 //prototype for task function
 static portTASK_FUNCTION(vFRAMTask, pvParameters);
 
+#ifndef NO_DEBUG
+static void DebugTraceFn (portCHAR *pcFormat,
+						unsigned portLONG Insert1,
+						unsigned portLONG Insert2,
+						unsigned portLONG Insert3);
+#endif /* NO_DEBUG */
+
 void vFRAM_Init(unsigned portBASE_TYPE uxPriority)
 {
 	FRAM_TaskToken = ActivateTask(TASK_MEM_FRAM,
@@ -38,6 +45,10 @@ void vFRAM_Init(unsigned portBASE_TYPE uxPriority)
 								vFRAMTask);
 
 	vActivateQueue(FRAM_TaskToken, FRAM_Q_SIZE);
+
+#ifndef NO_DEBUG
+	FRAMCore.DebugTracePtr = DebugTraceFn;
+#endif /* NO_DEBUG */
 }
 
 static portTASK_FUNCTION(vFRAMTask, pvParameters)
@@ -57,6 +68,19 @@ static portTASK_FUNCTION(vFRAMTask, pvParameters)
 
 		pContentHandle = (MemoryContent *)incoming_packet.Data;
 
-		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&FRAMCore, pContentHandle));
+		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&FRAMCore,
+																	incoming_packet.Src,
+																	pContentHandle));
 	}
 }
+
+#ifndef NO_DEBUG
+static void DebugTraceFn (portCHAR *pcFormat,
+						unsigned portLONG Insert1,
+						unsigned portLONG Insert2,
+						unsigned portLONG Insert3)
+{
+	vDebugPrint(FRAM_TaskToken, pcFormat, Insert1, Insert2, Insert3);
+}
+#endif /* NO_DEBUG */
+

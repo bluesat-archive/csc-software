@@ -46,6 +46,7 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 	//MessagePacket 	incoming_packet;
 	portCHAR			pcInputBuf[MAX_READ_BUF_SIZE+1];
 	unsigned portSHORT	usReadLen;
+	unsigned portLONG 	ulRetSize;
 
 	vPrintMenu();
 
@@ -75,12 +76,14 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 								ulDeciStringToVal(&pcInputBuf[2], 2),
 								ulDeciStringToVal(&pcInputBuf[8], 4),
 								ulDeciStringToVal(&pcInputBuf[4], 4),
-								pcInputBuf);
+								pcInputBuf,
+								&ulRetSize);
 		}
 		else if ((pcInputBuf[0] == 'C' && pcInputBuf[1] == 'S') && usReadLen == 4)
 		{
 			enResult = enDataSize(MemDEMO_TaskToken,
-								ulDeciStringToVal(&pcInputBuf[2], 2));
+								ulDeciStringToVal(&pcInputBuf[2], 2),
+								&ulRetSize);
 		}
 		else if ((pcInputBuf[0] == 'D' && pcInputBuf[1] == 'D') && usReadLen == 4)
 		{

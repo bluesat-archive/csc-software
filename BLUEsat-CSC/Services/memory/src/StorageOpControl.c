@@ -14,11 +14,34 @@
 
 #include "StorageOpControl.h"
 
-UnivRetCode enProcessStorageReq(GSACore *pGSACore, MemoryContent *pMemoryContent)
+UnivRetCode enProcessStorageReq(GSACore *pGSACore,
+								unsigned portCHAR ucAID,
+								MemoryContent *pMemoryContent)
 {
-	(void)pGSACore;
-	(void)pMemoryContent;
+	(void)ucAID;
 	//translate operation
+	switch (pMemoryContent->Operation)
+	{
+		case MEM_STORE	:	pGSACore->DebugTracePtr("AID: %h requested Store\n\r", ucAID, 0, 0);
+							break;
+
+		case MEM_APPEND	:	pGSACore->DebugTracePtr("AID: %h requested Append\n\r", ucAID, 0, 0);
+							break;
+
+		case MEM_DELETE	:	pGSACore->DebugTracePtr("AID: %h requested Delete\n\r", ucAID, 0, 0);
+							break;
+
+		case MEM_SIZE	:	pGSACore->DebugTracePtr("AID: %h requested Size\n\r", ucAID, 0, 0);
+							break;
+
+		case MEM_READ	:	pGSACore->DebugTracePtr("AID: %h requested Read\n\r", ucAID, 0, 0);
+							break;
+
+		default			:	pGSACore->DebugTracePtr("AID: %h requested unknown operation %h!\n\r",
+													ucAID,
+													pMemoryContent->Operation, 0);
+							return URC_FAIL;
+	}
 
 	return URC_SUCCESS;
 }

@@ -42,6 +42,18 @@ typedef unsigned portSHORT 	(*ReadFromMemSeg)	(void * pMemSeg, portCHAR *pBuffer
 typedef void *				(*GetNextMemSeg)	(MEM_SEG_SIZE enMemSegSize);
 typedef void 				(*UpdateMemSegState)(void * pMemSeg, MEM_SEG_SIZE enMemSegSize);
 
+#ifndef NO_DEBUG
+	typedef void			(*DebugTrace)		(portCHAR *pcFormat,
+												unsigned portLONG Insert1,
+												unsigned portLONG Insert2,
+												unsigned portLONG Insert3);
+#else
+
+	#define DebugTrace void *
+	#define	DebugTracePtr(a, b, c, d)	DebugTracePtr = NULL
+
+#endif /* NO_DEBUG */
+
 typedef struct
 {
 	MEM_SEG_SIZE		enMemSegSize;
@@ -50,6 +62,7 @@ typedef struct
 	ReadFromMemSeg		ReadFromMemSegPtr;
 	GetNextMemSeg		GetNextMemSegPtr;
 	UpdateMemSegState	UpdateMemSegStatePtr;
+	DebugTrace			DebugTracePtr;
 } GSACore;
 
 #endif	/* GSA_H_ */

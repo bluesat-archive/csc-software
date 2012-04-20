@@ -85,9 +85,7 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 {
 	MessagePacket outgoing_packet;
 
-	vDebugPrint(Memory_TaskToken, "Forward!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-
-	outgoing_packet.Src			= enGetTaskID(taskToken);
+	outgoing_packet.Src			= taskToken->enTaskID;
 	outgoing_packet.Token		= taskToken;
 	outgoing_packet.Data		= (unsigned portLONG)pMemoryContent;
 
@@ -100,6 +98,12 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 		default					:	return URC_MEM_NOT_ON_STORAGE_LIST;
 	}
 
+	vDebugPrint(Memory_TaskToken,
+				"Forwarded %50s request!\n\r",
+				(unsigned portLONG)taskToken->pcTaskName,
+				NO_INSERT,
+				NO_INSERT);
+
 	return enProcessRequest(&outgoing_packet, portMAX_DELAY);
 }
 
@@ -108,27 +112,28 @@ UnivRetCode enDataDelete(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	vDebugPrint(taskToken, "Delete!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	memoryContent.Operation = MEM_DELETE;
-	memoryContent.DID		= ucDID;
+	memoryContent.Operation		= MEM_DELETE;
+	memoryContent.DID			= ucDID;
+	memoryContent.pulRetValue	= NULL;
+	memoryContent.Ptr			= NULL;
 
 	return enMemoryForwardSwitch(taskToken, &memoryContent);
 }
 
 UnivRetCode enDataSize(TaskToken taskToken,
-						unsigned portCHAR ucDID)
+						unsigned portCHAR ucDID,
+						unsigned portLONG *pulDataSize)
 {
 	MemoryContent memoryContent;
 
-	vDebugPrint(taskToken, "Size!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	memoryContent.Operation = MEM_SIZE;
-	memoryContent.DID		= ucDID;
+	memoryContent.Operation 	= MEM_SIZE;
+	memoryContent.DID			= ucDID;
+	memoryContent.pulRetValue	= pulDataSize;
+	memoryContent.Ptr			= NULL;
 
 	return enMemoryForwardSwitch(taskToken, &memoryContent);
 }
@@ -137,19 +142,19 @@ UnivRetCode enDataRead(TaskToken taskToken,
 						unsigned portCHAR ucDID,
 						unsigned portLONG ulOffset,
 						unsigned portLONG ulSize,
-						portCHAR *pucBuffer)
+						portCHAR *pucBuffer,
+						unsigned portLONG *pulReadRetSize)
 {
 	MemoryContent memoryContent;
 
-	vDebugPrint(taskToken, "Read!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	memoryContent.Operation = MEM_READ;
-	memoryContent.DID		= ucDID;
-	memoryContent.Offset	= ulOffset;
-	memoryContent.Ptr		= pucBuffer;
-	memoryContent.Size		= ulSize;
+	memoryContent.Operation 	= MEM_READ;
+	memoryContent.DID			= ucDID;
+	memoryContent.Offset		= ulOffset;
+	memoryContent.Ptr			= pucBuffer;
+	memoryContent.Size			= ulSize;
+	memoryContent.pulRetValue	= pulReadRetSize;
 
 	return enMemoryForwardSwitch(taskToken, &memoryContent);
 }
@@ -161,14 +166,13 @@ UnivRetCode enDataStore(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	vDebugPrint(taskToken, "Store!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	memoryContent.Operation = MEM_STORE;
-	memoryContent.DID		= ucDID;
-	memoryContent.Ptr		= pcData;
-	memoryContent.Size		= ulSize;
+	memoryContent.Operation 	= MEM_STORE;
+	memoryContent.DID			= ucDID;
+	memoryContent.Ptr			= pcData;
+	memoryContent.Size			= ulSize;
+	memoryContent.pulRetValue	= NULL;
 
 	return enMemoryForwardSwitch(taskToken, &memoryContent);
 }
@@ -180,14 +184,13 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 {
 	MemoryContent memoryContent;
 
-	vDebugPrint(taskToken, "Append!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	memoryContent.Operation = MEM_APPEND;
-	memoryContent.DID		= ucDID;
-	memoryContent.Ptr		= pcData;
-	memoryContent.Size		= ulSize;
+	memoryContent.Operation 	= MEM_APPEND;
+	memoryContent.DID			= ucDID;
+	memoryContent.Ptr			= pcData;
+	memoryContent.Size			= ulSize;
+	memoryContent.pulRetValue	= NULL;
 
 	return enMemoryForwardSwitch(taskToken, &memoryContent);
 }

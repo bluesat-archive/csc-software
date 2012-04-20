@@ -41,20 +41,23 @@ UnivRetCode enDataDelete(TaskToken taskToken,
  *
  * \param[in] taskToken Task token from request task
  * \param[in] ucDID		Data ID
+ * \param[out] pulSize	Pointer to location for storing return size
  *
  * \returns URC_SUCCESS or URC_FAIL of the operation
  */
 UnivRetCode enDataSize(TaskToken taskToken,
-						unsigned portCHAR ucDID);
+						unsigned portCHAR ucDID,
+						unsigned portLONG *pulDataSize);
 
 /**
  * \brief Read stored data for given AID & DID
  *
  * \param[in] taskToken Task token from request task
- * \param[in] ucDID			Data ID
- * \param[in] ulOffset		Offset point for data read in bytes
- * \param[in] ulSize		Number of bytes to be read
- * \param[out] pucBuffer	Pointer to data return buffer
+ * \param[in] ucDID				Data ID
+ * \param[in] ulOffset			Offset point for data read in bytes
+ * \param[in] ulSize			Number of bytes to be read
+ * \param[out] pucBuffer		Pointer to data return buffer
+ * \param[out] pulReadRetSize	Pointer to location for storing return size
  *
  * \returns URC_SUCCESS or URC_FAIL of the operation
  */
@@ -62,7 +65,8 @@ UnivRetCode enDataRead(TaskToken taskToken,
 						unsigned portCHAR ucDID,
 						unsigned portLONG ulOffset,
 						unsigned portLONG ulSize,
-						portCHAR *pucBuffer);
+						portCHAR *pucBuffer,
+						unsigned portLONG *pulReadRetSize);
 
 /**
  * \brief Store data for given AID & DID

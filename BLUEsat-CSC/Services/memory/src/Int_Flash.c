@@ -28,6 +28,13 @@ static GSACore IntFlashCore;
 //prototype for task function
 static portTASK_FUNCTION(vFlashTask, pvParameters);
 
+#ifndef NO_DEBUG
+static void DebugTraceFn (portCHAR *pcFormat,
+						unsigned portLONG Insert1,
+						unsigned portLONG Insert2,
+						unsigned portLONG Insert3);
+#endif /* NO_DEBUG */
+
 void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 {
 	Flash_TaskToken = ActivateTask(TASK_MEM_INT_FLASH,
@@ -38,6 +45,10 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 								vFlashTask);
 
 	vActivateQueue(Flash_TaskToken, FLASH_Q_SIZE);
+
+#ifndef NO_DEBUG
+	IntFlashCore.DebugTracePtr = DebugTraceFn;
+#endif /* NO_DEBUG */
 }
 
 static portTASK_FUNCTION(vFlashTask, pvParameters)
@@ -57,6 +68,19 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 
 		pContentHandle = (MemoryContent *)incoming_packet.Data;
 
-		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore, pContentHandle));
+		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
+																	incoming_packet.Src,
+																	pContentHandle));
 	}
 }
+
+#ifndef NO_DEBUG
+static void DebugTraceFn (portCHAR *pcFormat,
+						unsigned portLONG Insert1,
+						unsigned portLONG Insert2,
+						unsigned portLONG Insert3)
+{
+	vDebugPrint(Flash_TaskToken, pcFormat, Insert1, Insert2, Insert3);
+}
+#endif /* NO_DEBUG */
+

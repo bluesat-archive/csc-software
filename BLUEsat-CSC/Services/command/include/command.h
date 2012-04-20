@@ -62,8 +62,8 @@ typedef struct taskToken *TaskToken;
 typedef struct
 {
 	TaskToken 			Token;
-	unsigned portCHAR 	Src;
-	unsigned portCHAR 	Dest;
+	TaskID 				Src;
+	TaskID 				Dest;
 	unsigned portLONG 	Data;	//can be used as a pointer
 } MessagePacket;
 

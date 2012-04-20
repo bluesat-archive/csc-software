@@ -27,19 +27,25 @@ typedef enum
 	MEM_READ,    		//read stored data
 	//temp op code
 	MEM_FLASH_FORMAT, 	//format flash sectors
-	MEM_FLASH_STATUS 	//print flash status
+	MEM_FLASH_STATUS, 	//print flash status
+	MEM_FRAM_FORMAT, 	//format FRAM sectors
+	MEM_FRAM_STATUS 	//print FRAM status
 } MEM_OPERATIONS;
 
+#define OP_BIT_SIZE		3
 #define DID_BIT_SIZE	6
+#define OFF_BIT_SIZE	27
+#define SIZE_BIT_SIZE	28
 
 //debug task message format
 typedef struct
 {
-	unsigned portLONG Operation	:	 3;				//operation to be performed
-	unsigned portLONG DID		:	 DID_BIT_SIZE;	//Data ID
-	unsigned portLONG Offset	:	27;				//start offset for reading
-	unsigned portLONG Size		:	28;				//data size/buffer size
+	unsigned portLONG Operation	:	OP_BIT_SIZE;	//operation to be performed
+	unsigned portLONG DID		:	DID_BIT_SIZE;	//Data ID
+	unsigned portLONG Offset	:	OFF_BIT_SIZE;	//start offset for reading
+	unsigned portLONG Size		:	SIZE_BIT_SIZE;	//data size/buffer size
 	portCHAR *Ptr;									//pointer to data/buffer
+	unsigned portLONG *pulRetValue;					//pointer to location for storing return value
 } MemoryContent;
 
 #define MEMORY_CONTENT_SIZE	sizeof(MemoryContent)
@@ -47,12 +53,14 @@ typedef struct
 /**
  * \brief Process storage message received by different memory tasks
  *
- * \param[in] pGSACore Core for GSA.
- *
+ * \param[in] pGSACore 		Core for GSA.
+ * \param[in] ucAID 		Application ID
  * \param[in] pMemoryContent Storage request message.
  *
  * \returns SUCCESS or FAIL
  */
-UnivRetCode enProcessStorageReq(GSACore *pGSACore, MemoryContent *pMemoryContent);
+UnivRetCode enProcessStorageReq(GSACore *pGSACore,
+								unsigned portCHAR ucAID,
+								MemoryContent *pMemoryContent);
 
 #endif /* STORAGE_OP_CONTROL_H_ */
