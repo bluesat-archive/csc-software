@@ -40,7 +40,13 @@
 										unsigned portSHORT 	usMaxSize);
 
 		/**
-		 * \brief Write debug message string
+		 * \brief Print debug messages.
+		 * Usage similar to printf except only the following options are available
+		 * %% 		= Normal % character
+		 * %####s 	= Print a string where #### specify the max possible length of the string
+		 * %####x 	= Print a string in hex where #### specify the max possible length of the string
+		 * %h		= Print value in hex decimal
+		 * %d		= Print value in decimal
 		 *
 		 * \param[in] taskToken Task token from request task
 		 * \param[in] pcFormat Print format.

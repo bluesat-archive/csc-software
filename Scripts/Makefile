@@ -48,7 +48,7 @@ CDEFINES	= -D GCC_ARM7 -D RUN_FROM_ROM #-D NO_DEBUG ###[NO_DEBUG] remember to ch
 CFLAGS	= $(WARNINGS) $(CDEFINES) -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
 -fno-strict-aliasing -nostdlib -Os -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
 
-LINKER_FLAGS=-Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
+LINKER_FLAGS=-lgcc -Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
 
 TESTWARNINGS 	=-Wall
 TESTCFLAGS 		=-I$(UNIT_TESTS_DIR) $(patsubst %,-I%,$(subst :, ,$(INC_DIRS)))

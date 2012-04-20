@@ -69,11 +69,11 @@ UnivRetCode enPrintInsertion(portCHAR const *pcFormat,
 							unsigned portLONG ulInsertion);
 
 /**
- * \brief Print data in decimal (REQUIRE standard library)
+ * \brief Print data in decimal
  *
  * \param[in] ulValue Value to be printed
  */
-//void vPrintDecimal(unsigned portLONG ulValue);
+void vPrintDecimal(unsigned portLONG ulValue);
 
 /**
  * \brief Print data in hex decimal
@@ -268,7 +268,8 @@ UnivRetCode enPrintInsertion(portCHAR const *	pcFormat,
 	}
 
 	//check pointer value is not NULL
-	if (ulInsertion == (unsigned portLONG)NULL && pcFormat[*pulFormatIndex] != 'h')
+	if (ulInsertion == (unsigned portLONG)NULL
+			&& (pcFormat[*pulFormatIndex] != 'h' && pcFormat[*pulFormatIndex] != 'd'))
 	{
 		vPrintString(" - Missing insertion!\n\r", MAX_ERROR_MSG_LEN);
 		return URC_DEB_MISSING_INSERTION;
@@ -283,6 +284,8 @@ UnivRetCode enPrintInsertion(portCHAR const *	pcFormat,
 					break;
 		case 'h':	vPrintHex((portCHAR const *)&ulInsertion, sizeof(unsigned portLONG));
 					break;
+		case 'd':	vPrintDecimal(ulInsertion);
+					break;
 		default:
 					vPrintString(" - Bad format!\n\r", MAX_ERROR_MSG_LEN);
 					return URC_DEB_BAD_FORMAT;
@@ -291,22 +294,23 @@ UnivRetCode enPrintInsertion(portCHAR const *	pcFormat,
 	return URC_SUCCESS;
 }
 
-
-/* REQUIRE standard library
 #define LONG_TO_DECIMAL_BYTE_SIZE	10
 void vPrintDecimal(unsigned portLONG ulValue)
 {
-	portCHAR pcBuffer[LONG_TO_DECIMAL_BYTE_SIZE];
-	unsigned portSHORT usIndex;
+	portCHAR pcBuffer[LONG_TO_DECIMAL_BYTE_SIZE + 1];	//include '\0'
+	unsigned portSHORT usIndex = LONG_TO_DECIMAL_BYTE_SIZE;
 
-	for (usIndex = LONG_TO_DECIMAL_BYTE_SIZE - 1; ulValue > 0; usIndex++)
+	memset(pcBuffer, '\0', LONG_TO_DECIMAL_BYTE_SIZE + 1);
+
+	do
 	{
-		pcBuffer[usIndex] = ulValue % 10 + '0';
-		ulValue -= pcBuffer[usIndex];
+		pcBuffer[--usIndex] = ulValue % 10 + '0';
 		ulValue /= 10;
 	}
+	while (ulValue > 0 && usIndex > 0);
+
+	vPrintString(&pcBuffer[usIndex], LONG_TO_DECIMAL_BYTE_SIZE);
 }
-*/
 
 void vPrintHex(portCHAR const *pcPtr, unsigned portSHORT usLength)
 {
