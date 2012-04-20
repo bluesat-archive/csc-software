@@ -89,7 +89,6 @@ static UnivRetCode enMemoryForwardSwitch(TaskToken taskToken, MemoryContent *pMe
 
 	outgoing_packet.Src			= enGetTaskID(taskToken);
 	outgoing_packet.Token		= taskToken;
-	outgoing_packet.Length		= MEMORY_CONTENT_SIZE;
 	outgoing_packet.Data		= (unsigned portLONG)pMemoryContent;
 
 	//forward to different memory type

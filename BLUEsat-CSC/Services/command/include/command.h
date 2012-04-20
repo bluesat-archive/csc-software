@@ -64,7 +64,6 @@ typedef struct
 	TaskToken 			Token;
 	unsigned portCHAR 	Src;
 	unsigned portCHAR 	Dest;
-	unsigned portSHORT 	Length;
 	unsigned portLONG 	Data;	//can be used as a pointer
 } MessagePacket;
 

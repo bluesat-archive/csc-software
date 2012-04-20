@@ -74,7 +74,6 @@ UnivRetCode enMessage_To_Q(TaskToken taskToken,
 	outgoing_packet.Src			= enGetTaskID(taskToken);
 	outgoing_packet.Dest		= TASK_DEMO_APP_1;
 	outgoing_packet.Token		= taskToken;
-	outgoing_packet.Length		= DEMO_CONTENT_SIZE;
 	outgoing_packet.Data		= (unsigned portLONG)&demoContent;
 	//store message in a struct and tag along with the request packet
 	demoContent.pMsg			= pcString;

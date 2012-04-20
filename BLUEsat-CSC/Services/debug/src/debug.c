@@ -172,7 +172,6 @@ void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength);
 			outgoing_packet.Src				= taskToken->enTaskID;
 			outgoing_packet.Dest			= TASK_DEBUG;
 			outgoing_packet.Token			= taskToken;
-			outgoing_packet.Length			= DEBUG_CONTENT_SIZE;
 			outgoing_packet.Data			= (unsigned portLONG)&debugContent;
 			//create tag along data
 			debugContent.pcFormat			= pcFormat;
