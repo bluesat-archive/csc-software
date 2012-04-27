@@ -20,24 +20,24 @@
 #define MAX_COMMAND_SIZE	5
 #define MAX_RESULT_SIZE		5
 
-#ifdef __LPC24xx_H
+#ifdef LPC2119
 
-   static unsigned portLONG FlashSecAdds[] = {0x00000000,
-                                             0x00002000,
-                                             0x00004000,
-                                             0x00006000,
-                                             0x00008000,
-                                             0x0000A000,
-                                             0x0000C000,
-                                             0x0000E000,
-                                             0x00010000,
-                                             0x00012000,
-                                             0x00014000,
-                                             0x00016000,
-                                             0x00018000,
-                                             0x0001A000,
-                                             0x0001C000,
-                                             0x0001E000};
+   static const unsigned portLONG FlashSecAdds[] = { 0x00000000,
+													 0x00002000,
+													 0x00004000,
+													 0x00006000,
+													 0x00008000,
+													 0x0000A000,
+													 0x0000C000,
+													 0x0000E000,
+													 0x00010000,
+													 0x00012000,
+													 0x00014000,
+													 0x00016000,
+													 0x00018000,
+													 0x0001A000,
+													 0x0001C000,
+													 0x0001E000};
 
    typedef enum{
       SECTOR0ADDR     = 0x00000000,
@@ -79,26 +79,26 @@
 #define MAX_NUM_SECTS 15 //NOTE: This value refers to the maximum index number in the sectors array
 #define UC_FLASH_LIMIT 0x00020000
 
-#elif defined(__LPC21xx_H)
+#elif defined(LPC2129)
 
-   static unsigned portLONG FlashSecAdds[] = {0x00000000,
-                                             0x00002000,
-                                             0x00004000,
-                                             0x00006000,
-                                             0x00008000,
-                                             0x0000A000,
-                                             0x0000C000,
-                                             0x0000E000,
-                                             0x00010000,
-                                             0x00020000,
-                                             0x00030000,
-                                             0x00032000,
-                                             0x00034000,
-                                             0x00036000,
-                                             0x00038000,
-                                             0x0003A000,
-                                             0x0003C000,
-                                             0x0003E000};
+   static const unsigned portLONG FlashSecAdds[] = { 0x00000000,
+													 0x00002000,
+													 0x00004000,
+													 0x00006000,
+													 0x00008000,
+													 0x0000A000,
+													 0x0000C000,
+													 0x0000E000,
+													 0x00010000,
+													 0x00020000,
+													 0x00030000,
+													 0x00032000,
+													 0x00034000,
+													 0x00036000,
+													 0x00038000,
+													 0x0003A000,
+													 0x0003C000,
+													 0x0003E000};
 
    typedef enum{
       SECTOR0ADDR     = 0x00000000,
@@ -144,6 +144,108 @@
 
 #define MAX_NUM_SECTS 17 //NOTE: This value refers to the maximum index number in the sectors array
 #define UC_FLASH_LIMIT 0x00040000
+
+#elif defined(LPC2468)
+
+   static const unsigned portLONG FlashSecAdds[] = { 0x00000000,
+													 0x00001000,
+													 0x00002000,
+													 0x00003000,
+													 0x00004000,
+													 0x00005000,
+													 0x00006000,
+													 0x00007000,
+													 0x00008000,
+													 0x00010000,
+													 0x00018000,
+													 0x00020000,
+													 0x00028000,
+													 0x00030000,
+													 0x00038000,
+													 0x00040000,
+													 0x00048000,
+													 0x00050000,
+													 0x00058000,
+													 0x00060000,
+													 0x00068000,
+													 0x00070000,
+													 0x00078000,
+													 0x00079000,
+													 0x0007A000,
+													 0x0007B000,
+													 0x0007C000,
+													 0x0007D000,
+													 0x0007E000};
+
+   typedef enum
+   {
+	    SECTOR0ADDR		= 0x00000000,
+		SECTOR1ADDR		= 0x00001000,
+		SECTOR2ADDR		= 0x00002000,
+		SECTOR3ADDR		= 0x00003000,
+		SECTOR4ADDR		= 0x00004000,
+		SECTOR5ADDR		= 0x00005000,
+		SECTOR6ADDR		= 0x00006000,
+		SECTOR7ADDR		= 0x00007000,
+		SECTOR8ADDR		= 0x00008000,
+		SECTOR9ADDR		= 0x00010000,
+		SECTOR10ADDR	= 0x00018000,
+		SECTOR11ADDR	= 0x00020000,
+		SECTOR12ADDR	= 0x00028000,
+		SECTOR13ADDR	= 0x00030000,
+		SECTOR14ADDR	= 0x00038000,
+		SECTOR15ADDR	= 0x00040000,
+		SECTOR16ADDR	= 0x00048000,
+		SECTOR17ADDR	= 0x00050000,
+		SECTOR18ADDR	= 0x00058000,
+		SECTOR19ADDR	= 0x00060000,
+		SECTOR20ADDR	= 0x00068000,
+		SECTOR21ADDR	= 0x00070000,
+		SECTOR22ADDR	= 0x00078000,
+		SECTOR23ADDR	= 0x00079000,
+		SECTOR24ADDR	= 0x0007A000,
+		SECTOR25ADDR	= 0x0007B000,
+		SECTOR26ADDR	= 0x0007C000,
+		SECTOR27ADDR	= 0x0007D000,
+		SECTOR28ADDR	= 0x0007E000
+   } SECTOR_ADDRESS;
+
+   typedef enum
+   {
+      SECTOR0     = 0x00,
+      SECTOR1     = 0x01,
+      SECTOR2     = 0x02,
+      SECTOR3     = 0x03,
+      SECTOR4     = 0x04,
+      SECTOR5     = 0x05,
+      SECTOR6     = 0x06,
+      SECTOR7     = 0x07,
+      SECTOR8     = 0x08,
+      SECTOR9     = 0x09,
+      SECTOR10    = 0x0A,
+      SECTOR11    = 0x0B,
+      SECTOR12    = 0x0C,
+      SECTOR13    = 0x0D,
+      SECTOR14    = 0x0E,
+      SECTOR15    = 0x0F,
+      SECTOR16    = 0x10,
+      SECTOR17    = 0x11,
+      SECTOR18    = 0x12,
+      SECTOR19    = 0x13,
+      SECTOR20    = 0x14,
+      SECTOR21    = 0x15,
+      SECTOR22    = 0x16,
+      SECTOR23    = 0x17,
+      SECTOR24    = 0x18,
+      SECTOR25    = 0x19,
+      SECTOR26    = 0x1A,
+      SECTOR27    = 0x1B,
+      SECTOR28    = 0x1C
+   } SECTORS;
+
+#define MAX_NUM_SECTS 28 //NOTE: This value refers to the maximum index number in the sectors array
+#define UC_FLASH_LIMIT 0x00080000
+
 #endif
 
 

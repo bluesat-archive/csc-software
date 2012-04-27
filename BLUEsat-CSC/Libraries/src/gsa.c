@@ -13,22 +13,15 @@
  */
 
 #include "gsa.h"
-
-#define HB_HEADER_SIZE 			6
-#define HB_HEADER_EXT_SIZE 		8
-#define DB_HEADER_SIZE 			4
-#define HEADER_HALFWORD_SIZE 	(HB_HEADER_EXT_SIZE / 2)
-#define HEADER_WORD_SIZE 		(HB_HEADER_EXT_SIZE / 4)
+#include "lib_string.h"
+#include "1sCompChecksum.h"
 
 typedef union
 {
 	struct
 	{
 		/* word 0 */
-		unsigned portLONG CS_S1_O:     	 4;	//checksum stage 1 original
-		unsigned portLONG CS_S1_I:     	 4;	//checksum stage 1 inverted
-		unsigned portLONG CS_S2_O:     	 4;	//checksum stage 2 original
-		unsigned portLONG CS_S2_I:	   	 4;	//checksum stage 2 inverted
+		unsigned portLONG Checksum:    	16;	//header checksum
 		unsigned portLONG H:			 1;	//head block bit
 		unsigned portLONG NDBI:	  		15;	//Next Data Block Index
 	};
@@ -36,24 +29,146 @@ typedef union
 	struct
 	{
 		/* word 0 */
-		unsigned portLONG CS_S1_O:		 4;	//checksum stage 1 original
-		unsigned portLONG CS_S1_I:		 4; //checksum stage 1 inverted
-		unsigned portLONG CS_S2_O: 		 4; //checksum stage 2 original
-		unsigned portLONG CS_S2_I:		 4; //checksum stage 2 inverted
+		unsigned portLONG Checksum:    	16;	//header checksum
 		unsigned portLONG H:			 1; //head block bit
 		unsigned portLONG PrevHBI:		15;	//previous Head Block Index
 		/* word 1 */
 		unsigned portLONG AID:			 6; //Application ID
-		unsigned portLONG DID:			 6; //Data ID
-		unsigned portLONG FDBI_U:		 1;	//First Data Block Index used
+		unsigned portLONG DID:			 8; //Data ID
 		unsigned portLONG Terminal:		 1; //terminal block flag
-		unsigned portLONG Upadding:		 2; //usable padding
+		unsigned portLONG FDBI_U:		 1;	//First Data Block Index used
+		//extended short
 		unsigned portLONG FDBI:			15;	//First Data Block Index
 		unsigned portLONG UUpadding:  	 1;	//unusable padding
 	};
-
-	unsigned portSHORT 	usHalfWords	[	HEADER_HALFWORD_SIZE];
-	unsigned portLONG 	ulWords		[		HEADER_WORD_SIZE];
 } *Header;
+
+#define HB_HEADER_SIZE 		sizeof(*Header)
+#define HB_SML_HEADER_SIZE 	HB_HEADER_SIZE - 2
+#define DB_HEADER_SIZE 		HB_HEADER_SIZE - 4
+
+typedef struct
+{
+	unsigned portLONG	DataSize;
+} Data_Info;
+
+typedef enum
+{
+	STATE_USED_DELETED	= 0,
+	STATE_USED_DATA		= 1,
+	STATE_USED_HEAD		= 2,
+	STATE_FREE			= 3
+} MEM_SEG_STATE;
+
+//set given address its state in state table
+void vAssignState(GSACore *pGSACore,
+				unsigned portLONG ulAddr,
+				MEM_SEG_STATE enState);
+
+typedef enum
+{
+	CHECKSUM_HEADER,
+	CHECKSUM_DATA
+} CHECKSUM_TYPE;
+
+//verify checksum for given data is valid
+portBASE_TYPE xVerifyBlock(unsigned portLONG	ulAddr,
+							MEM_SEG_SIZE enMemSegSize,
+							CHECKSUM_TYPE enType);
+
+//assign checksum for given data
+void vAssignChecksum(unsigned portLONG	ulAddr,
+					MEM_SEG_SIZE enMemSegSize,
+					CHECKSUM_TYPE enType);
+
+//initialise GSACore
+void vInitialiseCore(GSACore *pGSACore)
+{
+	//initialise data table
+	pGSACore->DataTableIndex = 0;
+
+	//initialise state table
+	memset(pGSACore->StateTable, 0, pGSACore->StateTableSize);
+}
+
+//map out memory segments and assign state
+void vSurveyMemory(GSACore *pGSACore,
+					unsigned portLONG ulStartAddr,
+					unsigned portLONG ulEndAddr)
+{
+	MEM_SEG_STATE enTmpState;
+
+	for (;ulStartAddr < ulEndAddr;
+		vAssignState(pGSACore, ulStartAddr, enTmpState), ulStartAddr += pGSACore->MemSegSize)
+	{
+		if (xVerifyBlock(ulStartAddr, pGSACore->MemSegSize, CHECKSUM_HEADER))
+		{
+			enTmpState = STATE_USED_DATA;
+
+			if ((HEADER *)(ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
+
+			continue;
+		}
+
+		enTmpState = STATE_FREE;
+
+		if (pGSACore->xIsMemSegFree != NULL)
+		{
+			if(!pGSACore->xIsMemSegFree(ulStartAddr)) enTmpState = STATE_USED_DELETED;
+		}
+	}
+}
+
+void vAssignState(GSACore *pGSACore,
+				unsigned portLONG ulAddr,
+				MEM_SEG_STATE enState)
+{
+	unsigned portCHAR ucClearMask;
+	unsigned portCHAR ucShiftFactor;
+
+	//convert address to base address space
+	ulAddr -= pGSACore->StartAddr;
+
+	//calculate position shift factor
+	ucShiftFactor = (ulAddr % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+
+	ucClearMask = ~(STATE_FREE << ucShiftFactor);
+
+	ucClearMask &= pGSACore->StateTable[ulAddr / NUM_STATES_PER_BYTE];
+
+	pGSACore->StateTable[ulAddr / NUM_STATES_PER_BYTE] = ucClearMask | (enState << ucShiftFactor);
+}
+
+portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
+							MEM_SEG_SIZE enMemSegSize,
+							CHECKSUM_TYPE enType)
+{
+	unsigned portLONG ulDataSum;
+
+	ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
+
+	ulDataSum = ulAddToSum(ulDataSum, &ulAddr[enMemSegSize - sizeof(Data_Info)], sizeof(Data_Info) / sizeof(unsigned portSHORT));
+
+	return xVerifyChecksum(ulDataSum);
+}
+
+void vAssignChecksum(unsigned portLONG ulAddr,
+					MEM_SEG_SIZE enMemSegSize,
+					CHECKSUM_TYPE enType)
+{
+	unsigned portLONG ulDataSum;
+
+	(HEADER *)(ulStartAddr)->Checksum) = 0;
+
+	ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
+
+	ulDataSum = ulAddToSum(ulDataSum, &ulAddr[enMemSegSize - sizeof(Data_Info)], sizeof(Data_Info) / sizeof(unsigned portSHORT));
+
+	(HEADER *)(ulStartAddr)->Checksum) = usGenerateChecksum(ulDataSum);
+}
+
+
+
+
 
 

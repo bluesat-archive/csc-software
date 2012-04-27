@@ -47,7 +47,7 @@ MOO_SQUID
 MOO_SQUID
    
    # read in i files
-   my @iFiles = get_i_files($iDir); 
+   my @iFiles = get_i_files($iDir);   
    my ($keepList, $removeList) = get_exc_keep_lists(\@iFiles, \@ignoreList );
    # delete unnecessare i files
    clean_up_unused_files(@$removeList);
@@ -95,6 +95,7 @@ sub extract_h_files
          push (@result, $1);
       }
    }
+
    return @result;
 }
 
@@ -122,6 +123,7 @@ sub get_exc_keep_lists
    my $excList = join ('|',@$delFilesRef);
    my @keepList = ();
    my @delList =();
+print "$excList\n";
    for my $temp (@$iFilesListRef)
    {
       my $file;
@@ -132,13 +134,16 @@ sub get_exc_keep_lists
       else{
          next;
       }
+print "a=$file\n";
       if ($excList =~ /$file/i)
       {
+print "b=$file\n";
          push (@delList,$temp);
          next;
       }
       push (@keepList, $temp);
    }
+#print "@delList";
    return (\@keepList, \@delList);
 }
 

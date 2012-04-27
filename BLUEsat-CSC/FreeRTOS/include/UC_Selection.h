@@ -16,4 +16,6 @@
 
 #include "lpc24xx.h"
 
+#define LPC2468
+
 #endif /* UC_SELECTION_H_ */

@@ -47,7 +47,7 @@ void vFRAM_Init(unsigned portBASE_TYPE uxPriority)
 	vActivateQueue(FRAM_TaskToken, FRAM_Q_SIZE);
 
 #ifndef NO_DEBUG
-	FRAMCore.DebugTracePtr = DebugTraceFn;
+	FRAMCore.DebugTrace = DebugTraceFn;
 #endif /* NO_DEBUG */
 }
 
