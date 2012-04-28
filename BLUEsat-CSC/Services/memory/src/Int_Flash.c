@@ -25,7 +25,7 @@
 #define NORMAL_DATA_TABLE_SIZE		100
 #define START_SECTOR				22
 #define END_SECTOR					MAX_NUM_SECTS
-#define	MEMORY_SEGMENT_SIZE			512
+#define	MEMORY_SEGMENT_SIZE			BYTE_512
 
 //task token for accessing services
 static TaskToken Flash_TaskToken;
@@ -69,27 +69,32 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 
 	if (IntFlashCore.DataTable == NULL)
 	{
-		usExtraMemory += (IntFlashCore.StateTableSize / sizeof(unsigned portLONG))
-								+ (IntFlashCore.StateTableSize % sizeof(unsigned portLONG) > 0);
+		usExtraMemory += (DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE) / sizeof(unsigned portLONG))
+								+ (DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE) % sizeof(unsigned portLONG) > 0);
+								
 		pvTaskFn = vDataTableMemory;
 	}
 
 	if (IntFlashCore.StateTable == NULL)
 	{
-		usExtraMemory += DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE);
+		usExtraMemory += (IntFlashCore.StateTableSize / sizeof(unsigned portLONG))
+								+ (IntFlashCore.StateTableSize % sizeof(unsigned portLONG) > 0);
+
 		pvTaskFn = vStateTableMemory;
 	}
 
+	IntFlashCore.xIsMemSegFree = NULL;
+	
 #ifndef NO_DEBUG
 	IntFlashCore.DebugTrace = DebugTraceFn;
 #endif /* NO_DEBUG */
 
 	Flash_TaskToken = ActivateTask(TASK_MEM_INT_FLASH,
-								"IntFlash",
-								SEV_TASK_TYPE,
-								uxPriority,
-								SERV_STACK_SIZE + usExtraMemory,
-								pvTaskFn);
+									"IntFlash",
+									SEV_TASK_TYPE,
+									uxPriority,
+									SERV_STACK_SIZE + usExtraMemory,
+									pvTaskFn);
 
 	vActivateQueue(Flash_TaskToken, FLASH_Q_SIZE);
 }
@@ -110,6 +115,7 @@ static portTASK_FUNCTION(vDataTableMemory, pvParameters)
 	unsigned portCHAR ucMemory[DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE)];
 
 	IntFlashCore.DataTableSize = DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE);
+	
 	IntFlashCore.DataTable = (void *)ucMemory;
 
 	vFlashTask(NULL);
@@ -122,10 +128,10 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 	MessagePacket incoming_packet;
 	MemoryContent *pContentHandle;
 
-        vDebugPrint(Flash_TaskToken, "Initialisation!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+    vDebugPrint(Flash_TaskToken, "Initialisation!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 	vInitialiseCore(&IntFlashCore);
 
-        vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+    vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 	vSurveyMemory(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
 
 	vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
