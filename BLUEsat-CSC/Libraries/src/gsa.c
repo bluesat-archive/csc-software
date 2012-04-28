@@ -114,7 +114,7 @@ void vSurveyMemory(GSACore *pGSACore,
 
 		if (pGSACore->xIsMemSegFree != NULL)
 		{
-			if(!pGSACore->xIsMemSegFree(ulStartAddr)) enTmpState = STATE_USED_DELETED;
+			if(!(pGSACore->xIsMemSegFree(ulStartAddr))) enTmpState = STATE_USED_DELETED;
 		}
 	}
 }
@@ -125,18 +125,19 @@ void vAssignState(GSACore *pGSACore,
 {
 	unsigned portCHAR ucClearMask;
 	unsigned portCHAR ucShiftFactor;
+	unsigned portSHORT usIndex;
 
 	//convert address to base address space
-	ulAddr -= pGSACore->StartAddr;
+	usIndex = ((ulAddr - pGSACore->StartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE;
 
 	//calculate position shift factor
 	ucShiftFactor = (ulAddr % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
 
 	ucClearMask = ~(STATE_FREE << ucShiftFactor);
 
-	ucClearMask &= pGSACore->StateTable[ulAddr / NUM_STATES_PER_BYTE];
+	ucClearMask &= pGSACore->StateTable[usIndex];
 
-	pGSACore->StateTable[ulAddr / NUM_STATES_PER_BYTE] = ucClearMask | (enState << ucShiftFactor);
+	pGSACore->StateTable[usIndex] = ucClearMask | (enState << ucShiftFactor);
 }
 
 #define DEFAULT_VALID_CHECKSUM	0x0000ffff
