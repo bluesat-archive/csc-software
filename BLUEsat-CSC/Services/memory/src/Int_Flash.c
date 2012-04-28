@@ -122,8 +122,10 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 	MessagePacket incoming_packet;
 	MemoryContent *pContentHandle;
 
+        vDebugPrint(Flash_TaskToken, "Initialisation!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 	vInitialiseCore(&IntFlashCore);
 
+        vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 	vSurveyMemory(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
 
 	vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
