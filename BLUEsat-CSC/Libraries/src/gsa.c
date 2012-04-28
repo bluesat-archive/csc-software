@@ -16,7 +16,7 @@
 #include "lib_string.h"
 #include "1sCompChecksum.h"
 
-typedef union
+typedef union Seg_Headers
 {
 	struct
 	{
@@ -43,7 +43,7 @@ typedef union
 	};
 } *Header;
 
-#define HB_HEADER_SIZE 		sizeof(*Header)
+#define HB_HEADER_SIZE 		sizeof(union Seg_Headers)
 #define HB_SML_HEADER_SIZE 	HB_HEADER_SIZE - 2
 #define DB_HEADER_SIZE 		HB_HEADER_SIZE - 4
 
@@ -105,7 +105,7 @@ void vSurveyMemory(GSACore *pGSACore,
 		{
 			enTmpState = STATE_USED_DATA;
 
-			if ((HEADER *)(ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
+			if (((Header)ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
 
 			continue;
 		}
@@ -139,15 +139,19 @@ void vAssignState(GSACore *pGSACore,
 	pGSACore->StateTable[ulAddr / NUM_STATES_PER_BYTE] = ucClearMask | (enState << ucShiftFactor);
 }
 
+#define DEFAULT_VALID_CHECKSUM	0x0000ffff
 portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
 							MEM_SEG_SIZE enMemSegSize,
 							CHECKSUM_TYPE enType)
 {
-	unsigned portLONG ulDataSum;
+	unsigned portLONG ulDataSum = DEFAULT_VALID_CHECKSUM;
 
-	ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
+	if (enType == CHECKSUM_HEADER)
+	{
+		ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
 
-	ulDataSum = ulAddToSum(ulDataSum, &ulAddr[enMemSegSize - sizeof(Data_Info)], sizeof(Data_Info) / sizeof(unsigned portSHORT));
+		ulDataSum = ulAddToSum(ulDataSum, ulAddr + enMemSegSize - sizeof(Data_Info), sizeof(Data_Info) / sizeof(unsigned portSHORT));
+	}
 
 	return xVerifyChecksum(ulDataSum);
 }
@@ -158,13 +162,16 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 {
 	unsigned portLONG ulDataSum;
 
-	(HEADER *)(ulStartAddr)->Checksum) = 0;
+        if (enType == CHECKSUM_HEADER)
+        {
+		((Header)ulAddr)->Checksum = 0;
 
-	ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
+		ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
 
-	ulDataSum = ulAddToSum(ulDataSum, &ulAddr[enMemSegSize - sizeof(Data_Info)], sizeof(Data_Info) / sizeof(unsigned portSHORT));
+		ulDataSum = ulAddToSum(ulDataSum, ulAddr + enMemSegSize - sizeof(Data_Info), sizeof(Data_Info) / sizeof(unsigned portSHORT));
 
-	(HEADER *)(ulStartAddr)->Checksum) = usGenerateChecksum(ulDataSum);
+		((Header)ulAddr)->Checksum = usGenerateChecksum(ulDataSum);
+	}
 }
 
 
