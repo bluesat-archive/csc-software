@@ -34,7 +34,7 @@ unsigned portSHORT usGenerateChecksum(unsigned portLONG ulDataSum)
 {
 	ulDataSum = (ulDataSum & 0xffff) + (ulDataSum >> 16);
 
-	return ((unsigned portSHORT) ulDataSum);
+	return ((unsigned portSHORT) ~ulDataSum);
 }
 
 
@@ -42,5 +42,5 @@ portBASE_TYPE xVerifyChecksum(unsigned portLONG ulDataSum)
 {
 	ulDataSum = (ulDataSum & 0xffff) + (ulDataSum >> 16);
 
-	return (ulDataSum == 0);
+	return (((unsigned portSHORT)~ulDataSum) == 0);
 }
