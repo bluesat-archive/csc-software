@@ -36,13 +36,13 @@ files:   A list of space seperated files to ignore from the
       <name>Demo Application1</name>
       <desc>Demo application to demonstrate an featured application setup</desc>
       <disable>YES</disable>
-      <files>Demo_Application1.c</files>
+      <files>Demo_Application_1.c</files>
    </Demo_Application1>
    <Demo_Application2>
       <name>Demo Application2</name>
       <desc>Demo application to demonstrate a pure application setup</desc>
       <disable>YES</disable>
-      <files>Demo_Application2.c</files>
+      <files>Demo_Application_2.c</files>
    </Demo_Application2>
    <MemoryDemo_Application>
       <name>Memory Demo</name>
@@ -50,4 +50,5 @@ files:   A list of space seperated files to ignore from the
       <disable>NO</disable>
       <files>memoryDemo.c</files>
    </MemoryDemo_Application>
+   
 </applist>
