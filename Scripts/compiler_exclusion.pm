@@ -123,21 +123,18 @@ sub get_exc_keep_lists
    my $excList = join ('|',@$delFilesRef);
    my @keepList = ();
    my @delList =();
-print "$excList\n";
    for my $temp (@$iFilesListRef)
    {
       my $file;
-      if ($temp =~/(\w\.i)/)
+      if ($temp =~/(\w+\.i)/)
       {
          $file = $1;
       }
       else{
          next;
       }
-print "a=$file\n";
       if ($excList =~ /$file/i)
       {
-print "b=$file\n";
          push (@delList,$temp);
          next;
       }
