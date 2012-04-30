@@ -92,5 +92,9 @@ void vSurveyMemory(GSACore *pGSACore,
 					unsigned portLONG ulStartAddr,
 					unsigned portLONG ulEndAddr);
 
+//find next free state memory segment in given range
+unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
+									unsigned portLONG ulStartAddr,
+									unsigned portLONG ulEndAddr);
 
 #endif	/* GSA_H_ */

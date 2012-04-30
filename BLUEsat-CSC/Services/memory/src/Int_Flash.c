@@ -34,14 +34,17 @@ static GSACore IntFlashCore;
 
 //GSACore state table memory maker task function
 //this function is used when malloc fail to create memory
-static portTASK_FUNCTION(vStateTableMemory, pvParameters);
+static portTASK_FUNCTION(vCreateStateTableMemory, pvParameters);
 
 //GSACore data table memory maker task function
 //this function is used when malloc fail to create memory
-static portTASK_FUNCTION(vDataTableMemory, pvParameters);
+static portTASK_FUNCTION(vCreateDataTableMemory, pvParameters);
 
 //prototype for task function
 static portTASK_FUNCTION(vFlashTask, pvParameters);
+
+//check memory segment is free
+static portBASE_TYPE xIsMemSegFreeFn(unsigned portLONG ulMemSegAddr);
 
 #ifndef NO_DEBUG
 static void DebugTraceFn (portCHAR *pcFormat,
@@ -72,7 +75,7 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 		usExtraMemory += (DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE) / sizeof(unsigned portLONG))
 								+ (DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE) % sizeof(unsigned portLONG) > 0);
 								
-		pvTaskFn = vDataTableMemory;
+		pvTaskFn = vCreateDataTableMemory;
 	}
 
 	if (IntFlashCore.StateTable == NULL)
@@ -80,10 +83,10 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 		usExtraMemory += (IntFlashCore.StateTableSize / sizeof(unsigned portLONG))
 								+ (IntFlashCore.StateTableSize % sizeof(unsigned portLONG) > 0);
 
-		pvTaskFn = vStateTableMemory;
+		pvTaskFn = vCreateStateTableMemory;
 	}
 
-	IntFlashCore.xIsMemSegFree = NULL;
+	IntFlashCore.xIsMemSegFree = xIsMemSegFreeFn;
 	
 #ifndef NO_DEBUG
 	IntFlashCore.DebugTrace = DebugTraceFn;
@@ -99,17 +102,17 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 	vActivateQueue(Flash_TaskToken, FLASH_Q_SIZE);
 }
 
-static portTASK_FUNCTION(vStateTableMemory, pvParameters)
+static portTASK_FUNCTION(vCreateStateTableMemory, pvParameters)
 {
 	(void) pvParameters;
 	unsigned portCHAR ucMemory[STATE_TABLE_SIZE(FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], MEMORY_SEGMENT_SIZE)];
 
 	IntFlashCore.StateTable = ucMemory;
 
-	if (IntFlashCore.DataTable == NULL) vDataTableMemory(NULL); else vFlashTask(NULL);
+	if (IntFlashCore.DataTable == NULL) vCreateDataTableMemory(NULL); else vFlashTask(NULL);
 }
 
-static portTASK_FUNCTION(vDataTableMemory, pvParameters)
+static portTASK_FUNCTION(vCreateDataTableMemory, pvParameters)
 {
 	(void) pvParameters;
 	unsigned portCHAR ucMemory[DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE)];
@@ -148,6 +151,22 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 																	incoming_packet.Src,
 																	pContentHandle));
 	}
+}
+
+static portBASE_TYPE xIsMemSegFreeFn(unsigned portLONG ulMemSegAddr)
+{
+	unsigned portSHORT usIndex;
+	unsigned portLONG *pulTmpPtr = (unsigned portLONG *)ulMemSegAddr;
+
+	//fresh erase all bits = 1
+	for (usIndex = 0;
+		usIndex < IntFlashCore.MemSegSize / sizeof(unsigned portLONG);
+		++usIndex, ++pulTmpPtr)
+	{
+		if (pulTmpPtr[usIndex] != 0xffffffff) return pdFALSE;
+	}
+
+	return pdTRUE;
 }
 
 #ifndef NO_DEBUG
