@@ -31,7 +31,7 @@ typedef enum
 
 typedef unsigned portSHORT 	(*WriteToMemSegPtr)	(unsigned portLONG ulMemSegAddr, portCHAR *pData, unsigned portSHORT usSize);
 typedef unsigned portSHORT 	(*ReadFromMemSegPtr)(unsigned portLONG ulMemSegAddr, portCHAR *pBuffer, unsigned portSHORT usSize);
-typedef void *				(*GetNextMemSegPtr)	(MEM_SEG_SIZE enMemSegSize);
+typedef unsigned portLONG	(*GetNextMemSegPtr)	(void);
 typedef void 				(*DeleteMemSegPtr)	(unsigned portLONG ulMemSegAddr);
 typedef portBASE_TYPE		(*xIsMemSegFreePtr)	(unsigned portLONG ulMemSegAddr);
 
@@ -56,7 +56,6 @@ typedef struct
 	/* management resource */
 	unsigned portSHORT		StateTableSize;
 	unsigned portCHAR *		StateTable;
-
 	unsigned portSHORT		DataTableSize;
 	void *					DataTable;
 	/* function pointers */
@@ -70,7 +69,7 @@ typedef struct
 	DeleteMemSegPtr			DeleteMemSeg;
 	xIsMemSegFreePtr		xIsMemSegFree;
 
-	/******* DO NOT MODIFY ******/
+	/******* DO NOT MODIFY GSA USE ONLY ******/
 	unsigned portSHORT		DataTableIndex;
 } GSACore;
 
@@ -78,11 +77,11 @@ typedef struct
 #define STATE_SIZE_BIT			2
 #define NUM_STATES_PER_BYTE		(NUM_BITS_PER_BYTE / STATE_SIZE_BIT)
 //calculate state table size in bytes
-#define STATE_TABLE_SIZE(StartAddr, EndAddr, MemSegSize)	((((EndAddr - StartAddr) / MemSegSize) / NUM_STATES_PER_BYTE) + sizeof(unsigned portLONG)) //extra for padding
+#define STATE_TABLE_SIZE(StartAddr, EndAddr, MemSegSize) ((((EndAddr - StartAddr) / MemSegSize) / NUM_STATES_PER_BYTE) + sizeof(unsigned portLONG)) //extra for padding
 
 #define DATA_TABLE_ENTRY_SIZE	8
 //calculate data table size in bytes
-#define DATA_TABLE_SIZE(NumEntry)	(NumEntry * DATA_TABLE_ENTRY_SIZE)
+#define DATA_TABLE_SIZE(NumEntry) (NumEntry * DATA_TABLE_ENTRY_SIZE)
 
 //initialise GSACore
 void vInitialiseCore(GSACore *pGSACore);
@@ -96,5 +95,13 @@ void vSurveyMemory(GSACore *pGSACore,
 unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 									unsigned portLONG ulStartAddr,
 									unsigned portLONG ulEndAddr);
+
+/************************************************* Operations ********************************************************/
+
+portBASE_TYPE xGSAWrite(GSACore *pGSACore,
+						unsigned portCHAR ucAID,
+						unsigned portCHAR ucDID,
+						unsigned portLONG ulSize,
+						portCHAR *pcData);
 
 #endif	/* GSA_H_ */

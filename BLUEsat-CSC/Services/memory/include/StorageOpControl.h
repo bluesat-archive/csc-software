@@ -26,10 +26,8 @@ typedef enum
 	MEM_SIZE,       	//get size of data currently stored
 	MEM_READ,    		//read stored data
 	//temp op code
-	MEM_FLASH_FORMAT, 	//format flash sectors
-	MEM_FLASH_STATUS, 	//print flash status
-	MEM_FRAM_FORMAT, 	//format FRAM sectors
-	MEM_FRAM_STATUS 	//print FRAM status
+	MEM_FORMAT, 		//format flash sectors
+	MEM_STATUS, 		//print flash status
 } MEM_OPERATIONS;
 
 #define OP_BIT_SIZE		3

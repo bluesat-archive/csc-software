@@ -17,6 +17,8 @@
 
 #include "FreeRTOS.h"
 
+#define DEFAULT_VALID_CHECKSUM	0x0000ffff
+
 //add data short to existing sum
 //return new sum
 unsigned portLONG ulAddToSum(unsigned portLONG ulDataSum,

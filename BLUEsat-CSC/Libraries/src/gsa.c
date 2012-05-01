@@ -119,28 +119,82 @@ void vSurveyMemory(GSACore *pGSACore,
 	}
 }
 
+unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
+									unsigned portLONG ulStartAddr,
+									unsigned portLONG ulEndAddr)
+{
+	unsigned portSHORT usStateTableIndex;
+	unsigned portCHAR  ucShiftFactor;
+	unsigned portSHORT usNumSegInRange;
+	unsigned portSHORT usIndex;
+
+	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE;
+	ucShiftFactor 		= (ulStartAddr % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+	usNumSegInRange 	= (ulEndAddr - ulStartAddr) / pGSACore->MemSegSize;
+
+	for (usIndex = 0; usIndex < usNumSegInRange; ++usIndex, ucShiftFactor += STATE_SIZE_BIT)
+	{
+		if (ucShiftFactor == NUM_STATES_PER_BYTE*STATE_SIZE_BIT)
+		{
+			ucShiftFactor = 0;
+			++usStateTableIndex;
+		}
+
+		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_FREE << ucShiftFactor)) == (STATE_FREE << ucShiftFactor))
+		{
+			return (usIndex*pGSACore->MemSegSize + ulStartAddr);
+		}
+	}
+
+	return (unsigned portLONG)NULL;
+}
+
+/************************************************* Operations ********************************************************/
+
+portBASE_TYPE xGSAWrite(GSACore *pGSACore,
+						unsigned portCHAR ucAID,
+						unsigned portCHAR ucDID,
+						unsigned portLONG ulSize,
+						portCHAR *pcData)
+{
+	unsigned portLONG ulAddr = pGSACore->GetNextMemSeg();
+
+	if (ulAddr == (unsigned portLONG)NULL) return pdFALSE;
+
+	(void)ucAID;
+	(void)ucDID;
+	(void)ulSize;
+	(void)pcData;
+
+	return pdTRUE;
+}
+
+/************************************************* Internal Functions *************************************************/
+
 void vAssignState(GSACore *pGSACore,
 				unsigned portLONG ulAddr,
 				MEM_SEG_STATE enState)
 {
 	unsigned portCHAR ucClearMask;
 	unsigned portCHAR ucShiftFactor;
-	unsigned portSHORT usIndex;
+	unsigned portSHORT usStateTableIndex;
 
 	//convert address to base address space
-	usIndex = ((ulAddr - pGSACore->StartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE;
+	usStateTableIndex = ((ulAddr - pGSACore->StartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE;
 
 	//calculate position shift factor
 	ucShiftFactor = (ulAddr % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
 
+	//create clear mask
 	ucClearMask = ~(STATE_FREE << ucShiftFactor);
 
-	ucClearMask &= pGSACore->StateTable[usIndex];
+	//clear state from state table
+	ucClearMask &= pGSACore->StateTable[usStateTableIndex];
 
-	pGSACore->StateTable[usIndex] = ucClearMask | (enState << ucShiftFactor);
+	//assign state to state table
+	pGSACore->StateTable[usStateTableIndex] = ucClearMask | (enState << ucShiftFactor);
 }
 
-#define DEFAULT_VALID_CHECKSUM	0x0000ffff
 portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
 							MEM_SEG_SIZE enMemSegSize,
 							CHECKSUM_TYPE enType)
@@ -174,8 +228,6 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 		((Header)ulAddr)->Checksum = usGenerateChecksum(ulDataSum);
 	}
 }
-
-
 
 
 

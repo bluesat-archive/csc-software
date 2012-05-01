@@ -43,6 +43,9 @@ static portTASK_FUNCTION(vCreateDataTableMemory, pvParameters);
 //prototype for task function
 static portTASK_FUNCTION(vFlashTask, pvParameters);
 
+//locate free memory segment
+unsigned portLONG GetNextMemSegFn(void);
+
 //check memory segment is free
 static portBASE_TYPE xIsMemSegFreeFn(unsigned portLONG ulMemSegAddr);
 
@@ -86,6 +89,7 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 		pvTaskFn = vCreateStateTableMemory;
 	}
 
+	IntFlashCore.GetNextMemSeg = GetNextMemSegFn;
 	IntFlashCore.xIsMemSegFree = xIsMemSegFreeFn;
 	
 #ifndef NO_DEBUG
@@ -153,17 +157,22 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 	}
 }
 
+unsigned portLONG GetNextMemSegFn(void)
+{
+	//TODO make this function evenly wear out memory
+	return ulFindNextFreeState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
+}
+
 static portBASE_TYPE xIsMemSegFreeFn(unsigned portLONG ulMemSegAddr)
 {
-	unsigned portSHORT usIndex;
-	unsigned portLONG *pulTmpPtr = (unsigned portLONG *)ulMemSegAddr;
+	unsigned portLONG *pulTmpPtr;
 
 	//fresh erase all bits = 1
-	for (usIndex = 0;
-		usIndex < IntFlashCore.MemSegSize / sizeof(unsigned portLONG);
-		++usIndex, ++pulTmpPtr)
+	for (pulTmpPtr = (unsigned portLONG *)ulMemSegAddr;
+		pulTmpPtr < (unsigned portLONG *)(ulMemSegAddr + IntFlashCore.MemSegSize);
+		++pulTmpPtr)
 	{
-		if (pulTmpPtr[usIndex] != 0xffffffff) return pdFALSE;
+		if (*pulTmpPtr != 0xffffffff) return pdFALSE;
 	}
 
 	return pdTRUE;

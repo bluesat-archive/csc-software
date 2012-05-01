@@ -22,7 +22,7 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 	switch (pMemoryContent->Operation)
 	{
 		case MEM_STORE	:	pGSACore->DebugTrace("AID: %d requested Store\n\r", ucAID, 0, 0);
-							break;
+							return xGSAWrite(pGSACore, ucAID, pMemoryContent->DID, pMemoryContent->Size, pMemoryContent->Ptr);
 
 		case MEM_APPEND	:	pGSACore->DebugTrace("AID: %d requested Append\n\r", ucAID, 0, 0);
 							break;
