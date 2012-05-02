@@ -29,7 +29,9 @@ typedef enum
 	BYTE_8192	= 8192	//268,435,456 bytes
 } MEM_SEG_SIZE;
 
-typedef unsigned portSHORT 	(*WriteToMemSegPtr)	(unsigned portLONG ulMemSegAddr, portCHAR *pData, unsigned portSHORT usSize);
+#define MIN_MEM_SEG_SIZE BYTE_64
+
+typedef portBASE_TYPE 		(*WriteToMemSegPtr)	(unsigned portLONG ulMemSegAddr);
 typedef unsigned portSHORT 	(*ReadFromMemSegPtr)(unsigned portLONG ulMemSegAddr, portCHAR *pBuffer, unsigned portSHORT usSize);
 typedef unsigned portLONG	(*GetNextMemSegPtr)	(void);
 typedef void 				(*DeleteMemSegPtr)	(unsigned portLONG ulMemSegAddr);
@@ -65,6 +67,7 @@ typedef struct
 	/******* Optional fields *******/
 	/* function pointers */
 	WriteToMemSegPtr		WriteToMemSeg;
+	unsigned portLONG *		MemSegBuffer;	//MUST have enough memory if WriteToMemSeg NOT NULL
 	ReadFromMemSegPtr		ReadFromMemSeg;
 	DeleteMemSegPtr			DeleteMemSeg;
 	xIsMemSegFreePtr		xIsMemSegFree;
@@ -95,6 +98,20 @@ void vSurveyMemory(GSACore *pGSACore,
 unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 									unsigned portLONG ulStartAddr,
 									unsigned portLONG ulEndAddr);
+
+typedef enum
+{
+	STATE_USED_DELETED	= 0,
+	STATE_USED_DATA		= 1,
+	STATE_USED_HEAD		= 2,
+	STATE_FREE			= 3
+} MEM_SEG_STATE;
+
+//count number of specified state in given range
+unsigned portSHORT usCountState(GSACore *pGSACore,
+								unsigned portLONG ulStartAddr,
+								unsigned portLONG ulEndAddr,
+								MEM_SEG_STATE enState);
 
 /************************************************* Operations ********************************************************/
 

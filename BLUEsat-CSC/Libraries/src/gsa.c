@@ -16,7 +16,7 @@
 #include "lib_string.h"
 #include "1sCompChecksum.h"
 
-typedef union Seg_Headers
+typedef union
 {
 	struct
 	{
@@ -41,9 +41,9 @@ typedef union Seg_Headers
 		unsigned portLONG FDBI:			15;	//First Data Block Index
 		unsigned portLONG UUpadding:  	 1;	//unusable padding
 	};
-} *Header;
+} Header;
 
-#define HB_HEADER_SIZE 		sizeof(union Seg_Headers)
+#define HB_HEADER_SIZE 		sizeof(Header)
 #define HB_SML_HEADER_SIZE 	HB_HEADER_SIZE - 2
 #define DB_HEADER_SIZE 		HB_HEADER_SIZE - 4
 
@@ -51,14 +51,6 @@ typedef struct
 {
 	unsigned portLONG	DataSize;
 } Data_Info;
-
-typedef enum
-{
-	STATE_USED_DELETED	= 0,
-	STATE_USED_DATA		= 1,
-	STATE_USED_HEAD		= 2,
-	STATE_FREE			= 3
-} MEM_SEG_STATE;
 
 //set given address its state in state table
 void vAssignState(GSACore *pGSACore,
@@ -101,20 +93,19 @@ void vSurveyMemory(GSACore *pGSACore,
 	for (;ulStartAddr < ulEndAddr;
 		vAssignState(pGSACore, ulStartAddr, enTmpState), ulStartAddr += pGSACore->MemSegSize)
 	{
+		enTmpState = STATE_USED_DELETED;
+
+		if (pGSACore->xIsMemSegFree != NULL && pGSACore->xIsMemSegFree(ulStartAddr))
+		{
+			enTmpState = STATE_FREE;
+			continue;
+		}
+
 		if (xVerifyBlock(ulStartAddr, pGSACore->MemSegSize, CHECKSUM_HEADER))
 		{
 			enTmpState = STATE_USED_DATA;
 
-			if (((Header)ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
-
-			continue;
-		}
-
-		enTmpState = STATE_FREE;
-
-		if (pGSACore->xIsMemSegFree != NULL)
-		{
-			if(!(pGSACore->xIsMemSegFree(ulStartAddr))) enTmpState = STATE_USED_DELETED;
+			if (((Header *)ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
 		}
 	}
 }
@@ -128,8 +119,10 @@ unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 	unsigned portSHORT usNumSegInRange;
 	unsigned portSHORT usIndex;
 
-	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE;
-	ucShiftFactor 		= (ulStartAddr % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
+	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
+
 	usNumSegInRange 	= (ulEndAddr - ulStartAddr) / pGSACore->MemSegSize;
 
 	for (usIndex = 0; usIndex < usNumSegInRange; ++usIndex, ucShiftFactor += STATE_SIZE_BIT)
@@ -149,6 +142,39 @@ unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 	return (unsigned portLONG)NULL;
 }
 
+unsigned portSHORT usCountState(GSACore *pGSACore,
+								unsigned portLONG ulStartAddr,
+								unsigned portLONG ulEndAddr,
+								MEM_SEG_STATE enState)
+{
+	unsigned portSHORT usStateTableIndex;
+	unsigned portCHAR  ucShiftFactor;
+	unsigned portSHORT usNumSegInRange;
+	unsigned portSHORT usIndex;
+	unsigned portSHORT usCount;
+
+	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
+	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
+	usNumSegInRange 	= (ulEndAddr - ulStartAddr) / pGSACore->MemSegSize;
+
+	for (usIndex = 0, usCount = 0; usIndex < usNumSegInRange; ++usIndex, ucShiftFactor += STATE_SIZE_BIT)
+	{
+		if (ucShiftFactor == NUM_STATES_PER_BYTE*STATE_SIZE_BIT)
+		{
+			ucShiftFactor = 0;
+			++usStateTableIndex;
+		}
+
+		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_FREE << ucShiftFactor)) == (enState << ucShiftFactor))
+		{
+			++usCount;
+		}
+	}
+
+	return usCount;
+}
+
 /************************************************* Operations ********************************************************/
 
 portBASE_TYPE xGSAWrite(GSACore *pGSACore,
@@ -157,14 +183,33 @@ portBASE_TYPE xGSAWrite(GSACore *pGSACore,
 						unsigned portLONG ulSize,
 						portCHAR *pcData)
 {
+	Header 		tmpHeader;
+	Data_Info	tmpDataInfo;
 	unsigned portLONG ulAddr = pGSACore->GetNextMemSeg();
+
+pGSACore->DebugTrace("NextAddr: %h\n\r", ulAddr, 0, 0);
 
 	if (ulAddr == (unsigned portLONG)NULL) return pdFALSE;
 
-	(void)ucAID;
-	(void)ucDID;
-	(void)ulSize;
-	(void)pcData;
+	tmpHeader.Terminal 		= pdTRUE;
+	tmpHeader.H 			= pdTRUE;
+	tmpHeader.AID 			= ucAID;
+	tmpHeader.DID 			= ucDID;
+	tmpDataInfo.DataSize 	= ulSize;
+
+	if (pGSACore->WriteToMemSeg != NULL)
+	{
+		strncpy((portCHAR *)pGSACore->MemSegBuffer, (portCHAR *)&tmpHeader, HB_SML_HEADER_SIZE);
+
+		//currently assuming ulsize is << MemSegSize
+		strncpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + HB_SML_HEADER_SIZE, pcData, ulSize);
+
+		strncpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + pGSACore->MemSegSize - sizeof(Data_Info), (portCHAR *)&tmpDataInfo, sizeof(Data_Info));
+
+		vAssignChecksum((unsigned portLONG)pGSACore->MemSegBuffer, pGSACore->MemSegSize, CHECKSUM_HEADER);
+
+		return pGSACore->WriteToMemSeg(ulAddr);
+	}
 
 	return pdTRUE;
 }
@@ -179,11 +224,12 @@ void vAssignState(GSACore *pGSACore,
 	unsigned portCHAR ucShiftFactor;
 	unsigned portSHORT usStateTableIndex;
 
-	//convert address to base address space
-	usStateTableIndex = ((ulAddr - pGSACore->StartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE;
+	usStateTableIndex 	= ((ulAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
 
 	//calculate position shift factor
-	ucShiftFactor = (ulAddr % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+
+	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
 
 	//create clear mask
 	ucClearMask = ~(STATE_FREE << ucShiftFactor);
@@ -217,15 +263,15 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 {
 	unsigned portLONG ulDataSum;
 
-        if (enType == CHECKSUM_HEADER)
-        {
-		((Header)ulAddr)->Checksum = 0;
+	if (enType == CHECKSUM_HEADER)
+	{
+		((Header *)ulAddr)->Checksum = 0;
 
 		ulDataSum = ulAddToSum(0, ulAddr, HB_HEADER_SIZE / sizeof(unsigned portSHORT));
 
 		ulDataSum = ulAddToSum(ulDataSum, ulAddr + enMemSegSize - sizeof(Data_Info), sizeof(Data_Info) / sizeof(unsigned portSHORT));
 
-		((Header)ulAddr)->Checksum = usGenerateChecksum(ulDataSum);
+		((Header *)ulAddr)->Checksum = usGenerateChecksum(ulDataSum);
 	}
 }
 

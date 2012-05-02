@@ -33,6 +33,7 @@ unsigned portLONG ulAddToSum(unsigned portLONG ulDataSum,
 unsigned portSHORT usGenerateChecksum(unsigned portLONG ulDataSum)
 {
 	ulDataSum = (ulDataSum & 0xffff) + (ulDataSum >> 16);
+	ulDataSum = (ulDataSum & 0xffff) + (ulDataSum >> 16);
 
 	return ((unsigned portSHORT) ~ulDataSum);
 }
@@ -40,6 +41,7 @@ unsigned portSHORT usGenerateChecksum(unsigned portLONG ulDataSum)
 
 portBASE_TYPE xVerifyChecksum(unsigned portLONG ulDataSum)
 {
+	ulDataSum = (ulDataSum & 0xffff) + (ulDataSum >> 16);
 	ulDataSum = (ulDataSum & 0xffff) + (ulDataSum >> 16);
 
 	return (((unsigned portSHORT)~ulDataSum) == 0);
