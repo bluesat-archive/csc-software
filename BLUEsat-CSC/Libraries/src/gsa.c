@@ -229,6 +229,17 @@ pGSACore->DebugTrace("NextAddr: %h\n\r", ulAddr, 0, 0);
 	return pdTRUE;
 }
 
+unsigned portLONG ulGSASize(GSACore *pGSACore,
+							unsigned portCHAR ucAID,
+							unsigned portCHAR ucDID)
+{
+	Data_Table_Entry *pDataTableEntry;
+
+	pDataTableEntry = pFindDataTableEntry(pGSACore, ucAID, ucDID);
+
+	if (pDataTableEntry != NULL) return pDataTableEntry->Size; else return 0;
+}
+
 /************************************************* Internal Functions *************************************************/
 
 #define STATE_MASK_BIT	3	//11
