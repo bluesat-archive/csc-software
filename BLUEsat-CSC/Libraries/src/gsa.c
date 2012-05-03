@@ -95,6 +95,10 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 					MEM_SEG_SIZE enMemSegSize,
 					CHECKSUM_TYPE enType);
 
+//get memory segment state
+MEM_SEG_STATE enGetState(GSACore *pGSACore,
+						unsigned portLONG ulAddr);
+
 //find corresponding data table entry
 Data_Table_Entry *pFindDataTableEntry(GSACore *pGSACore,
 									unsigned portCHAR ucAID,
@@ -131,7 +135,7 @@ void vSurveyMemory(GSACore *pGSACore,
 	for (;ulStartAddr < ulEndAddr;
 		vAssignState(pGSACore, ulStartAddr, enTmpState), ulStartAddr += pGSACore->MemSegSize)
 	{
-		enTmpState = STATE_USED_DELETED;
+		enTmpState = STATE_DELETED;
 
 		if (pGSACore->xIsMemSegFree != NULL && pGSACore->xIsMemSegFree(ulStartAddr))
 		{
@@ -146,6 +150,29 @@ void vSurveyMemory(GSACore *pGSACore,
 			if (((Header *)ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
 		}
 	}
+}
+
+void vBuildDataTable(GSACore *pGSACore,
+					unsigned portLONG ulStartAddr,
+					unsigned portLONG ulEndAddr,
+					unsigned portCHAR ucIsolateBuild,
+					unsigned portCHAR ucAID)
+{
+	unsigned portLONG ulHeadBlockAddr;
+
+	for(ulHeadBlockAddr = ulStartAddr;
+		(ulHeadBlockAddr = ulUseStateTable(pGSACore, ulHeadBlockAddr, ulEndAddr, STATE_USED_HEAD, OP_FIND_NEXT))
+						!= (unsigned portLONG)NULL;
+		ulHeadBlockAddr += pGSACore->MemSegSize)
+	{
+		if (ucIsolateBuild == pdTRUE && ((Header *)ulHeadBlockAddr)->AID != ucAID) continue;
+
+		//TODO verify head block chain
+		//TODO add entry in data table
+	}
+
+	//TODO verify data block chain
+	//TODO finalise state table
 }
 
 unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
@@ -204,6 +231,8 @@ pGSACore->DebugTrace("NextAddr: %h\n\r", ulAddr, 0, 0);
 
 /************************************************* Internal Functions *************************************************/
 
+#define STATE_MASK_BIT	3	//11
+
 void vAssignState(GSACore *pGSACore,
 				unsigned portLONG ulAddr,
 				MEM_SEG_STATE enState)
@@ -221,13 +250,30 @@ void vAssignState(GSACore *pGSACore,
 	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
 
 	//create clear mask
-	ucClearMask = ~(STATE_FREE << ucShiftFactor);
+	ucClearMask = ~(STATE_MASK_BIT << ucShiftFactor);
 
 	//clear state from state table
 	ucClearMask &= pGSACore->StateTable[usStateTableIndex];
 
 	//assign state to state table
 	pGSACore->StateTable[usStateTableIndex] = ucClearMask | (enState << ucShiftFactor);
+}
+
+MEM_SEG_STATE enGetState(GSACore *pGSACore,
+						unsigned portLONG ulAddr)
+{
+	unsigned portCHAR ucShiftFactor;
+	unsigned portSHORT usStateTableIndex;
+
+	usStateTableIndex 	= ((ulAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
+
+	//calculate position shift factor
+	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+
+	//state table index
+	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
+
+	return ((pGSACore->StateTable[usStateTableIndex] >> ucShiftFactor) & 0xf);
 }
 
 unsigned portLONG ulUseStateTable(GSACore *pGSACore,
@@ -255,7 +301,7 @@ unsigned portLONG ulUseStateTable(GSACore *pGSACore,
 			++usStateTableIndex;
 		}
 
-		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_FREE << ucShiftFactor)) == (enState << ucShiftFactor))
+		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_MASK_BIT << ucShiftFactor)) == (enState << ucShiftFactor))
 		{
 			if (enOperation == OP_FIND_NEXT) return (usIndex*pGSACore->MemSegSize + ulStartAddr);
 

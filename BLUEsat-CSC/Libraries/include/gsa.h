@@ -95,6 +95,14 @@ void vSurveyMemory(GSACore *pGSACore,
 					unsigned portLONG ulStartAddr,
 					unsigned portLONG ulEndAddr);
 
+//build data table from memory range
+//accept application isolation build
+void vBuildDataTable(GSACore *pGSACore,
+					unsigned portLONG ulStartAddr,
+					unsigned portLONG ulEndAddr,
+					unsigned portCHAR ucIsolateBuild,
+					unsigned portCHAR ucAID);
+
 //find next free state memory segment in given range
 unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 									unsigned portLONG ulStartAddr,
@@ -102,7 +110,7 @@ unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 
 typedef enum
 {
-	STATE_USED_DELETED	= 0,
+	STATE_DELETED		= 0,
 	STATE_USED_DATA		= 1,
 	STATE_USED_HEAD		= 2,
 	STATE_FREE			= 3

@@ -172,11 +172,13 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
     vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 	vSurveyMemory(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
 
+	vBuildDataTable(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], pdTRUE, TASK_MEM_INT_FLASH);
+
 	vDebugPrint(Flash_TaskToken, "Free blocks: %d\n\rData blocks: %d\n\rDead blocks: %d\n\r",
 				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_FREE),
 				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_USED_DATA)
 					+ usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_USED_HEAD),
-				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_USED_DELETED));
+				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_DELETED));
 
 	vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
