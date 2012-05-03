@@ -59,6 +59,19 @@ void vAssignState(GSACore *pGSACore,
 
 typedef enum
 {
+	OP_COUNT,
+	OP_FIND_NEXT
+} STATE_TABLE_OP;
+
+//use state table to complete specified operation
+unsigned portLONG ulUseStateTable(GSACore *pGSACore,
+								unsigned portLONG ulStartAddr,
+								unsigned portLONG ulEndAddr,
+								MEM_SEG_STATE enState,
+								STATE_TABLE_OP enOperation);
+
+typedef enum
+{
 	CHECKSUM_HEADER,
 	CHECKSUM_DATA
 } CHECKSUM_TYPE;
@@ -114,32 +127,7 @@ unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 									unsigned portLONG ulStartAddr,
 									unsigned portLONG ulEndAddr)
 {
-	unsigned portSHORT usStateTableIndex;
-	unsigned portCHAR  ucShiftFactor;
-	unsigned portSHORT usNumSegInRange;
-	unsigned portSHORT usIndex;
-
-	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
-	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
-	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
-
-	usNumSegInRange 	= (ulEndAddr - ulStartAddr) / pGSACore->MemSegSize;
-
-	for (usIndex = 0; usIndex < usNumSegInRange; ++usIndex, ucShiftFactor += STATE_SIZE_BIT)
-	{
-		if (ucShiftFactor == NUM_STATES_PER_BYTE*STATE_SIZE_BIT)
-		{
-			ucShiftFactor = 0;
-			++usStateTableIndex;
-		}
-
-		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_FREE << ucShiftFactor)) == (STATE_FREE << ucShiftFactor))
-		{
-			return (usIndex*pGSACore->MemSegSize + ulStartAddr);
-		}
-	}
-
-	return (unsigned portLONG)NULL;
+	return ulUseStateTable(pGSACore, ulStartAddr, ulEndAddr, STATE_FREE, OP_FIND_NEXT);
 }
 
 unsigned portSHORT usCountState(GSACore *pGSACore,
@@ -147,32 +135,7 @@ unsigned portSHORT usCountState(GSACore *pGSACore,
 								unsigned portLONG ulEndAddr,
 								MEM_SEG_STATE enState)
 {
-	unsigned portSHORT usStateTableIndex;
-	unsigned portCHAR  ucShiftFactor;
-	unsigned portSHORT usNumSegInRange;
-	unsigned portSHORT usIndex;
-	unsigned portSHORT usCount;
-
-	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
-	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
-	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
-	usNumSegInRange 	= (ulEndAddr - ulStartAddr) / pGSACore->MemSegSize;
-
-	for (usIndex = 0, usCount = 0; usIndex < usNumSegInRange; ++usIndex, ucShiftFactor += STATE_SIZE_BIT)
-	{
-		if (ucShiftFactor == NUM_STATES_PER_BYTE*STATE_SIZE_BIT)
-		{
-			ucShiftFactor = 0;
-			++usStateTableIndex;
-		}
-
-		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_FREE << ucShiftFactor)) == (enState << ucShiftFactor))
-		{
-			++usCount;
-		}
-	}
-
-	return usCount;
+	return ulUseStateTable(pGSACore, ulStartAddr, ulEndAddr, enState, OP_COUNT);
 }
 
 /************************************************* Operations ********************************************************/
@@ -229,6 +192,7 @@ void vAssignState(GSACore *pGSACore,
 	//calculate position shift factor
 	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
 
+	//state table index
 	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
 
 	//create clear mask
@@ -239,6 +203,49 @@ void vAssignState(GSACore *pGSACore,
 
 	//assign state to state table
 	pGSACore->StateTable[usStateTableIndex] = ucClearMask | (enState << ucShiftFactor);
+}
+
+unsigned portLONG ulUseStateTable(GSACore *pGSACore,
+								unsigned portLONG ulStartAddr,
+								unsigned portLONG ulEndAddr,
+								MEM_SEG_STATE enState,
+								STATE_TABLE_OP enOperation)
+{
+	unsigned portSHORT usStateTableIndex;
+	unsigned portCHAR  ucShiftFactor;
+	unsigned portSHORT usNumSegInRange;
+	unsigned portSHORT usIndex;
+	unsigned portSHORT usCount;
+
+	usStateTableIndex 	= ((ulStartAddr - pGSACore->StartAddr) / pGSACore->MemSegSize);
+	ucShiftFactor 		= (usStateTableIndex % NUM_STATES_PER_BYTE)*STATE_SIZE_BIT;
+	usStateTableIndex 	/= NUM_STATES_PER_BYTE;
+	usNumSegInRange 	= (ulEndAddr - ulStartAddr) / pGSACore->MemSegSize;
+
+	for (usIndex = 0, usCount = 0; usIndex < usNumSegInRange; ++usIndex, ucShiftFactor += STATE_SIZE_BIT)
+	{
+		if (ucShiftFactor == NUM_STATES_PER_BYTE*STATE_SIZE_BIT)
+		{
+			ucShiftFactor = 0;
+			++usStateTableIndex;
+		}
+
+		if ((pGSACore->StateTable[usStateTableIndex] & (STATE_FREE << ucShiftFactor)) == (enState << ucShiftFactor))
+		{
+			if (enOperation == OP_FIND_NEXT) return (usIndex*pGSACore->MemSegSize + ulStartAddr);
+
+			++usCount;
+		}
+	}
+
+	if(enOperation == OP_COUNT)
+	{
+		return usCount;
+	}
+	else
+	{
+		return (unsigned portLONG)NULL;
+	}
 }
 
 portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
@@ -274,7 +281,5 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 		((Header *)ulAddr)->Checksum = usGenerateChecksum(ulDataSum);
 	}
 }
-
-
 
 

@@ -32,7 +32,7 @@ typedef enum
 #define MIN_MEM_SEG_SIZE BYTE_64
 
 typedef portBASE_TYPE 		(*WriteToMemSegPtr)	(unsigned portLONG ulMemSegAddr);
-typedef unsigned portSHORT 	(*ReadFromMemSegPtr)(unsigned portLONG ulMemSegAddr, portCHAR *pBuffer, unsigned portSHORT usSize);
+typedef unsigned portSHORT 	(*ReadFromMemSegPtr)(unsigned portLONG ulMemSegAddr);
 typedef unsigned portLONG	(*GetNextMemSegPtr)	(void);
 typedef void 				(*DeleteMemSegPtr)	(unsigned portLONG ulMemSegAddr);
 typedef portBASE_TYPE		(*xIsMemSegFreePtr)	(unsigned portLONG ulMemSegAddr);
@@ -65,9 +65,10 @@ typedef struct
 	DebugTracePtr			DebugTrace;
 
 	/******* Optional fields *******/
+	/* management resource */
+	unsigned portLONG *		MemSegBuffer;	//MUST have enough memory if WriteToMemSeg and/or ReadFromMemSeg NOT NULL
 	/* function pointers */
 	WriteToMemSegPtr		WriteToMemSeg;
-	unsigned portLONG *		MemSegBuffer;	//MUST have enough memory if WriteToMemSeg NOT NULL
 	ReadFromMemSegPtr		ReadFromMemSeg;
 	DeleteMemSegPtr			DeleteMemSeg;
 	xIsMemSegFreePtr		xIsMemSegFree;
