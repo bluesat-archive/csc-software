@@ -31,6 +31,7 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 							break;
 
 		case MEM_SIZE	:	pGSACore->DebugTrace("AID: %d requested Size\n\r", ucAID, 0, 0);
+							*(pMemoryContent->pulRetValue) = ulGSASize(pGSACore, ucAID, pMemoryContent->DID);
 							break;
 
 		case MEM_READ	:	pGSACore->DebugTrace("AID: %d requested Read\n\r", ucAID, 0, 0);
