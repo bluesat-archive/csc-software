@@ -52,6 +52,15 @@ typedef struct
 	unsigned portLONG	DataSize;
 } Data_Info;
 
+typedef struct
+{
+	unsigned portLONG AID:		6;
+	unsigned portLONG DID:		8;
+	unsigned portLONG LastHBI:	15;
+	unsigned portLONG Upadding:	3;	//usable padding
+	unsigned portLONG Size;
+} Data_Table_Entry;
+
 //set given address its state in state table
 void vAssignState(GSACore *pGSACore,
 				unsigned portLONG ulAddr,
@@ -77,14 +86,30 @@ typedef enum
 } CHECKSUM_TYPE;
 
 //verify checksum for given data is valid
-portBASE_TYPE xVerifyBlock(unsigned portLONG	ulAddr,
+portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
 							MEM_SEG_SIZE enMemSegSize,
 							CHECKSUM_TYPE enType);
 
-//assign checksum for given data
-void vAssignChecksum(unsigned portLONG	ulAddr,
+//assign checksum to memory segment
+void vAssignChecksum(unsigned portLONG ulAddr,
 					MEM_SEG_SIZE enMemSegSize,
 					CHECKSUM_TYPE enType);
+
+//find corresponding data table entry
+Data_Table_Entry *pFindDataTableEntry(GSACore *pGSACore,
+									unsigned portCHAR ucAID,
+									unsigned portCHAR ucDID);
+
+//add new data table entry
+portBASE_TYPE xAddDataTableEntry(GSACore *pGSACore,
+								unsigned portCHAR ucAID,
+								unsigned portCHAR ucDID,
+								unsigned portSHORT usLastHBI,
+								unsigned portLONG ulSize);
+
+//remove data table entry
+void vRemoveDataTableEntry(GSACore *pGSACore,
+							Data_Table_Entry *pDataTableEntry);
 
 //initialise GSACore
 void vInitialiseCore(GSACore *pGSACore)
@@ -282,4 +307,59 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 	}
 }
 
+Data_Table_Entry *pFindDataTableEntry(GSACore *pGSACore,
+									unsigned portCHAR ucAID,
+									unsigned portCHAR ucDID)
+{
+	Data_Table_Entry *pData_Table = (Data_Table_Entry *)pGSACore->DataTable;
+	unsigned portSHORT usIndex;
 
+	for (usIndex = 0; usIndex < pGSACore->DataTableIndex; usIndex++)
+	{
+		if (pData_Table[usIndex].AID == ucAID
+				&& pData_Table[usIndex].DID == ucDID) return &pData_Table[usIndex];
+	}
+
+	return NULL;
+}
+
+portBASE_TYPE xAddDataTableEntry(GSACore *pGSACore,
+								unsigned portCHAR ucAID,
+								unsigned portCHAR ucDID,
+								unsigned portSHORT usLastHBI,
+								unsigned portLONG ulSize)
+{
+	Data_Table_Entry *pDataTable;
+
+	if (pGSACore->DataTableIndex >= pGSACore->DataTableSize) return pdFAIL;
+
+	pDataTable = (Data_Table_Entry *)pGSACore->DataTable;
+
+	pDataTable[pGSACore->DataTableIndex].AID = ucAID;
+	pDataTable[pGSACore->DataTableIndex].DID = ucDID;
+	pDataTable[pGSACore->DataTableIndex].LastHBI = usLastHBI;
+	pDataTable[pGSACore->DataTableIndex].Size = ulSize;
+
+	++(pGSACore->DataTableIndex);
+
+	return pdPASS;
+}
+
+void vRemoveDataTableEntry(GSACore *pGSACore,
+							Data_Table_Entry *pDataTableEntry)
+{
+	Data_Table_Entry *pDataTable;
+
+	if (pDataTableEntry == NULL) return;
+
+	if (pGSACore->DataTableIndex == 0) return;
+
+	pDataTable = (Data_Table_Entry *)pGSACore->DataTable;
+
+	--(pGSACore->DataTableIndex);
+
+	pDataTableEntry->AID 		= pDataTable[pGSACore->DataTableIndex].AID;
+	pDataTableEntry->DID 		= pDataTable[pGSACore->DataTableIndex].DID;
+	pDataTableEntry->LastHBI 	= pDataTable[pGSACore->DataTableIndex].LastHBI;
+	pDataTableEntry->Size 		= pDataTable[pGSACore->DataTableIndex].Size;
+}
