@@ -61,6 +61,8 @@ typedef struct
 	unsigned portLONG Size;
 } Data_Table_Entry;
 
+#define MAX_BLOCKS	(1 << 16)
+
 /******************************************** Start Function Prototypes  *********************************************/
 
 //set given address its state in state table
@@ -93,9 +95,10 @@ typedef enum
 } ARCHITECTURE_OP;
 
 //complete specified operation on architecture
-portBASE_TYPE xUseArchitecture(unsigned portLONG ulAddr,
-								unsigned portSHORT usStopBlock,
-								ARCHITECTURE_OP enOperation);
+unsigned portLONG ulUseArchitecture(GSACore *pGSACore,
+									unsigned portLONG ulHBAddr,
+									unsigned portSHORT usStopHBlock,
+									ARCHITECTURE_OP enOperation);
 
 
 typedef enum
@@ -137,7 +140,10 @@ unsigned portSHORT usAddrToIndex(GSACore *pGSACore, unsigned portLONG ulAddr);
 unsigned portLONG ulIndexToAddr(GSACore *pGSACore, unsigned portSHORT usBlockIndex);
 
 //synchronise state table with data table
-void vFinaliseGSA(GSACore *pGSACore);
+void vFinaliseGSACore(GSACore *pGSACore);
+
+//check whether given address is in service range
+portBASE_TYPE xCheckAddrInRange(GSACore *pGSACore, unsigned portLONG ulAddr);
 
 /***************************************** Start Function Implementations *****************************************/
 
@@ -204,7 +210,10 @@ portBASE_TYPE xBuildDataTable(GSACore *pGSACore,
 
 		pDataTableEntry = pFindDataTableEntry(pGSACore, ((Header *)ulHeadBlockAddr)->AID, ((Header *)ulHeadBlockAddr)->DID);
 
-		if (xUseArchitecture(ulHeadBlockAddr,
+
+pGSACore->DebugTrace("Test: %d %d %h\n\r", ((Header *)ulHeadBlockAddr)->AID, ((Header *)ulHeadBlockAddr)->DID, ulHeadBlockAddr);
+		if (ulUseArchitecture(pGSACore,
+							ulHeadBlockAddr,
 							(pDataTableEntry == NULL) ? usBlockIndex : pDataTableEntry->LastHBI,
 							TREE_VERIFY) == pdFAIL)
 		{
@@ -212,7 +221,7 @@ portBASE_TYPE xBuildDataTable(GSACore *pGSACore,
 
 			continue;
 		}
-
+pGSACore->DebugTrace("Build: %d %d %h\n\r", ((Header *)ulHeadBlockAddr)->AID, ((Header *)ulHeadBlockAddr)->DID, ulHeadBlockAddr);
 		if (pDataTableEntry == NULL)
 		{
 			xAddDataTableEntry(pGSACore,
@@ -227,7 +236,7 @@ portBASE_TYPE xBuildDataTable(GSACore *pGSACore,
 		}
 	}
 
-	vFinaliseGSA(pGSACore);
+	vFinaliseGSACore(pGSACore);
 
 	return pdTRUE;
 }
@@ -277,6 +286,7 @@ pGSACore->DebugTrace("NextAddr: %h\n\r", ulAddr, 0, 0);
 	tmpHeader.H 			= pdTRUE;
 	tmpHeader.AID 			= ucAID;
 	tmpHeader.DID 			= ucDID;
+	tmpHeader.FDBI_U 		= pdFALSE;
 	tmpDataInfo.DataSize 	= ulSize;
 
 	if (pGSACore->WriteToMemSeg != NULL)
@@ -396,15 +406,86 @@ unsigned portLONG ulUseStateTable(GSACore *pGSACore,
 	}
 }
 
-portBASE_TYPE xUseArchitecture(unsigned portLONG ulAddr,
-								unsigned portSHORT usStopBlock,
-								ARCHITECTURE_OP enOperation)
+unsigned portLONG ulUseArchitecture(GSACore *pGSACore,
+									unsigned portLONG ulHBAddr,
+									unsigned portSHORT usStopHBlock,
+									ARCHITECTURE_OP enOperation)
 {
-	(void)ulAddr;
-	(void)usStopBlock;
-	(void)enOperation;
+//	typedef enum
+//	{
+//		TREE_DELETE,
+//		TREE_VERIFY,
+//		TREE_SET_ACTIVE
+//	} ARCHITECTURE_OP;
+	unsigned portLONG ulBlockCount = 0;
+	unsigned portSHORT usHBlockIndex;
+	unsigned portSHORT usDBlockIndex;
+	unsigned portLONG ulDBAddr;
+	unsigned portLONG ulSize = 0;
+	unsigned portCHAR ucAID, ucDID;
 
-	return pdTRUE;
+	usHBlockIndex = usAddrToIndex(pGSACore, ulHBAddr);
+	ucAID = ((Header *)ulHBAddr)->AID;
+	ucDID = ((Header *)ulHBAddr)->DID;
+
+	do
+	{
+		if (((Header *)ulHBAddr)->FDBI_U)
+		{
+			for(ulDBAddr = ulIndexToAddr(pGSACore, ((Header *)ulHBAddr)->FDBI);
+				++ulBlockCount < MAX_BLOCKS;
+				ulDBAddr = ulIndexToAddr(pGSACore, usDBlockIndex))
+			{
+				if (!xCheckAddrInRange(pGSACore, ulDBAddr)) return pdFALSE;
+
+				if (enOperation == TREE_VERIFY)
+				{
+					if (enGetState(pGSACore, ulDBAddr) == STATE_FREE) return pdFALSE;
+					if (!xVerifyBlock(ulDBAddr, pGSACore->MemSegSize, CHECKSUM_HEADER)) return pdFALSE;
+				}
+				else if (enOperation == TREE_SET_ACTIVE)
+				{
+					vAssignState(pGSACore, ulDBAddr, STATE_DATA);
+				}
+
+				usDBlockIndex = ((Header *)ulDBAddr)->NDBI;
+				if (usDBlockIndex == usHBlockIndex) break;
+				break;
+			}
+		}
+
+		if (++ulBlockCount >= MAX_BLOCKS) return pdFALSE;
+
+		if (enOperation == TREE_SET_ACTIVE)
+		{
+			ulSize += ((Data_Info *)(ulHBAddr + pGSACore->MemSegSize - sizeof(Data_Info)))->DataSize;
+		}
+
+		if (((Header *)ulHBAddr)->Terminal) break;
+
+		usHBlockIndex = ((Header *)ulHBAddr)->PrevHBI;
+
+		ulHBAddr = ulIndexToAddr(pGSACore, usHBlockIndex);
+
+		if (enOperation == TREE_VERIFY)
+		{
+			if (!xCheckAddrInRange(pGSACore, ulHBAddr)) return pdFALSE;
+
+			if (enGetState(pGSACore, ulHBAddr) != STATE_DATA
+					|| (ucAID != ((Header *)ulHBAddr)->AID
+							|| ucDID != ((Header *)ulHBAddr)->DID)) return pdFALSE;
+		}
+	}
+	while (usHBlockIndex != usStopHBlock);
+
+	if (enOperation == TREE_SET_ACTIVE)
+	{
+		return ulSize;
+	}
+	else
+	{
+		return pdTRUE;
+	}
 }
 
 portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
@@ -445,13 +526,13 @@ Data_Table_Entry *pFindDataTableEntry(GSACore *pGSACore,
 									unsigned portCHAR ucAID,
 									unsigned portCHAR ucDID)
 {
-	Data_Table_Entry *pData_Table = (Data_Table_Entry *)pGSACore->DataTable;
+	Data_Table_Entry *pDataTable = (Data_Table_Entry *)pGSACore->DataTable;
 	unsigned portSHORT usIndex;
 
 	for (usIndex = 0; usIndex < pGSACore->DataTableIndex; usIndex++)
 	{
-		if (pData_Table[usIndex].AID == ucAID
-				&& pData_Table[usIndex].DID == ucDID) return &pData_Table[usIndex];
+		if (pDataTable[usIndex].AID == ucAID
+				&& pDataTable[usIndex].DID == ucDID) return &pDataTable[usIndex];
 	}
 
 	return NULL;
@@ -509,7 +590,25 @@ unsigned portLONG ulIndexToAddr(GSACore *pGSACore, unsigned portSHORT usBlockInd
 	return (usBlockIndex * pGSACore->MemSegSize + pGSACore->StartAddr);
 }
 
-void vFinaliseGSA(GSACore *pGSACore)
+void vFinaliseGSACore(GSACore *pGSACore)
 {
-	(void) pGSACore;
+	Data_Table_Entry *pDataTable = (Data_Table_Entry *)pGSACore->DataTable;
+	unsigned portSHORT usIndex;
+
+	for (usIndex = 0; usIndex < pGSACore->DataTableIndex; usIndex++)
+	{
+		pDataTable[usIndex].Size = ulUseArchitecture(pGSACore,
+													ulIndexToAddr(pGSACore, pDataTable[usIndex].LastHBI),
+													pDataTable[usIndex].LastHBI,
+													TREE_SET_ACTIVE);
+	}
 }
+
+portBASE_TYPE xCheckAddrInRange(GSACore *pGSACore, unsigned portLONG ulAddr)
+{
+	if (ulAddr < pGSACore->StartAddr) return pdFAIL;
+	if (ulAddr >= (pGSACore->StateTableSize * NUM_STATES_PER_BYTE * pGSACore->MemSegSize + pGSACore->StartAddr)) return pdFAIL;
+
+	return pdTRUE;
+}
+
