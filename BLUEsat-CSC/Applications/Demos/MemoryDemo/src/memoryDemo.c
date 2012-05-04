@@ -84,6 +84,12 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 			enResult = enDataSize(MemDEMO_TaskToken,
 								ulDeciStringToVal(&pcInputBuf[2], 2),
 								&ulRetSize);
+
+			vDebugPrint(MemDEMO_TaskToken,
+						"Request entry size: %d\n\r",
+						ulRetSize,
+						NO_INSERT,
+						NO_INSERT);
 		}
 		else if ((pcInputBuf[0] == 'D' && pcInputBuf[1] == 'D') && usReadLen == 4)
 		{

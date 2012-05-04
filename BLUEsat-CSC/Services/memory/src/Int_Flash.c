@@ -79,7 +79,7 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 													MEMORY_SEGMENT_SIZE);
 	IntFlashCore.StateTable = NULL;		//TODO use malloc, currently simulate malloc return NULL
 
-	IntFlashCore.DataTableSize = DATA_TABLE_SIZE(NORMAL_DATA_TABLE_SIZE);
+	IntFlashCore.DataTableSize = NORMAL_DATA_TABLE_SIZE;
 	IntFlashCore.DataTable = NULL;		//TODO use malloc, currently simulate malloc return NULL
 
 	if (IntFlashCore.DataTable == NULL)
@@ -138,7 +138,7 @@ static portTASK_FUNCTION(vCreateDataTableMemory, pvParameters)
 	(void) pvParameters;
 	unsigned portCHAR ucMemory[DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE)];
 
-	IntFlashCore.DataTableSize = DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE);
+	IntFlashCore.DataTableSize = DEFAULT_DATA_TABLE_SIZE;
 	
 	IntFlashCore.DataTable = (void *)ucMemory;
 
@@ -170,14 +170,14 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 	vInitialiseCore(&IntFlashCore);
 
     vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-	vSurveyMemory(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
+	xSurveyMemory(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
 
-	vBuildDataTable(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], pdTRUE, TASK_MEM_INT_FLASH);
+	xBuildDataTable(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], pdTRUE, TASK_MEM_INT_FLASH);
+	xBuildDataTable(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], pdFALSE, 0);
 
 	vDebugPrint(Flash_TaskToken, "Free blocks: %d\n\rData blocks: %d\n\rDead blocks: %d\n\r",
 				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_FREE),
-				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_USED_DATA)
-					+ usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_USED_HEAD),
+				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_DATA),
 				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_DELETED));
 
 	vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);

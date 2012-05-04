@@ -91,13 +91,13 @@ typedef struct
 void vInitialiseCore(GSACore *pGSACore);
 
 //map out memory segments and assign state
-void vSurveyMemory(GSACore *pGSACore,
+portBASE_TYPE xSurveyMemory(GSACore *pGSACore,
 					unsigned portLONG ulStartAddr,
 					unsigned portLONG ulEndAddr);
 
 //build data table from memory range
 //accept application isolation build
-void vBuildDataTable(GSACore *pGSACore,
+portBASE_TYPE xBuildDataTable(GSACore *pGSACore,
 					unsigned portLONG ulStartAddr,
 					unsigned portLONG ulEndAddr,
 					unsigned portCHAR ucIsolateBuild,
@@ -111,9 +111,8 @@ unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 typedef enum
 {
 	STATE_DELETED		= 0,
-	STATE_USED_DATA		= 1,
-	STATE_USED_HEAD		= 2,
-	STATE_FREE			= 3
+	STATE_FREE			= 1,
+	STATE_DATA			= 2
 } MEM_SEG_STATE;
 
 //count number of specified state in given range

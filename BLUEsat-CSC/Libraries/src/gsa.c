@@ -44,8 +44,8 @@ typedef union
 } Header;
 
 #define HB_HEADER_SIZE 		sizeof(Header)
-#define HB_SML_HEADER_SIZE 	HB_HEADER_SIZE - 2
-#define DB_HEADER_SIZE 		HB_HEADER_SIZE - 4
+#define HB_SML_HEADER_SIZE 	(HB_HEADER_SIZE - 2)
+#define DB_HEADER_SIZE 		(HB_HEADER_SIZE - 4)
 
 typedef struct
 {
@@ -61,10 +61,16 @@ typedef struct
 	unsigned portLONG Size;
 } Data_Table_Entry;
 
+/******************************************** Start Function Prototypes  *********************************************/
+
 //set given address its state in state table
 void vAssignState(GSACore *pGSACore,
 				unsigned portLONG ulAddr,
 				MEM_SEG_STATE enState);
+
+//get memory segment state
+MEM_SEG_STATE enGetState(GSACore *pGSACore,
+						unsigned portLONG ulAddr);
 
 typedef enum
 {
@@ -78,6 +84,19 @@ unsigned portLONG ulUseStateTable(GSACore *pGSACore,
 								unsigned portLONG ulEndAddr,
 								MEM_SEG_STATE enState,
 								STATE_TABLE_OP enOperation);
+
+typedef enum
+{
+	TREE_DELETE,
+	TREE_VERIFY,
+	TREE_SET_ACTIVE
+} ARCHITECTURE_OP;
+
+//complete specified operation on architecture
+portBASE_TYPE xUseArchitecture(unsigned portLONG ulAddr,
+								unsigned portSHORT usStopBlock,
+								ARCHITECTURE_OP enOperation);
+
 
 typedef enum
 {
@@ -95,10 +114,6 @@ void vAssignChecksum(unsigned portLONG ulAddr,
 					MEM_SEG_SIZE enMemSegSize,
 					CHECKSUM_TYPE enType);
 
-//get memory segment state
-MEM_SEG_STATE enGetState(GSACore *pGSACore,
-						unsigned portLONG ulAddr);
-
 //find corresponding data table entry
 Data_Table_Entry *pFindDataTableEntry(GSACore *pGSACore,
 									unsigned portCHAR ucAID,
@@ -115,6 +130,17 @@ portBASE_TYPE xAddDataTableEntry(GSACore *pGSACore,
 void vRemoveDataTableEntry(GSACore *pGSACore,
 							Data_Table_Entry *pDataTableEntry);
 
+//convert address to block index
+unsigned portSHORT usAddrToIndex(GSACore *pGSACore, unsigned portLONG ulAddr);
+
+//convert block index to address
+unsigned portLONG ulIndexToAddr(GSACore *pGSACore, unsigned portSHORT usBlockIndex);
+
+//synchronise state table with data table
+void vFinaliseGSA(GSACore *pGSACore);
+
+/***************************************** Start Function Implementations *****************************************/
+
 //initialise GSACore
 void vInitialiseCore(GSACore *pGSACore)
 {
@@ -126,59 +152,96 @@ void vInitialiseCore(GSACore *pGSACore)
 }
 
 //map out memory segments and assign state
-void vSurveyMemory(GSACore *pGSACore,
+portBASE_TYPE xSurveyMemory(GSACore *pGSACore,
 					unsigned portLONG ulStartAddr,
 					unsigned portLONG ulEndAddr)
 {
 	MEM_SEG_STATE enTmpState;
+
+	if (ulStartAddr < pGSACore->StartAddr || ulEndAddr < ulStartAddr) return pdFAIL;
+
+	if (((ulEndAddr - ulStartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE > pGSACore->StateTableSize) return pdFAIL;
 
 	for (;ulStartAddr < ulEndAddr;
 		vAssignState(pGSACore, ulStartAddr, enTmpState), ulStartAddr += pGSACore->MemSegSize)
 	{
 		enTmpState = STATE_DELETED;
 
-		if (pGSACore->xIsMemSegFree != NULL && pGSACore->xIsMemSegFree(ulStartAddr))
+		if ((pGSACore->xIsMemSegFree != NULL) ? pGSACore->xIsMemSegFree(ulStartAddr) : pdTRUE)
 		{
 			enTmpState = STATE_FREE;
 			continue;
 		}
 
-		if (xVerifyBlock(ulStartAddr, pGSACore->MemSegSize, CHECKSUM_HEADER))
-		{
-			enTmpState = STATE_USED_DATA;
-
-			if (((Header *)ulStartAddr)->H) enTmpState = STATE_USED_HEAD;
-		}
+		if (((Header *)ulStartAddr)->H && xVerifyBlock(ulStartAddr, pGSACore->MemSegSize, CHECKSUM_HEADER)) enTmpState = STATE_DATA;
 	}
+
+	return pdTRUE;
 }
 
-void vBuildDataTable(GSACore *pGSACore,
+portBASE_TYPE xBuildDataTable(GSACore *pGSACore,
 					unsigned portLONG ulStartAddr,
 					unsigned portLONG ulEndAddr,
 					unsigned portCHAR ucIsolateBuild,
 					unsigned portCHAR ucAID)
 {
 	unsigned portLONG ulHeadBlockAddr;
+	Data_Table_Entry *pDataTableEntry;
+	unsigned portSHORT usBlockIndex;
+
+	if (ulStartAddr < pGSACore->StartAddr || ulEndAddr < ulStartAddr) return pdFAIL;
+
+	if (((ulEndAddr - ulStartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE > pGSACore->StateTableSize) return pdFAIL;
 
 	for(ulHeadBlockAddr = ulStartAddr;
-		(ulHeadBlockAddr = ulUseStateTable(pGSACore, ulHeadBlockAddr, ulEndAddr, STATE_USED_HEAD, OP_FIND_NEXT))
+		(ulHeadBlockAddr = ulUseStateTable(pGSACore, ulHeadBlockAddr, ulEndAddr, STATE_DATA, OP_FIND_NEXT))
 						!= (unsigned portLONG)NULL;
 		ulHeadBlockAddr += pGSACore->MemSegSize)
 	{
 		if (ucIsolateBuild == pdTRUE && ((Header *)ulHeadBlockAddr)->AID != ucAID) continue;
 
-		//TODO verify head block chain
-		//TODO add entry in data table
+		usBlockIndex = usAddrToIndex(pGSACore, ulHeadBlockAddr);
+
+		pDataTableEntry = pFindDataTableEntry(pGSACore, ((Header *)ulHeadBlockAddr)->AID, ((Header *)ulHeadBlockAddr)->DID);
+
+		if (xUseArchitecture(ulHeadBlockAddr,
+							(pDataTableEntry == NULL) ? usBlockIndex : pDataTableEntry->LastHBI,
+							TREE_VERIFY) == pdFAIL)
+		{
+			vAssignState(pGSACore, ulHeadBlockAddr, (pGSACore->xIsMemSegFree == NULL) ? STATE_FREE : STATE_DELETED);
+
+			continue;
+		}
+
+		if (pDataTableEntry == NULL)
+		{
+			xAddDataTableEntry(pGSACore,
+								((Header *)ulHeadBlockAddr)->AID,
+								((Header *)ulHeadBlockAddr)->DID,
+								usBlockIndex,
+								0);
+		}
+		else
+		{
+			pDataTableEntry->LastHBI = usBlockIndex;
+		}
 	}
 
-	//TODO verify data block chain
-	//TODO finalise state table
+	vFinaliseGSA(pGSACore);
+
+	return pdTRUE;
 }
 
 unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
 									unsigned portLONG ulStartAddr,
 									unsigned portLONG ulEndAddr)
 {
+	if (ulStartAddr < pGSACore->StartAddr || ulEndAddr < ulStartAddr)
+				return (unsigned portLONG) NULL;
+
+	if (((ulEndAddr - ulStartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE > pGSACore->StateTableSize)
+				return (unsigned portLONG) NULL;
+
 	return ulUseStateTable(pGSACore, ulStartAddr, ulEndAddr, STATE_FREE, OP_FIND_NEXT);
 }
 
@@ -187,6 +250,10 @@ unsigned portSHORT usCountState(GSACore *pGSACore,
 								unsigned portLONG ulEndAddr,
 								MEM_SEG_STATE enState)
 {
+	if (ulStartAddr < pGSACore->StartAddr || ulEndAddr < ulStartAddr) return 0;
+
+	if (((ulEndAddr - ulStartAddr) / pGSACore->MemSegSize) / NUM_STATES_PER_BYTE > pGSACore->StateTableSize) return 0;
+
 	return ulUseStateTable(pGSACore, ulStartAddr, ulEndAddr, enState, OP_COUNT);
 }
 
@@ -214,12 +281,11 @@ pGSACore->DebugTrace("NextAddr: %h\n\r", ulAddr, 0, 0);
 
 	if (pGSACore->WriteToMemSeg != NULL)
 	{
-		strncpy((portCHAR *)pGSACore->MemSegBuffer, (portCHAR *)&tmpHeader, HB_SML_HEADER_SIZE);
-
+		memcpy((portCHAR *)pGSACore->MemSegBuffer, (portCHAR *)&tmpHeader, HB_SML_HEADER_SIZE);
 		//currently assuming ulsize is << MemSegSize
-		strncpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + HB_SML_HEADER_SIZE, pcData, ulSize);
+		memcpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + HB_SML_HEADER_SIZE, pcData, ulSize);
 
-		strncpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + pGSACore->MemSegSize - sizeof(Data_Info), (portCHAR *)&tmpDataInfo, sizeof(Data_Info));
+		memcpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + pGSACore->MemSegSize - sizeof(Data_Info), (portCHAR *)&tmpDataInfo, sizeof(Data_Info));
 
 		vAssignChecksum((unsigned portLONG)pGSACore->MemSegBuffer, pGSACore->MemSegSize, CHECKSUM_HEADER);
 
@@ -330,6 +396,17 @@ unsigned portLONG ulUseStateTable(GSACore *pGSACore,
 	}
 }
 
+portBASE_TYPE xUseArchitecture(unsigned portLONG ulAddr,
+								unsigned portSHORT usStopBlock,
+								ARCHITECTURE_OP enOperation)
+{
+	(void)ulAddr;
+	(void)usStopBlock;
+	(void)enOperation;
+
+	return pdTRUE;
+}
+
 portBASE_TYPE xVerifyBlock(unsigned portLONG ulAddr,
 							MEM_SEG_SIZE enMemSegSize,
 							CHECKSUM_TYPE enType)
@@ -407,9 +484,7 @@ void vRemoveDataTableEntry(GSACore *pGSACore,
 {
 	Data_Table_Entry *pDataTable;
 
-	if (pDataTableEntry == NULL) return;
-
-	if (pGSACore->DataTableIndex == 0) return;
+	if (pDataTableEntry == NULL || pGSACore->DataTableIndex == 0) return;
 
 	pDataTable = (Data_Table_Entry *)pGSACore->DataTable;
 
@@ -419,4 +494,22 @@ void vRemoveDataTableEntry(GSACore *pGSACore,
 	pDataTableEntry->DID 		= pDataTable[pGSACore->DataTableIndex].DID;
 	pDataTableEntry->LastHBI 	= pDataTable[pGSACore->DataTableIndex].LastHBI;
 	pDataTableEntry->Size 		= pDataTable[pGSACore->DataTableIndex].Size;
+}
+
+unsigned portSHORT usAddrToIndex(GSACore *pGSACore, unsigned portLONG ulAddr)
+{
+	//convert to base address space
+	ulAddr -= pGSACore->StartAddr;
+
+	return (ulAddr / pGSACore->MemSegSize);
+}
+
+unsigned portLONG ulIndexToAddr(GSACore *pGSACore, unsigned portSHORT usBlockIndex)
+{
+	return (usBlockIndex * pGSACore->MemSegSize + pGSACore->StartAddr);
+}
+
+void vFinaliseGSA(GSACore *pGSACore)
+{
+	(void) pGSACore;
 }
