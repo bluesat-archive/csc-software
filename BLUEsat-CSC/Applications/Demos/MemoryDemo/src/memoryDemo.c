@@ -78,6 +78,14 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 								ulDeciStringToVal(&pcInputBuf[4], 4),
 								pcInputBuf,
 								&ulRetSize);
+			
+			pcInputBuf[ulRetSize] = 0;
+			
+			vDebugPrint(MemDEMO_TaskToken,
+						"Data: %50s\n\r",
+						(unsigned portLONG)pcInputBuf,
+						NO_INSERT,
+						NO_INSERT);
 		}
 		else if ((pcInputBuf[0] == 'C' && pcInputBuf[1] == 'S') && usReadLen == 4)
 		{
