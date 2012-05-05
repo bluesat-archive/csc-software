@@ -129,6 +129,13 @@ portBASE_TYPE xGSAWrite(GSACore *pGSACore,
 						unsigned portLONG ulSize,
 						portCHAR *pcData);
 
+unsigned portLONG ulGSARead(GSACore *pGSACore,
+							unsigned portCHAR ucAID,
+							unsigned portCHAR ucDID,
+							unsigned portLONG ulOffset,
+							unsigned portLONG ulSize,
+							portCHAR *pucBuffer);
+						
 unsigned portLONG ulGSASize(GSACore *pGSACore,
 							unsigned portCHAR ucAID,
 							unsigned portCHAR ucDID);
