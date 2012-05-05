@@ -298,11 +298,39 @@ pGSACore->DebugTrace("NextAddr: %h\n\r", ulAddr, 0, 0);
 		memcpy((portCHAR *)(unsigned portLONG)pGSACore->MemSegBuffer + pGSACore->MemSegSize - sizeof(Data_Info), (portCHAR *)&tmpDataInfo, sizeof(Data_Info));
 
 		vAssignChecksum((unsigned portLONG)pGSACore->MemSegBuffer, pGSACore->MemSegSize, CHECKSUM_HEADER);
-
+	
+		xAddDataTableEntry(pGSACore,
+						ucAID,
+						ucDID,
+						usAddrToIndex(pGSACore, ulAddr),
+						ulSize);
+		
 		return pGSACore->WriteToMemSeg(ulAddr);
 	}
 
 	return pdTRUE;
+}
+
+unsigned portLONG ulGSARead(GSACore *pGSACore,
+							unsigned portCHAR ucAID,
+							unsigned portCHAR ucDID,
+							unsigned portLONG ulOffset,
+							unsigned portLONG ulSize,
+							portCHAR *pucBuffer)
+{
+	(void)ulOffset;
+	
+	Data_Table_Entry * pDataTableEntry = pFindDataTableEntry(pGSACore, ucAID, ucDID);
+	
+	if (pDataTableEntry == NULL) return 0;
+	
+	ulSize = pDataTableEntry->Size;
+	
+	memcpy(pucBuffer, 
+		(portCHAR *)(ulIndexToAddr(pGSACore, pDataTableEntry->LastHBI) + HB_SML_HEADER_SIZE), 
+		ulSize);
+	
+	return ulSize;
 }
 
 unsigned portLONG ulGSASize(GSACore *pGSACore,
