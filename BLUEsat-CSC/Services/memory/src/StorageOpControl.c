@@ -18,6 +18,7 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 								unsigned portCHAR ucAID,
 								MemoryContent *pMemoryContent)
 {
+	unsigned portLONG ulRetVal;
 	//translate operation
 	switch (pMemoryContent->Operation)
 	{
@@ -31,10 +32,13 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 							break;
 
 		case MEM_SIZE	:	pGSACore->DebugTrace("AID: %d requested Size\n\r", ucAID, 0, 0);
-							*(pMemoryContent->pulRetValue) = ulGSASize(pGSACore, ucAID, pMemoryContent->DID);
+							ulRetVal = ulGSASize(pGSACore, ucAID, pMemoryContent->DID);
+							if (pMemoryContent->pulRetValue != NULL) *(pMemoryContent->pulRetValue) = ulRetVal;
 							break;
 
 		case MEM_READ	:	pGSACore->DebugTrace("AID: %d requested Read\n\r", ucAID, 0, 0);
+							ulRetVal = ulGSARead(pGSACore, ucAID, pMemoryContent->DID, pMemoryContent->Offset, pMemoryContent->Size, pMemoryContent->Ptr);
+							if (pMemoryContent->pulRetValue != NULL) *(pMemoryContent->pulRetValue) = ulRetVal;
 							break;
 
 		default			:	pGSACore->DebugTrace("AID: %d requested unknown operation %d!\n\r",
