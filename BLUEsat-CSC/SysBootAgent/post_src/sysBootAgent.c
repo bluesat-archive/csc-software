@@ -25,10 +25,19 @@ unsigned int initDrivers(void)
 	Comms_I2C_Init();
 #endif
 
+#ifdef GPIO_H_
+	Gpio_Init();
+#endif
+
+#ifdef SWITCHING_H_
+	Switching_Init();
+#endif
+
 #ifdef IAP_H_
 	//Internal Flash Memory driver (IAP)
 	/* NO INITIALISATION REQUIRED */
 #endif
+
 
 	return 0;
 }
@@ -48,10 +57,15 @@ unsigned int initServices(void)
 	vDebug_Init(SERV_TASK_PRIORITY);
 #endif
 
-#ifdef MEMORY_H_
+/*#ifdef MEMORY_H_
 	//memory task
 	vMemory_Init(SERV_TASK_PRIORITY);
+#endif*/
+
+#ifdef BEACON_H_
+	vBeacon_Init(SERV_TASK_PRIORITY + 1);
 #endif
+
 
 	return 0;
 }
@@ -74,6 +88,10 @@ unsigned int initApplications(void)
 #ifdef MEMORYDEMO_H_
 	//Demonstration application memory
 	vMemDemo_Init(APP_TASK_PRIORITY);
+#endif
+
+#ifdef GPIODEMO_H_
+	vGpioDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 	return 0;
