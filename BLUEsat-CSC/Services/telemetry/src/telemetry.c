@@ -113,7 +113,7 @@ static int iRead_sensor(sensor_lc* location)
 		if ((!isValid) || (!returnVal)) return URC_FAIL;
 
 		// Read Sensor Value
-		length = 2; // read 2 bytes
+		length = 2; // read 2 bytes as sensor returns 12 bits
 		returnVal = Comms_I2C_Master(location->address, I2C_READ, &isValid,
 				&latest_data[location->address + (location->bus * MAX127_SENSOR_COUNT)][i],
 				&length, telem_MUTEX, location->bus);
