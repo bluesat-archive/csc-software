@@ -44,7 +44,7 @@ OBJCOPY	=arm-elf-objcopy
 WARNINGS =-Wall -Werror -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
 -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Wformat-security
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
-CDEFINES	= -D GCC_ARM7 -D RUN_FROM_ROM #-D NO_DEBUG ###[NO_DEBUG] remember to check for functions uses usDebugRead()
+CDEFINES	= -D GCC_ARM7 -D RUN_FROM_ROM #-D MEM_TEST #-D NO_DEBUG ###[NO_DEBUG] remember to check for functions uses usDebugRead()
 CFLAGS	= $(WARNINGS) $(CDEFINES) -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -mcpu=arm7tdmi -fomit-frame-pointer \
 -fno-strict-aliasing -nostdlib -Os -T $(CORE_SOURCE_DIR)/lpc2468-rom.ld
 
