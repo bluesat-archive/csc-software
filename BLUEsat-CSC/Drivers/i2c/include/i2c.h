@@ -119,7 +119,7 @@ typedef enum{
 }I2C_SLAVE_STATUS;
 
 typedef enum{
-	BUS0,
+	BUS0 = 0,
 	BUS1,
 	BUS2
 }I2C_BUS_CHOICE;
