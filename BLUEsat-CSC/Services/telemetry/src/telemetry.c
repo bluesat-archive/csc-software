@@ -104,7 +104,7 @@ static int iRead_sensor(sensor_lc* location)
 	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
 	{
 		if (!(channel_mask & (1 << i))) continue;
-
+		// Start Conversation
 		data = TELEM_I2C_CONFIG_BITS + (i << 4);
 		length = 1; // write 1 byte
 		returnVal = Comms_I2C_Master(location->address, I2C_WRITE, &isValid, &data, &length, telem_MUTEX, location->bus);
@@ -112,6 +112,7 @@ static int iRead_sensor(sensor_lc* location)
 
 		if ((!isValid) || (!returnVal)) return URC_FAIL;
 
+		// Read Sensor Value
 		length = 2; // read 2 bytes
 		returnVal = Comms_I2C_Master(location->address, I2C_READ, &isValid,
 				&latest_data[location->address + (location->bus * MAX127_SENSOR_COUNT)][i],
