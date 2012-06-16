@@ -9,6 +9,7 @@
 #include "telemetry.h"
 #include "semphr.h"
 #include "UniversalReturnCode.h"
+#include "lib_string.h"
 
 #define MAX127_COUNT 		       16
 #define MAX127_SENSOR_COUNT		   8
@@ -62,6 +63,8 @@ void vTelem_Init(unsigned portBASE_TYPE uxPriority)
 								vTelemTask);
 
 	vActivateQueue(telemTask_token, TELEM_QUEUE_SIZE);
+
+	memset((int*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
 }
 
 static portTASK_FUNCTION(vTelemTask, pvParameters)
@@ -100,7 +103,7 @@ static int iRead_sensor(sensor_lc* location)
 	vSemaphoreCreateBinary( telem_MUTEX );
 	while (i < MAX127_SENSOR_COUNT)
 	{
-		if (channel_mask & (1 << i))
+		if (!(channel_mask & (1 << i)))
 		{
 			i++;
 			continue;
@@ -124,16 +127,4 @@ static int iRead_sensor(sensor_lc* location)
 	}
 
 	return URC_SUCCESS;
-}
-
-
-static void bzero(void)
-{
-	int i;
-	int* ptr = (int*)latest_data;
-
-	for (i = 0; i < (MAX_SENSOR_PER_BUS * 2); ++i)
-	{
-		*ptr = 0;
-	}
 }
