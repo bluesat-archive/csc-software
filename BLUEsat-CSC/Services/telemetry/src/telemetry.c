@@ -96,18 +96,14 @@ static int iRead_sensor(sensor_lc* location)
 	int isValid;
 	int length;
 	char data;
-	int i = 0;
+	int i;
 	int returnVal;
 	xSemaphoreHandle telem_MUTEX;
 
 	vSemaphoreCreateBinary( telem_MUTEX );
-	while (i < MAX127_SENSOR_COUNT)
+	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
 	{
-		if (!(channel_mask & (1 << i)))
-		{
-			i++;
-			continue;
-		}
+		if (!(channel_mask & (1 << i))) continue;
 
 		data = TELEM_I2C_CONFIG_BITS + (i << 4);
 		length = 1; // write 1 byte
@@ -123,7 +119,6 @@ static int iRead_sensor(sensor_lc* location)
 		xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
 
 		if ((!isValid) || (!returnVal)) return URC_FAIL;
-		i++;
 	}
 
 	return URC_SUCCESS;
