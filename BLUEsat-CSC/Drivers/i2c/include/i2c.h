@@ -150,7 +150,7 @@ void Comms_I2C_Init(void);
  * \param[in] op Operation code to be performed by the slave
  * \param[out] result Pointer to flag indicating if I2C commas has been a success
  * \param[in,out] loc Pointer to the buffer which will contain data to be sent and the result
- * \param[out] len Pointer to the buffer which will hold the length of the result that was returned
+ * \param[in] len Pointer to the buffer which will hold the length of the result that was returned
  * \param[in]  semaphore Semaphore of the calling task to be woken up by the driver upon completion
  * \param[in] bus I2C bus to be used
  * \returns pdTrue for success or pdFalse for failure

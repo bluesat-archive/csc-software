@@ -8,8 +8,10 @@
 #include "service.h"
 #include "telemetry.h"
 #include "semphr.h"
+#include "UniversalReturnCode.h"
 
-
+#define MAX127_COUNT 		       16
+#define MAX127_SENSOR_COUNT		   8
 #define TELEM_QUEUE_SIZE           16
 #define TELEM_SEMAPHORE_BLOCK_TIME 10
 /* Control Byte
@@ -28,6 +30,9 @@
 
 static TaskToken telemTask_token;
 
+static unsigned short latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
+
+static void bzero(void);
 static portTASK_FUNCTION(vTelemTask, pvParameters);
 
 void vTelem_Init(unsigned portBASE_TYPE uxPriority)
@@ -54,7 +59,6 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		if (enResult != URC_SUCCESS) continue;
 
 
-
 	}
 }
 
@@ -71,45 +75,52 @@ UnivRetCode setSweep(sensor_lc* config, unsigned int time_interval)
 }
 
 
-static int iRead_sensor(char* buf, sensor_lc* location)
-{
-
-
-	return 0;
-}
-
-static int iStart_conversation_raw(sensor_lc* location)
+static int iRead_sensor(sensor_lc* location)
 {
 	int isValid;
-	int length = 1;
+	int length;
 	char data;
+	int i = 0;
+	int returnVal;
 	xSemaphoreHandle telem_MUTEX;
 
-	data = TELEM_I2C_CONFIG_BITS + (location->channel_mask << 4);
-	Comms_I2C_Master(location->address, I2C_WRITE, &isValid, &data, &length, telem_MUTEX, location->bus);
-	xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
+	vSemaphoreCreateBinary( telem_MUTEX );
+	while (i < MAX127_SENSOR_COUNT)
+	{
+		if (channel_mask & (1 << i))
+		{
+			i++;
+			continue;
+		}
 
-	return isValid;
+		data = TELEM_I2C_CONFIG_BITS + (i << 4);
+		length = 1; // write 1 byte
+		returnVal = Comms_I2C_Master(location->address, I2C_WRITE, &isValid, &data, &length, telem_MUTEX, location->bus);
+		xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
+
+		if ((!isValid) || (!returnVal)) return URC_FAIL;
+
+		length = 2; // read 2 bytes
+		returnVal = Comms_I2C_Master(location->address, I2C_READ, &isValid,
+				&latest_data[location->address + (location->bus * MAX127_SENSOR_COUNT)][i],
+				&length, telem_MUTEX, location->bus);
+		xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
+
+		if ((!isValid) || (!returnVal)) return URC_FAIL;
+		i++;
+	}
+
+	return URC_SUCCESS;
 }
 
-static int iRead_value_raw(char* buf, sensor_lc* location)
+
+static void bzero(void)
 {
-	int length;
+	int i;
+	int* ptr = (int*)latest_data;
 
-	return 0;
-}
-
-static void config_sweep(sensor_lc* location, unsigned int time_interval)
-{
-
-
-
-}
-
-static int read_sweep(void)
-{
-
-
-
-	return 0;
+	for (i = 0; i < (MAX_SENSOR_PER_BUS * 2); ++i)
+	{
+		*ptr = 0;
+	}
 }
