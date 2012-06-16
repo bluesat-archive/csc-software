@@ -8,10 +8,6 @@
 #ifndef TELEMETRY_H_
 #define TELEMETRY_H_
 
-#define TELEM_QUEUE_SIZE 16
-#define TELEM_SEMAPHORE_BLOCK_TIME 10
-#define TELEM_I2C_CONFIG_BITS 0x88
-#define TELEM_BYTE_INVALID 0xFF
 
 #include "UniversalReturnCode.h"
 #include "i2c.h"

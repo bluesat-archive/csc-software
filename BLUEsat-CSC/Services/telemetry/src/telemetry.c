@@ -9,6 +9,23 @@
 #include "telemetry.h"
 #include "semphr.h"
 
+
+#define TELEM_QUEUE_SIZE           16
+#define TELEM_SEMAPHORE_BLOCK_TIME 10
+/* Control Byte
+ * ------------
+ * BIT 7 START Star bit
+ * BIT 6 SEL2 Channel address to access 000
+ * BIT 5 SEL1
+ * BIT 4 SEL0
+ * BIT 3 RNG Full scale voltage range 1 to enable
+ * BIT 2 BIP Bipolar conversion 0 for the value to be in binary
+ * BIT 1 PD1 Power down bits 00 for Normal Operation
+ * BIT 0 PD0
+ * */
+#define TELEM_I2C_CONFIG_BITS      0x88
+#define TELEM_BYTE_INVALID         0xFF
+
 static TaskToken telemTask_token;
 
 static portTASK_FUNCTION(vTelemTask, pvParameters);
@@ -41,12 +58,12 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	}
 }
 
-void retrieve_data(char* output)
+int retrieve_data(unsigned char* output, unsigned int size)
 {
 
 }
 
-void setSweep(sensor_lc* config, unsigned int time_interval)
+UnivRetCode setSweep(sensor_lc* config, unsigned int time_interval)
 {
 
 
