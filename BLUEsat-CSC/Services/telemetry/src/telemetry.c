@@ -28,6 +28,23 @@
 #define TELEM_I2C_CONFIG_BITS      0x88
 #define TELEM_BYTE_INVALID         0xFF
 
+
+typedef enum
+{
+	SETSWEEP,
+	READSWEEP
+}Telem_Ops;
+
+typedef struct
+{
+	Telem_Ops operation; // Telem server operation
+	Sweep_Type sweep;	// Determine the type of sweep if specifying the sweep
+	unsigned int size;	// Declare the size of the input buffer or the sweep time
+	portCHAR * buffer;	// Pointer to the buffer where the results are
+} Telem_Cmd;
+
+
+
 static TaskToken telemTask_token;
 
 static unsigned short latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
@@ -52,27 +69,23 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	(void) pvParameters;
 	UnivRetCode enResult;
 	MessagePacket incoming_packet;
-
+	Telem_Cmd *pComamndHandle;
+	portTickType sweepDelay = portMAX_DELAY;
 	for (;;)
 	{
-		enResult = enGetRequest(telemTask_token, &incoming_packet, portMAX_DELAY);
-		if (enResult != URC_SUCCESS) continue;
+		enResult = enGetRequest(telemTask_token, &incoming_packet, sweepDelay);
+		if (enResult != URC_SUCCESS)
+		{
+			//Perform sweep nand update buffer.
+			continue;
+		}
+		//Process command
+		pComamndHandle = (Telem_Cmd *)incoming_packet.Data;
 
 
 	}
 }
 
-int retrieve_data(unsigned char* output, unsigned int size)
-{
-
-}
-
-UnivRetCode setSweep(sensor_lc* config, unsigned int time_interval)
-{
-
-
-
-}
 
 
 static int iRead_sensor(sensor_lc* location)
