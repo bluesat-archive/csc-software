@@ -31,8 +31,8 @@
 #define STATIC_BANK_3_START_ADDR	0x83000000
 
 //static banks size
-#define STATIC_BANK_0_SIZE			0x00100000	//0x00200000 <- should be this but address line is wrong, thus size is halved
-#define STATIC_BANK_1_SIZE			0x00040000	//0x00080000 <- should be this but address line is wrong, thus size is halved
+#define STATIC_BANK_0_SIZE			0x00080000	//FRAM
+#define STATIC_BANK_1_SIZE			0x00200000	//SRAM
 #define STATIC_BANK_2_SIZE			0x00000000
 #define STATIC_BANK_3_SIZE			0x00000000
 
