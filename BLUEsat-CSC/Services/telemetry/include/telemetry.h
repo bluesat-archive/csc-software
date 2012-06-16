@@ -21,7 +21,7 @@ typedef struct {
 
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
 
-UnivRetCode retrieve_data(char* output);
+int retrieve_data(unsigned char* output, unsigned int size);
 
 UnivRetCode setSweep(sensor_lc* config, unsigned int time_interval);
 
