@@ -75,7 +75,6 @@ static portTASK_FUNCTION(vI2CTestTask, pvParameters)
 
 
 
-
 static unsigned int iTelemGetmVoltage(unsigned int channel, char addressOfADC, char *isValid)
 {
 	unsigned int result;

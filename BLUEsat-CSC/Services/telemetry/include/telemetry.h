@@ -8,6 +8,9 @@
 #ifndef TELEMETRY_H_
 #define TELEMETRY_H_
 
+#define TELEM_QUEUE_SIZE 16
+
+
 typedef struct {
 	unsigned char address;
 	unsigned char bus;
