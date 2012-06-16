@@ -78,11 +78,11 @@ void EMC_Init(void)
 		//PINMODE6 =  0xAAAAAAAA;
 
 		//A[0..15], mode = 10
-		PINSEL8  =  0x55555555;
+		PINSEL8  =  0x55555554;
 		//PINMODE8 =  0xAAAAAAAA;
 
 		//A[16..23], !OE, !WE, !CS0, !CS1, BLS0-BLS3, mode = 10
-		PINSEL9  =  0x50555155;
+		PINSEL9  =  0x50550555;
 		//PINMODE9 =  0xA0AAA2AA;
 
 		// enable EMC power
@@ -116,6 +116,18 @@ void vInitStaticMemoryBanks(void)
 {
 #if STATIC_BANK_0_ENABLED == 1
 	//static memory bank general configuration
+	EMC_STA_CFG1 		= MEM_WIDTH_16 | R_LOW_W_LOW;
+	//static memory bank timing configuration
+	EMC_STA_WAITWEN1	= FM22L16_WWEN;
+	EMC_STA_WAITOEN1	= FM22L16_WOEN;
+	EMC_STA_WAITRD1		= FM22L16_WRD;
+	EMC_STA_WAITPAGE1	= FM22L16_WPAGE;
+	EMC_STA_WAITWR1		= FM22L16_WWR;
+	EMC_STA_WAITTURN1	= FM22L16_WTURN;
+
+#endif
+#if STATIC_BANK_1_ENABLED == 1
+	//static memory bank general configuration
 	EMC_STA_CFG0 		= MEM_WIDTH_16 | R_LOW_W_LOW;
 	//static memory bank timing configuration
 	EMC_STA_WAITWEN0	= CY62167DV30_WWEN;
@@ -124,18 +136,6 @@ void vInitStaticMemoryBanks(void)
 	EMC_STA_WAITPAGE0	= CY62167DV30_WPAGE;
 	EMC_STA_WAITWR0		= CY62167DV30_WWR;
 	EMC_STA_WAITTURN0	= CY62167DV30_WTURN;
-
-#endif
-#if STATIC_BANK_1_ENABLED == 1
-	//static memory bank general configuration
-	EMC_STA_CFG1 		= MEM_WIDTH_8 | R_LOW_W_LOW;
-	//static memory bank timing configuration
-	EMC_STA_WAITWEN1	= FM22L16_WWEN;
-	EMC_STA_WAITOEN1	= FM22L16_WOEN;
-	EMC_STA_WAITRD1		= FM22L16_WRD;
-	EMC_STA_WAITPAGE1	= FM22L16_WPAGE;
-	EMC_STA_WAITWR1		= FM22L16_WWR;
-	EMC_STA_WAITTURN1	= FM22L16_WTURN;
 
 #endif
 #if STATIC_BANK_2_ENABLED == 1
