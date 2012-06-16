@@ -7,7 +7,7 @@
 
 #include "service.h"
 #include "telemetry.h"
-
+#include "semphr.h"
 
 static TaskToken telemTask_token;
 
@@ -64,22 +64,25 @@ static int iRead_sensor(char* buf, sensor_lc* location)
 static int iStart_conversation_raw(sensor_lc* location)
 {
 	int isValid;
+	int length = 1;
+	char data;
+	xSemaphoreHandle telem_MUTEX;
 
-	Comms_I2C_Master(location->address, I2C_WRITE, &isValid, data, &length, NULL, location->bus);
-
+	data = TELEM_I2C_CONFIG_BITS + (location->channel_mask << 4);
+	Comms_I2C_Master(location->address, I2C_WRITE, &isValid, &data, &length, telem_MUTEX, location->bus);
+	xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
 
 	return isValid;
 }
 
 static int iRead_value_raw(char* buf, sensor_lc* location)
 {
-
-
+	int length;
 
 	return 0;
 }
 
-static void config_sweep(sensor_lc* location)
+static void config_sweep(sensor_lc* location, unsigned int time_interval)
 {
 
 
