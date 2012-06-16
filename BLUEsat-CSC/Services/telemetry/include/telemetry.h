@@ -11,17 +11,19 @@
 #define TELEM_QUEUE_SIZE 16
 
 
+#include "UniversalReturnCode.h"
+
 typedef struct {
 	unsigned char address;
 	unsigned char bus;
 	unsigned short channel_mask;
 } sensor_lc;
 
-void vTelem_Init(unsigned portBASE_TYPE uxPriority);
+UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
 
-void retrieve_data(char* output);
+UnivRetCode retrieve_data(char* output);
 
-void setSweep(sensor_lc* config, unsigned int time_interval);
+UnivRetCode setSweep(sensor_lc* config, unsigned int time_interval);
 
 
 
