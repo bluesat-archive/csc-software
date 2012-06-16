@@ -28,7 +28,8 @@
  * */
 #define TELEM_I2C_CONFIG_BITS      0x88
 #define TELEM_BYTE_INVALID         0xFF
-
+#define MIN_SWEEP_TIME				100/portTICK_RATE_MS //portTickRAtems
+#define DEF_SWEEP_TIME				300000/portTICK_RATE_MS //0.1sec min delay
 
 typedef enum
 {
@@ -73,7 +74,8 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	UnivRetCode enResult;
 	MessagePacket incoming_packet;
 	Telem_Cmd *pComamndHandle;
-	portTickType sweepDelay = portMAX_DELAY;
+	Sweep_Type presentSweep = DEFAULT;
+	portTickType sweepDelay = DEF_SWEEP_TIME;
 	for (;;)
 	{
 		enResult = enGetRequest(telemTask_token, &incoming_packet, sweepDelay);
@@ -84,8 +86,21 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		}
 		//Process command
 		pComamndHandle = (Telem_Cmd *)incoming_packet.Data;
+		switch (pComamndHandle->operation)
+		{
+			case SETSWEEP:
 
-
+				presentSweep = pComamndHandle->sweep;
+				sweepDelay = (pComamndHandle->size > MIN_SWEEP_TIME)?pComamndHandle->size:sweepDelay;
+				break;
+			case READSWEEP:
+				// load sweep
+				break;
+			default:
+				vCompleteRequest(incoming_packet.Token, URC_FAIL);
+		}
+		//complete request by passing the status to the sender
+		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 	}
 }
 
