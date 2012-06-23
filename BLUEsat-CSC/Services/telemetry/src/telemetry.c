@@ -10,7 +10,6 @@
 #include "semphr.h"
 #include "UniversalReturnCode.h"
 #include "lib_string.h"
-#include "telemetrySweep.h"
 
 #define MAX127_COUNT 		       16 /*8 on each bus as MAX127 address is limited to 3 bits + 5 chip bits*/
 #define MAX127_SENSOR_COUNT		   8
@@ -34,6 +33,12 @@
 #define DEF_SWEEP_TIME					300000/portTICK_RATE_MS //0.1sec min delay
 
 #define MAX127_TOTAL_RESULT_ELEMENTS  	MAX127_SENSOR_COUNT * MAX127_COUNT
+
+typedef enum
+{
+	DEFAULT,
+	EVIL_SWEEP
+} Sweep_Type;
 
 typedef enum
 {
