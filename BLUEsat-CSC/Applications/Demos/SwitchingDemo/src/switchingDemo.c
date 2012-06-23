@@ -120,6 +120,9 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 		} else if ((pcInputBuf[0] == '9'))
 		{
 			switching_RX_Device(GMSK_2);
+		} else
+		{
+			vPrintMenu();
 		}
 	}
 }
@@ -127,19 +130,19 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 #define MENU_L00 " ----------------------------------- Menu -----------------------------------\n\r
 #define MENU_L01 0\t- DEVICE MODE\n\r
 #define MENU_L02 1\t- REPEATER MODE\n\r
-#define MENU_L03 2\t- Read Data @@(DID), $$$$(Size), %%%%(offset)\n\r
-#define MENU_L04 3\t- Check Size @@(DID)\n\r
-#define MENU_L05 4\t- Delete slot @@(DID)\n\r
-#define MENU_L06 5\t- Format\n\r
-#define MENU_L07 6\t- Print FMT Table\n\r
-#define MENU_L08 7\t- Display this menu\n\r
-#define MENU_L09 8\t- Display this menu\n\r
-#define MENU_L10 9\t- Display this menu\n\r
-#define MENU_L11 10\t- Display this menu\n\r
-#define MENU_L12 11\t- Display this menu\n\r
-#define MENU_L13 12\t- Display this menu\n\r
-#define MENU_L14 13\t- Display this menu\n\r
-#define MENU_L15 14\t- Display this menu\n\r
+#define MENU_L03 2\t- TX1\n\r
+#define MENU_L04 3\t- TX2\n\r
+#define MENU_L05 4\t- RX1\n\r
+#define MENU_L06 5\t- RX2\n\r
+#define MENU_L07 6\t- RX AFSK1\n\r
+#define MENU_L08 7\t- RX AFSK2\n\r
+#define MENU_L09 8\t- RX GMSK1\n\r
+#define MENU_L10 9\t- RX GMSK2\n\r
+#define MENU_L11 10\t- TX BEAC\n\r
+#define MENU_L12 11\t- TX AFSK1\n\r
+#define MENU_L13 12\t- TX AFSK2\n\r
+#define MENU_L14 13\t- TX GMSK1\n\r
+#define MENU_L15 14\t- TX GMSK2\n\r
 #define MENU_L16 ----------------------------------------------------------------------------\n\r"
 #define MENU MENU_L00 MENU_L01 MENU_L02 MENU_L03 MENU_L04 MENU_L05 MENU_L06 MENU_L07 MENU_L08 MENU_L09 MENU_L10 MENU_L11 MENU_L12 MENU_L13 MENU_L14 MENU_L15 MENU_L16
 
