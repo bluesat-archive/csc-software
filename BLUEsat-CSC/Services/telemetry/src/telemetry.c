@@ -28,23 +28,18 @@
  * BIT 1 PD1 Power down bits 00 for Normal Operation
  * BIT 0 PD0
  * */
-#define TELEM_I2C_CONFIG_BITS      0x88
-#define TELEM_BYTE_INVALID         0xFF
-#define MIN_SWEEP_TIME				100/portTICK_RATE_MS //portTickRAtems
-#define DEF_SWEEP_TIME				300000/portTICK_RATE_MS //0.1sec min delay
+#define TELEM_I2C_CONFIG_BITS      		0x88
+#define TELEM_BYTE_INVALID         		0xFF
+#define MIN_SWEEP_TIME					100/portTICK_RATE_MS //portTickRAtems
+#define DEF_SWEEP_TIME					300000/portTICK_RATE_MS //0.1sec min delay
 
+#define MAX127_TOTAL_RESULT_ELEMENTS  	MAX127_SENSOR_COUNT * MAX127_COUNT
 
 typedef enum
 {
 	SETSWEEP,
 	READSWEEP
 }Telem_Ops;
-
-typedef enum
-{
-	DEFAULT,
-	EVIL_SWEEP
-} Sweep_Type;
 
 typedef struct
 {
@@ -58,13 +53,15 @@ typedef struct
 
 static TaskToken telemTask_token;
 
-typedef sensor_result all_sensors_per_max127 [MAX127_SENSOR_COUNT];
+//typedef sensor_result all_sensors_per_max127[MAX127_SENSOR_COUNT];
 static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
-const all_sensors_per_max127 *latest_data_buffer = latest_data;
-#define MAX127_TOTAL_RESULT_ELEMETS MAX127_SENSOR_COUNT*MAX127_COUNT
+
+//const all_sensors_per_max127 *latest_data_buffer = (all_sensors_per_max127 *)latest_data;
+const sensor_result *latest_data_buffer = (sensor_result*)latest_data;
 
 static portTASK_FUNCTION(vTelemTask, pvParameters);
 static unsigned int uiLoad_results (sensor_result * buffer, unsigned int size);
+static UnivRetCode enRead_sensor(sensor_lc* location);
 
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 {
@@ -77,7 +74,7 @@ UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 
 	vActivateQueue(telemTask_token, TELEM_QUEUE_SIZE);
 
-	memset((int*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
+	memset((sensor_result*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
 
 	return URC_SUCCESS;
 }
@@ -96,6 +93,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		if (enResult != URC_SUCCESS)
 		{
 			//Perform sweep and update buffer.
+			enRead_sensor(NULL);
 			continue;
 		}
 		//Process command
@@ -103,9 +101,8 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		switch (pComamndHandle->operation)
 		{
 			case SETSWEEP:
-
 				presentSweep = pComamndHandle->sweep;
-				sweepDelay = (pComamndHandle->size > MIN_SWEEP_TIME)?pComamndHandle->size:sweepDelay;
+				sweepDelay = (pComamndHandle->size > MIN_SWEEP_TIME) ? pComamndHandle->size : sweepDelay;
 				break;
 			case READSWEEP:
 				// load sweep
@@ -125,13 +122,13 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
  * size of the buffer is in element entries
  *
  * */
-static unsigned int uiLoad_results (sensor_result * buffer, unsigned int size)
+static unsigned int uiLoad_results (sensor_result *buffer, unsigned int size)
 {
 	unsigned int result = 0;
-	unsigned int max_elem_cpy = (size < MAX127_TOTAL_RESULT_ELEMETS)?size:MAX127_TOTAL_RESULT_ELEMETS;
+	unsigned int max_elem_cpy = (size < MAX127_TOTAL_RESULT_ELEMENTS) ? size : MAX127_TOTAL_RESULT_ELEMENTS;
 	unsigned int max_byte_cpy = max_elem_cpy * sizeof(sensor_result);
 	if (size <= 0) return result;
-	memcpy ((void *) buffer, (void *)latest_data_buffer, max_byte_cpy);
+	memcpy ((void*)buffer, (void*)latest_data_buffer, max_byte_cpy);
 	return max_elem_cpy;
 }
 
@@ -162,7 +159,8 @@ static UnivRetCode enRead_sensor(sensor_lc* location)
 		// Start Conversation
 		data = TELEM_I2C_CONFIG_BITS + (i << 4);
 		length = 1; // write 1 byte
-		returnVal = Comms_I2C_Master(location->address, I2C_WRITE, &isValid, &data, &length, telem_MUTEX, location->bus);
+		returnVal = Comms_I2C_Master(location->address, I2C_WRITE, (char*)&isValid, (char*)&data,
+				(short*)&length, telem_MUTEX, location->bus);
 		xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
 
 		if ((!isValid) || (!returnVal)) return URC_FAIL;
@@ -170,9 +168,9 @@ static UnivRetCode enRead_sensor(sensor_lc* location)
 		// Read Sensor Value
 		length = 2; // read 2 bytes as sensor returns 12 bits
 
-		returnVal = Comms_I2C_Master(location->address, I2C_READ, &isValid,
-				&latest_data[uiAddress_to_index(location->address,location->bus )][i],
-				&length, telem_MUTEX, location->bus);
+		returnVal = Comms_I2C_Master(location->address, I2C_READ, (char*)&isValid,
+				(char*)&latest_data[uiAddress_to_index(location->address,location->bus)][i],
+				(short*)&length, telem_MUTEX, location->bus);
 		xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
 
 		if ((!isValid) || (!returnVal)) return URC_FAIL;

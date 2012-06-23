@@ -11,13 +11,16 @@
 
 #include "UniversalReturnCode.h"
 #include "i2c.h"
+
+typedef short int sensor_result;
+
 typedef struct {
 	unsigned short address;
 	unsigned char channel_mask;
 	I2C_BUS_CHOICE bus : 8;
 } sensor_lc;
 
-typedef unsigned short sensor_result;
+
 
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
 
