@@ -33,6 +33,7 @@ typedef enum
 	TASK_DEMO_APP_2,
 	TASK_GPIO_DEMO,
 	TASK_MEMORY_DEMO,
+	TASK_SWITCHING_DEMO,
 	/** Task ID end **/
 	NUM_TASKID,		/* <--- task ID list size */
 	/* Virtual task IDs */
