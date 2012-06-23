@@ -71,25 +71,77 @@ static portTASK_FUNCTION(vDemoTask, pvParameters)
 	{
 		usReadLen = usDebugRead(pcInputBuf, 2);
 
-		if ((pcInputBuf[0] == 'S' && pcInputBuf[1] == 'D') && usReadLen > 4)
+		if ((pcInputBuf[0] == '0'))
 		{
-
+			switching_OPMODE(DEVICE_MODE);
+		} else if ((pcInputBuf[0] == '1'))
+		{
+			switch (pcInputBuf[1])
+			{
+				case '0':
+					switching_TX_Device(BEACON);
+					break;
+				case '1':
+					switching_TX_Device(AFSK_1);
+					break;
+				case '2':
+					switching_TX_Device(AFSK_2);
+					break;
+				case '3':
+					switching_TX_Device(GMSK_1);
+					break;
+				case '4':
+					switching_TX_Device(GMSK_2);
+					break;
+				default:
+					switching_OPMODE(REPEATER_MODE);
+			}
+		} else if ((pcInputBuf[0] == '2'))
+		{
+			switching_TX(TX_1);
+		} else if ((pcInputBuf[0] == '3'))
+		{
+			switching_TX(TX_2);
+		} else if ((pcInputBuf[0] == '4'))
+		{
+			switching_RX(RX_1);
+		} else if ((pcInputBuf[0] == '5'))
+		{
+			switching_RX(RX_2);
+		} else if ((pcInputBuf[0] == '6'))
+		{
+			switching_RX_Device(AFSK_1);
+		} else if ((pcInputBuf[0] == '7'))
+		{
+			switching_RX_Device(AFSK_2);
+		} else if ((pcInputBuf[0] == '8'))
+		{
+			switching_RX_Device(GMSK_1);
+		} else if ((pcInputBuf[0] == '9'))
+		{
+			switching_RX_Device(GMSK_2);
 		}
 	}
 }
 
 #define MENU_L00 " ----------------------------------- Menu -----------------------------------\n\r
-#define MENU_L01 SD@@(Data)\t- Store Data @@(DID)\n\r
-#define MENU_L02 AD@@(Data)\t- Append Data @@(DID)\n\r
-#define MENU_L03 RD@@$$$$%%%%\t- Read Data @@(DID), $$$$(Size), %%%%(offset)\n\r
-#define MENU_L04 CS@@\t\t- Check Size @@(DID)\n\r
-#define MENU_L05 DD@@\t\t- Delete slot @@(DID)\n\r
-#define MENU_L06 FF\t\t- Format\n\r
-#define MENU_L07 PT\t\t- Print FMT Table\n\r
-#define MENU_L08 MU\t\t- Display this menu\n\r
-#define MENU_L09 Note: All value in decimal\n\r
-#define MENU_L10 ----------------------------------------------------------------------------\n\r"
-#define MENU MENU_L00 MENU_L01 MENU_L02 MENU_L03 MENU_L04 MENU_L05 MENU_L06 MENU_L07 MENU_L08 MENU_L09 MENU_L10
+#define MENU_L01 0\t- DEVICE MODE\n\r
+#define MENU_L02 1\t- REPEATER MODE\n\r
+#define MENU_L03 2\t- Read Data @@(DID), $$$$(Size), %%%%(offset)\n\r
+#define MENU_L04 3\t- Check Size @@(DID)\n\r
+#define MENU_L05 4\t- Delete slot @@(DID)\n\r
+#define MENU_L06 5\t- Format\n\r
+#define MENU_L07 6\t- Print FMT Table\n\r
+#define MENU_L08 7\t- Display this menu\n\r
+#define MENU_L09 8\t- Display this menu\n\r
+#define MENU_L10 9\t- Display this menu\n\r
+#define MENU_L11 10\t- Display this menu\n\r
+#define MENU_L12 11\t- Display this menu\n\r
+#define MENU_L13 12\t- Display this menu\n\r
+#define MENU_L14 13\t- Display this menu\n\r
+#define MENU_L15 14\t- Display this menu\n\r
+#define MENU_L16 ----------------------------------------------------------------------------\n\r"
+#define MENU MENU_L00 MENU_L01 MENU_L02 MENU_L03 MENU_L04 MENU_L05 MENU_L06 MENU_L07 MENU_L08 MENU_L09 MENU_L10 MENU_L11 MENU_L12 MENU_L13 MENU_L14 MENU_L15 MENU_L16
 
 void vPrintMenu(void)
 {
