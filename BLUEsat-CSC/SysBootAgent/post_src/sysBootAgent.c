@@ -97,5 +97,9 @@ unsigned int initApplications(void)
 	vGpioDemo_Init(APP_TASK_PRIORITY);
 #endif
 
+#ifdef SWITCHINGDEMO_H_
+	vSwitchingDemo_Init(APP_TASK_PRIORITY);
+#endif
+
 	return 0;
 }

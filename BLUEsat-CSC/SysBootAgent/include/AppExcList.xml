@@ -53,7 +53,13 @@ files:   A list of space seperated files to ignore from the
    <GpioDemo>
       <name>GPIO Demo</name>
       <desc>Demo application to test GPIO</desc>
-      <disable>NO</disable>
+      <disable>YES</disable>
       <files>gpioDemo.c</files>
    </GpioDemo>
+   <SwitchingDemo>
+      <name>Switching Demo</name>
+      <desc>Demo application to test Switching circuit</desc>
+      <disable>NO</disable>
+      <files>switchingDemo.c</files>
+   </SwitchingDemo>
 </applist>
