@@ -81,7 +81,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		enResult = enGetRequest(telemTask_token, &incoming_packet, sweepDelay);
 		if (enResult != URC_SUCCESS)
 		{
-			//Perform sweep nand update buffer.
+			//Perform sweep and update buffer.
 			continue;
 		}
 		//Process command
@@ -106,7 +106,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 
 
 
-static int iRead_sensor(sensor_lc* location)
+static UnivRetCode iRead_sensor(sensor_lc* location)
 {
 	int isValid;
 	int length;
