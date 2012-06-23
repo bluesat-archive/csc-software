@@ -16,4 +16,4 @@
 #define GPIODEMO_H_
 
 void vGpioDemo_Init(unsigned portBASE_TYPE uxPriority);
-#endif /* MEMORYDEMO_H_ */
+#endif /* GPIODEMO_H_ */
