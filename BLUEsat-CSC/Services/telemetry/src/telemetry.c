@@ -10,6 +10,7 @@
 #include "semphr.h"
 #include "UniversalReturnCode.h"
 #include "lib_string.h"
+#include "telemetrySweep.h"
 
 #define MAX127_COUNT 		       16 /*8 on each bus as MAX127 address is limited to 3 bits + 5 chip bits*/
 #define MAX127_SENSOR_COUNT		   8
@@ -39,6 +40,12 @@ typedef enum
 	READSWEEP
 }Telem_Ops;
 
+typedef enum
+{
+	DEFAULT,
+	EVIL_SWEEP
+} Sweep_Type;
+
 typedef struct
 {
 	Telem_Ops operation; // Telem server operation
@@ -56,10 +63,10 @@ static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
 const all_sensors_per_max127 *latest_data_buffer = latest_data;
 #define MAX127_TOTAL_RESULT_ELEMETS MAX127_SENSOR_COUNT*MAX127_COUNT
 
-static void bzero(void);
 static portTASK_FUNCTION(vTelemTask, pvParameters);
+static unsigned int uiLoad_results (sensor_result * buffer, unsigned int size);
 
-void vTelem_Init(unsigned portBASE_TYPE uxPriority)
+UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 {
 	telemTask_token = ActivateTask(TASK_TELEM,
 								"Telem",
@@ -71,6 +78,8 @@ void vTelem_Init(unsigned portBASE_TYPE uxPriority)
 	vActivateQueue(telemTask_token, TELEM_QUEUE_SIZE);
 
 	memset((int*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
+
+	return URC_SUCCESS;
 }
 
 static portTASK_FUNCTION(vTelemTask, pvParameters)
@@ -142,14 +151,14 @@ static UnivRetCode enRead_sensor(sensor_lc* location)
 	int isValid;
 	unsigned int length;
 	char data;
-	insigned int i;
+	unsigned int i;
 	portBASE_TYPE returnVal;
 	xSemaphoreHandle telem_MUTEX;
 
 	vSemaphoreCreateBinary( telem_MUTEX );
 	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
 	{
-		if (!(channel_mask & (1 << i))) continue;
+		if (!(location->channel_mask & (1 << i))) continue;
 		// Start Conversation
 		data = TELEM_I2C_CONFIG_BITS + (i << 4);
 		length = 1; // write 1 byte
