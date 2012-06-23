@@ -36,8 +36,7 @@
 
 typedef enum
 {
-	DEFAULT,
-	EVIL_SWEEP
+	DEFAULT
 } Sweep_Type;
 
 typedef enum
