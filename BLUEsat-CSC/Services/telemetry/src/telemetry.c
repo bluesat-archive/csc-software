@@ -51,7 +51,10 @@ typedef struct
 
 static TaskToken telemTask_token;
 
+typedef sensor_result all_sensors_per_max127 [MAX127_SENSOR_COUNT];
 static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
+const all_sensors_per_max127 *latest_data_buffer = latest_data;
+#define MAX127_TOTAL_RESULT_ELEMETS MAX127_SENSOR_COUNT*MAX127_COUNT
 
 static void bzero(void);
 static portTASK_FUNCTION(vTelemTask, pvParameters);
@@ -97,7 +100,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 				break;
 			case READSWEEP:
 				// load sweep
-
+				uiLoad_results (pComamndHandle->buffer, pComamndHandle->size);
 				break;
 			default:
 				vCompleteRequest(incoming_packet.Token, URC_FAIL);
@@ -109,13 +112,18 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 
 /*void * memcpy(void * dest, const void *src, unsigned long count)
  * takes in the output buffer and the size in number of sensor results
+ * simple buffer copy function to populate the given data with as much data as possible
+ * size of the buffer is in element entries
+ *
  * */
 static unsigned int uiLoad_results (sensor_result * buffer, unsigned int size)
 {
 	unsigned int result = 0;
-	unsigned int max_cpy;
+	unsigned int max_elem_cpy = (size < MAX127_TOTAL_RESULT_ELEMETS)?size:MAX127_TOTAL_RESULT_ELEMETS;
+	unsigned int max_byte_cpy = max_elem_cpy * sizeof(sensor_result);
 	if (size <= 0) return result;
-
+	memcpy ((void *) buffer, (void *)latest_data_buffer, max_byte_cpy);
+	return max_elem_cpy;
 }
 
 static unsigned int uiAddress_to_index (unsigned short address, I2C_BUS_CHOICE bus)
