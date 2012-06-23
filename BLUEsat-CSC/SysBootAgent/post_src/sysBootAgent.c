@@ -11,6 +11,10 @@
 
 unsigned int initDrivers(void)
 {
+#ifdef GPIO_H_
+	Gpio_Init();
+#endif
+
 #ifdef UART_H_
 	//UART driver
 	Comms_UART_Init();
@@ -25,12 +29,12 @@ unsigned int initDrivers(void)
 	Comms_I2C_Init();
 #endif
 
-#ifdef GPIO_H_
-	Gpio_Init();
-#endif
-
 #ifdef SWITCHING_H_
 	Switching_Init();
+#endif
+
+#ifdef MODEM_H_
+	Comms_Modem_Timer_Init();
 #endif
 
 #ifdef IAP_H_
@@ -63,7 +67,7 @@ unsigned int initServices(void)
 #endif*/
 
 #ifdef BEACON_H_
-	vBeacon_Init(SERV_TASK_PRIORITY + 1);
+//	vBeacon_Init(SERV_TASK_PRIORITY + 1);
 #endif
 
 #ifdef TELEM_H_
@@ -98,8 +102,13 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef SWITCHINGDEMO_H_
-	vSwitchingDemo_Init(APP_TASK_PRIORITY);
+//	vSwitchingDemo_Init(APP_TASK_PRIORITY);
 #endif
+
+#ifdef MODEMDEMO_H_
+	vModemDemo_Init(APP_TASK_PRIORITY);
+#endif
+
 
 	return 0;
 }
