@@ -33,8 +33,8 @@
 
 void Comms_Modem_Timer_Init(void);
 
-signed portBASE_TYPE Comms_Modem_Write_Char( signed portCHAR cOutChar, portTickType xBlockTime, portSHORT sel );
-void Comms_Modem_Write_Str( const signed portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel );
+signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBlockTime, portSHORT sel );
+void Comms_Modem_Write_Str( const  portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel );
 void Comms_Modem_Write_Hex(const void * const loc, unsigned portSHORT usStringLength,portSHORT sel);
 void setModemTransmit(portSHORT sel);
 void setModemReceive(portSHORT sel);

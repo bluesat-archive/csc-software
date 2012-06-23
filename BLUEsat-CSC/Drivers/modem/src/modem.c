@@ -166,7 +166,7 @@ signed portBASE_TYPE Comms_Modem_Read_Char( signed portCHAR *pcRxedChar, portTic
 }
 */
 
-signed portBASE_TYPE Comms_Modem_Write_Char( signed portCHAR cOutChar, portTickType xBlockTime, portSHORT sel )
+signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBlockTime, portSHORT sel )
 {
 	(void) xBlockTime;
 	//enable_VIC_irq(MODEM_INTERRUPTS);
@@ -206,7 +206,7 @@ unsigned portSHORT Comms_Modem_Read_Str( portCHAR * pcString, unsigned portSHORT
 
 */
 
-void Comms_Modem_Write_Str( const signed portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel )
+void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel )
 {
 	const signed portCHAR *pxNext;
 	unsigned portSHORT usLength = 0;
