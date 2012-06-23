@@ -17,6 +17,8 @@ typedef struct {
 	I2C_BUS_CHOICE bus : 8;
 } sensor_lc;
 
+typedef unsigned short sensor_result;
+
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
 
 
