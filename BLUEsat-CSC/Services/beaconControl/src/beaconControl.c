@@ -76,10 +76,10 @@ static portTASK_FUNCTION(vBeaconTask, pvParameters)
 		switching_giveSemaphore();
 
 		// sleep for 1 minutes (for testing 5 seconds)
-		vTaskDelay( 5000 / portTICK_RATE_MS );
+		vTaskDelay( 50000 / portTICK_RATE_MS );
 		//// debug
 
-		vDebugPrint(Beacon_TaskToken, "after 5 seconds wake up\n\r", 0 ,0, 0);
+		vDebugPrint(Beacon_TaskToken, "after 50 seconds wake up\n\r", 0 ,0, 0);
 
 
 		// end of debug

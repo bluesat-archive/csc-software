@@ -64,24 +64,24 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		{
 			switching_TX_Device(AFSK_1);
 			switching_TX(TX_1);
-			Comms_Modem_Write_Str( (signed char*)&incoming_packet, 100, MODEM_1 );
+			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_1 );
 			modem_takeSemaphore(MODEM_1);
 		} else if (counter_should_not_be_final % 4 == 1)
 		{
 			switching_TX_Device(AFSK_1);
 			switching_TX(TX_2);
-			Comms_Modem_Write_Str( (signed char*)&incoming_packet, 100, MODEM_1 );
+			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_1 );
 			modem_takeSemaphore(MODEM_1);
 		} else if (counter_should_not_be_final % 4 == 2)
 		{
 			switching_TX_Device(AFSK_2);
 			switching_TX(TX_1);
-			Comms_Modem_Write_Str( (signed char*)&incoming_packet, 100, MODEM_2 );
+			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_2 );
 			modem_takeSemaphore(MODEM_2);
 		} else {
 			switching_TX_Device(AFSK_2);
 			switching_TX(TX_2);
-			Comms_Modem_Write_Str( (signed char*)&incoming_packet, 100, MODEM_2 );
+			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_2 );
 			modem_takeSemaphore(MODEM_2);
 		}
 
