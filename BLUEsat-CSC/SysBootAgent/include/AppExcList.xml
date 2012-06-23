@@ -62,10 +62,10 @@ files:   A list of space seperated files to ignore from the
       <disable>YES</disable>
       <files>switchingDemo.c</files>
    </SwitchingDemo>
-   <SwitchingDemo>
+   <ModemDemo>
       <name>Modem Demo</name>
       <desc>Demo application to test Modem</desc>
-      <disable>NO</disable>
+      <disable>YES</disable>
       <files>modemDemo.c</files>
-   </SwitchingDemo>
+   </ModemDemo>
 </applist>
