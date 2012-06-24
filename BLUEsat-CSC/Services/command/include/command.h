@@ -171,4 +171,18 @@ portCHAR *pcGetTaskName(TaskToken taskToken);
  */
 TaskID enGetTaskID(TaskToken taskToken);
 
+/**
+ * \brief Sleep for specified time
+ *
+ * \param[in] usTimeMS Time sleep in milliseconds
+ */
+void vSleep(unsigned portSHORT usTimeMS);
+
+#if !defined(NO_DEBUG) && (INCLUDE_uxTaskGetStackHighWaterMark == 1)
+	/**
+	 * \brief Print unused stack size for all tasks
+	 */
+	void vShowAllTaskUnusedStack(void);
+#endif
+
 #endif /* COMMAND_H_ */

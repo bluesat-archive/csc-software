@@ -26,6 +26,7 @@
 static xQueueHandle 	xTaskQueueHandles	[NUM_TASKID];
 static struct taskToken TaskTokens			[NUM_TASKID];
 static xSemaphoreHandle	TaskSemphrs			[NUM_TASKID];
+static xTaskHandle TaskHandles				[NUM_TASKID];
 
 static portTASK_FUNCTION(vCommandTask, pvParameters);
 
@@ -162,8 +163,8 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 	//catch NO task name input
 	if (pcTaskName == NULL) return NULL;
 
-	//create task in memory
-	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, NULL);
+	//create task
+	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, TaskHandles[enTaskID]);
 
 	//store task profile in array
 	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
@@ -173,7 +174,7 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 	//create semaphore for task
 	vSemaphoreCreateBinary(TaskSemphrs[enTaskID]);
 
-	//exhuast task semaphore
+	//exhaust task semaphore
 	xSemaphoreTake(TaskSemphrs[enTaskID], NO_BLOCK);
 	
 	//return pointer to taks profile
@@ -208,3 +209,35 @@ TaskID enGetTaskID(TaskToken taskToken)
 	//get task ID from profile
 	return taskToken->enTaskID;
 }
+
+void vSleep(unsigned portSHORT usTimeMS)
+{
+	vTaskDelay( usTimeMS / portTICK_RATE_MS );
+}
+
+#if !defined(NO_DEBUG) && (INCLUDE_uxTaskGetStackHighWaterMark == 1)
+	#include "debug.h"
+	void vShowAllTaskUnusedStack(void)
+	{
+		unsigned portSHORT usIndex;
+
+		vDebugPrint(&TaskTokens[TASK_COMMAND],
+					"***** Unused Stack Table *****\n\r",
+					0, 0, 0);
+
+		vDebugPrint(&TaskTokens[TASK_COMMAND],
+					"Task Name\t\tUnused Stack Size(Word)\n\r",
+					0, 0, 0);
+
+		for (usIndex = 0; usIndex < NUM_TASKID; usIndex++)
+		{
+			if (TaskTokens[usIndex].pcTaskName != NULL)
+			{
+				vDebugPrint(&TaskTokens[TASK_COMMAND],
+							"%16s\t\t%d\n\r",
+							(unsigned portLONG)TaskTokens[usIndex].pcTaskName,
+							(unsigned portLONG)uxTaskGetStackHighWaterMark(TaskHandles[usIndex]), 0);
+			}
+		}
+	}
+#endif
