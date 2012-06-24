@@ -67,7 +67,7 @@
  */
 void vInitStaticMemoryBanks(void);
 
-void EMC_Init(void)
+void vEMC_Init(void)
 {
 	portENTER_CRITICAL();
 	{
