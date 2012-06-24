@@ -13,9 +13,11 @@
 
 #include "service.h"
 #include "beaconControl.h"
-#include "task.h"
 #include "switching.h"
 #include "debug.h"
+
+#define TRANSMISSION_TIME	1000
+#define BEACON_SLEEP_TIME	5000	// sleep for 1 minutes (for testing 5 seconds)
 
 //task token for accessing services
 static TaskToken Beacon_TaskToken;
@@ -39,50 +41,31 @@ static portTASK_FUNCTION(vBeaconTask, pvParameters)
 {
 	(void) pvParameters;
 
-	int i = 0;
-	vDebugPrint(Beacon_TaskToken, "before\n\r", 0 ,0, 0);
-	while (1)
+	unsigned portCHAR ucToggle;
+
+	for (ucToggle = 0; ; ++ucToggle)
 	{
-		// grab semaphore
+		// grab switching circuit semaphore
 		switching_takeSemaphore();
+
+		vDebugPrint(Beacon_TaskToken, "Acquired switching circuit\n\r", 0 ,0, 0);
 
 		// call switching circuit
 		switching_OPMODE(DEVICE_MODE);
 		switching_TX_Device(BEACON);
-		//// debug
 
-		vDebugPrint(Beacon_TaskToken, "after switching TX device\n\r", 0 ,0, 0);
+		switching_TX((ucToggle % 2 == 0) ? TX_1 : TX_2);
 
-		// end of debug
+		vDebugPrint(Beacon_TaskToken, "Finished setup switching TX device, transmit for %d ms\n\r", TRANSMISSION_TIME ,0, 0);
 
-		if (i % 2 == 0)
-		{
-			switching_TX(TX_1);
-		} else
-		{
-			switching_TX(TX_2);
-		}
+		vSleep( TRANSMISSION_TIME );
 
-		vTaskDelay( 1000 / portTICK_RATE_MS );
-
-		//// debug
-
-		vDebugPrint(Beacon_TaskToken, "after 1 seconds wake up\n\r", 0 ,0, 0);
-
-
-		// end of debug
 		switching_TX_Device(AFSK_1);
-		// release semaphore
+		// release switching circuit semaphore
 		switching_giveSemaphore();
 
-		// sleep for 1 minutes (for testing 5 seconds)
-		vTaskDelay( 5000 / portTICK_RATE_MS );
-		//// debug
+		vDebugPrint(Beacon_TaskToken, "Released switching circuit, silence for %d ms\n\r", BEACON_SLEEP_TIME ,0, 0);
 
-		vDebugPrint(Beacon_TaskToken, "after 5 seconds wake up\n\r", 0 ,0, 0);
-
-
-		// end of debug
-		i++;
+		vSleep( BEACON_SLEEP_TIME );
 	}
 }
