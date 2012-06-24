@@ -38,11 +38,12 @@ sub process
 
 > Running Preprocess Parser System for Conditional Building <
 -------------------------------------------------------------
-
 MOO_SQUID
    # Read in exclude files
    my @ignoreList = get_exclusion_list($excFile);  
+
    print <<'MOO_SQUID';
+   
 - Exclusion List Extracted
 MOO_SQUID
    
@@ -156,6 +157,8 @@ sub get_exclusion_list
    foreach my $key ( keys %$data )
    {
       my $tempApp = $data->{$key};
+      my $appState = ($tempApp->{disable}=~/yes/i) ? "DISABLE" : "ENABLE";
+      print "$appState\t$tempApp->{name}\n";
       next unless ($tempApp->{disable}=~/yes/i);
       push (@ignoreFiles, split(/\s/,$tempApp->{files}));
    }
@@ -213,14 +216,15 @@ sub clean_up_unused_files
    my @unwantedFiles = @_;
    my $summary_deleted = 0;
    return unless (@unwantedFiles);
+      
    foreach my $tempFile (@unwantedFiles)
    {
       # Do not delete directories
       next if (-d $tempFile);
       # Delete file if it exists
-      unlink $tempFile if (-e $tempFile);
+      unlink $tempFile  if (-e $tempFile);
       ++$summary_deleted;
-   }
+   } 
    return $summary_deleted;
 }
 
