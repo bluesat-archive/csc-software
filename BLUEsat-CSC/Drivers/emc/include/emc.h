@@ -39,6 +39,6 @@
 /**
  * \brief Initialise External Memory Controller.
  */
-void EMC_Init(void);
+void vEMC_Init(void);
 
 #endif /* EMC_H_ */
