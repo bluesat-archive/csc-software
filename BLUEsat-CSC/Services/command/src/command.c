@@ -26,7 +26,7 @@
 static xQueueHandle 	xTaskQueueHandles	[NUM_TASKID];
 static struct taskToken TaskTokens			[NUM_TASKID];
 static xSemaphoreHandle	TaskSemphrs			[NUM_TASKID];
-static xTaskHandle TaskHandles				[NUM_TASKID];
+static xTaskHandle 		TaskHandles			[NUM_TASKID];
 
 static portTASK_FUNCTION(vCommandTask, pvParameters);
 
@@ -164,7 +164,7 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 	if (pcTaskName == NULL) return NULL;
 
 	//create task
-	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, TaskHandles[enTaskID]);
+	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, &TaskHandles[enTaskID]);
 
 	//store task profile in array
 	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
@@ -222,11 +222,7 @@ void vSleep(unsigned portSHORT usTimeMS)
 		unsigned portSHORT usIndex;
 
 		vDebugPrint(&TaskTokens[TASK_COMMAND],
-					"***** Unused Stack Table *****\n\r",
-					0, 0, 0);
-
-		vDebugPrint(&TaskTokens[TASK_COMMAND],
-					"Task Name\t\tUnused Stack Size(Word)\n\r",
+					"********** Unused Stack Table ***********\n\r",
 					0, 0, 0);
 
 		for (usIndex = 0; usIndex < NUM_TASKID; usIndex++)
@@ -236,7 +232,7 @@ void vSleep(unsigned portSHORT usTimeMS)
 				vDebugPrint(&TaskTokens[TASK_COMMAND],
 							"%16s\t\t%d\n\r",
 							(unsigned portLONG)TaskTokens[usIndex].pcTaskName,
-							(unsigned portLONG)uxTaskGetStackHighWaterMark(TaskHandles[usIndex]), 0);
+							(unsigned portLONG)uxTaskGetStackHighWaterMark(TaskHandles[usIndex]),0);
 			}
 		}
 	}
