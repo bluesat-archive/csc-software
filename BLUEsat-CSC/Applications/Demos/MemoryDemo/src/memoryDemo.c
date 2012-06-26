@@ -60,9 +60,9 @@ static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 		for(ucIndex = 0; ucIndex < MAX_FIB_SIZE; ++ucIndex)
 		{
 			vDebugPrint(MemDEMO_TaskToken,
-						"%d\n\r",
+						"Fib[%d] = %d\n\r",
+						(unsigned portLONG)ucIndex,
 						pulFibonacciSeq[ucIndex],
-						NO_INSERT,
 						NO_INSERT);
 		}
 	}
