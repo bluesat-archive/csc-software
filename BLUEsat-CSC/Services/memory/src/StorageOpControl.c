@@ -16,14 +16,14 @@
 
 UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 								unsigned portCHAR ucAID,
-								MemoryContent *pMemoryContent)
+								StorageContent *pStorageContent)
 {
 	unsigned portLONG ulRetVal;
 	//translate operation
-	switch (pMemoryContent->Operation)
+	switch (pStorageContent->Operation)
 	{
 		case MEM_STORE	:	pGSACore->DebugTrace("AID: %d requested Store\n\r", ucAID, 0, 0);
-							return xGSAWrite(pGSACore, ucAID, pMemoryContent->DID, pMemoryContent->Size, pMemoryContent->Ptr);
+							return xGSAWrite(pGSACore, ucAID, pStorageContent->DID, pStorageContent->Size, pStorageContent->Ptr);
 
 		case MEM_APPEND	:	pGSACore->DebugTrace("AID: %d requested Append\n\r", ucAID, 0, 0);
 							break;
@@ -32,18 +32,18 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 							break;
 
 		case MEM_SIZE	:	pGSACore->DebugTrace("AID: %d requested Size\n\r", ucAID, 0, 0);
-							ulRetVal = ulGSASize(pGSACore, ucAID, pMemoryContent->DID);
-							if (pMemoryContent->pulRetValue != NULL) *(pMemoryContent->pulRetValue) = ulRetVal;
+							ulRetVal = ulGSASize(pGSACore, ucAID, pStorageContent->DID);
+							if (pStorageContent->pulRetValue != NULL) *(pStorageContent->pulRetValue) = ulRetVal;
 							break;
 
 		case MEM_READ	:	pGSACore->DebugTrace("AID: %d requested Read\n\r", ucAID, 0, 0);
-							ulRetVal = ulGSARead(pGSACore, ucAID, pMemoryContent->DID, pMemoryContent->Offset, pMemoryContent->Size, pMemoryContent->Ptr);
-							if (pMemoryContent->pulRetValue != NULL) *(pMemoryContent->pulRetValue) = ulRetVal;
+							ulRetVal = ulGSARead(pGSACore, ucAID, pStorageContent->DID, pStorageContent->Offset, pStorageContent->Size, pStorageContent->Ptr);
+							if (pStorageContent->pulRetValue != NULL) *(pStorageContent->pulRetValue) = ulRetVal;
 							break;
 
 		default			:	pGSACore->DebugTrace("AID: %d requested unknown operation %d!\n\r",
 												ucAID,
-												pMemoryContent->Operation, 0);
+												pStorageContent->Operation, 0);
 							return URC_FAIL;
 	}
 

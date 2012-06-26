@@ -44,21 +44,21 @@ typedef struct
 	unsigned portLONG Size		:	SIZE_BIT_SIZE;	//data size/buffer size
 	portCHAR *Ptr;									//pointer to data/buffer
 	unsigned portLONG *pulRetValue;					//pointer to location for storing return value
-} MemoryContent;
+} StorageContent;
 
-#define MEMORY_CONTENT_SIZE	sizeof(MemoryContent)
+#define STORAGE_CONTENT_SIZE	sizeof(StorageContent)
 
 /**
  * \brief Process storage message received by different memory tasks
  *
- * \param[in] pGSACore 		Core for GSA.
- * \param[in] ucAID 		Application ID
- * \param[in] pMemoryContent Storage request message.
+ * \param[in] pGSACore 			Core for GSA.
+ * \param[in] ucAID 			Application ID
+ * \param[in] pStorageContent 	Storage request message.
  *
  * \returns SUCCESS or FAIL
  */
 UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 								unsigned portCHAR ucAID,
-								MemoryContent *pMemoryContent);
+								StorageContent *pStorageContent);
 
 #endif /* STORAGE_OP_CONTROL_H_ */
