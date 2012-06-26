@@ -56,7 +56,7 @@ static portTASK_FUNCTION(vFRAMTask, pvParameters)
 	(void) pvParameters;
 	UnivRetCode enResult;
 	MessagePacket incoming_packet;
-	MemoryContent *pContentHandle;
+	StorageContent *pContentHandle;
 
 	vDebugPrint(FRAM_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
@@ -66,7 +66,7 @@ static portTASK_FUNCTION(vFRAMTask, pvParameters)
 
 		if (enResult != URC_SUCCESS) continue;
 
-		pContentHandle = (MemoryContent *)incoming_packet.Data;
+		pContentHandle = (StorageContent *)incoming_packet.Data;
 
 		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&FRAMCore,
 																	incoming_packet.Src,
