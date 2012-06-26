@@ -182,6 +182,7 @@ combo:
 clean: cleantests
 	rm -f $(BUILDS_DIR)/*
 	rm -f $(IMAGE_DIR)/csc.*
+	rm -f $(INCLUSION_LIST)
 	
 cleantests:
 	rm -f $(IMAGE_DIR)/test_*.exe
