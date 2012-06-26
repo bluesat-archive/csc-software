@@ -30,8 +30,8 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 
 	ulFreeMemoryPointer = MEMORY_START_ADDR;
 
-	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_8_BITS) == URC_FAIL) return;
-	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_16_BITS) == URC_FAIL) return;
+	//if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_8_BITS) == URC_FAIL) return;
+	//if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_16_BITS) == URC_FAIL) return;
 	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_32_BITS) == URC_FAIL) return;
 
 	xMemoryUsable = pdTRUE;
