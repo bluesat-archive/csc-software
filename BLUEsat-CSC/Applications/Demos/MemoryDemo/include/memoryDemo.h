@@ -1,7 +1,8 @@
  /**
- *  \file Demo_Application_2.h
+ *  \file memoryDemo.h
  *
- *  \brief An application demonstrating how an application operate
+ *  \brief An application demonstrating how to use pvJMalloc for additional memory
+ *  		and periodic trigger stack usage for all tasks
  *
  *  \author $Author: James Qin $
  *  \version 1.0
@@ -12,14 +13,14 @@
  *  \note No Notes for now
  */
 
-#ifndef MEMORYDEMO_H_
-#define MEMORYDEMO_H_
+#ifndef MEMORY_DEMO_H_
+#define MEMORY_DEMO_H_
 
 /**
  * \brief Initialise Memory Demo application
  *
  * \param[in] uxPriority Priority for Memory Demo application.
  */
-void vMemDemo_Init(unsigned portBASE_TYPE uxPriority);
+void vMemoryDemo_Init(unsigned portBASE_TYPE uxPriority);
 
-#endif /* MEMORYDEMO_H_ */
+#endif /* MEMORY_DEMO_H_ */
