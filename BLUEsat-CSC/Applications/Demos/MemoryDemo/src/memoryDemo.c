@@ -19,8 +19,9 @@
 #include "debug.h"
 #include "lib_string.h"
 
-#define MAX_FIB_SIZE		48
-#define SLEEP_TIME			10000
+#define MAX_FIB_SIZE			48
+#define MAX_ARITH_PROG_SIZE		251
+#define SLEEP_TIME				10000
 
 //task token for accessing services and other applications
 static TaskToken MemDEMO_TaskToken;
@@ -40,31 +41,55 @@ void vMemoryDemo_Init(unsigned portBASE_TYPE uxPriority)
 static portTASK_FUNCTION(vMemDemoTask, pvParameters)
 {
 	(void) pvParameters;
-	unsigned portLONG *	pulFibonacciSeq;
-	unsigned portCHAR	ucFibIndex;
+	unsigned portLONG	*pulFibonacciSeq, *pulArithProg;
+	unsigned portCHAR	ucIndex;
 	unsigned portLONG	ulFibN_Minus1, ulFibN_Minus2;
 
 	pulFibonacciSeq = (unsigned portLONG *)pvJMalloc(MAX_FIB_SIZE * sizeof(portLONG));
+	pulArithProg	= (unsigned portLONG *)pvJMalloc(sizeof(portLONG));
 
 	if (pulFibonacciSeq != NULL)
 	{
-		for(pulFibonacciSeq[0] = ulFibN_Minus2 = 0, pulFibonacciSeq[1] = ulFibN_Minus1 = 1, ucFibIndex = 2;
-			ucFibIndex < MAX_FIB_SIZE;
-			++ucFibIndex)
+		for(pulFibonacciSeq[0] = ulFibN_Minus2 = 0, pulFibonacciSeq[1] = ulFibN_Minus1 = 1, ucIndex = 2;
+			ucIndex < MAX_FIB_SIZE;
+			++ucIndex)
 		{
-			pulFibonacciSeq[ucFibIndex] = ulFibN_Minus1 + ulFibN_Minus2;
+			pulFibonacciSeq[ucIndex] = ulFibN_Minus1 + ulFibN_Minus2;
 			ulFibN_Minus2 = ulFibN_Minus1;
-			ulFibN_Minus1 = pulFibonacciSeq[ucFibIndex];
+			ulFibN_Minus1 = pulFibonacciSeq[ucIndex];
 		}
-		for(ucFibIndex = 0; ucFibIndex < MAX_FIB_SIZE; ++ucFibIndex)
+		for(ucIndex = 0; ucIndex < MAX_FIB_SIZE; ++ucIndex)
 		{
 			vDebugPrint(MemDEMO_TaskToken,
 						"%d\n\r",
-						pulFibonacciSeq[ucFibIndex],
+						pulFibonacciSeq[ucIndex],
 						NO_INSERT,
 						NO_INSERT);
 		}
 	}
+	vDebugPrint(MemDEMO_TaskToken,
+				"Fibonacci Array * = %p\n\r",
+				(unsigned portLONG)pulFibonacciSeq,
+				NO_INSERT,
+				NO_INSERT);
+
+	if (pulArithProg != NULL)
+	{
+		for(ucIndex = 0, *pulArithProg = 0; ucIndex < MAX_ARITH_PROG_SIZE; ++ucIndex)
+		{
+			*pulArithProg += ucIndex;
+		}
+		vDebugPrint(MemDEMO_TaskToken,
+					"AP(250) = %d\n\r",
+					*pulArithProg,
+					NO_INSERT,
+					NO_INSERT);
+	}
+	vDebugPrint(MemDEMO_TaskToken,
+				"Arithmetic Progression Array * = %p\n\r",
+				(unsigned portLONG)pulArithProg,
+				NO_INSERT,
+				NO_INSERT);
 
 	for ( ; ; )
 	{
