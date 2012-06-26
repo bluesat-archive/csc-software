@@ -160,22 +160,26 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 						unsigned 	portSHORT usStackSize,
 						pdTASK_CODE pvTaskFunction)
 {
-	//catch NO task name input
-	if (pcTaskName == NULL) return NULL;
+	taskENTER_CRITICAL();
+	{
+		//catch NO task name input & task already exist
+		if (pcTaskName == NULL || TaskTokens[enTaskID].pcTaskName != NULL) return NULL;
 
-	//create task
-	xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, &TaskHandles[enTaskID]);
+		//create task
+		xTaskCreate(pvTaskFunction, (signed portCHAR *)pcTaskName, usStackSize, NULL, uxPriority, &TaskHandles[enTaskID]);
 
-	//store task profile in array
-	TaskTokens[enTaskID].pcTaskName		= pcTaskName;
-	TaskTokens[enTaskID].enTaskType		= enTaskType;
-	TaskTokens[enTaskID].enTaskID		= enTaskID;
+		//store task profile in array
+		TaskTokens[enTaskID].pcTaskName		= pcTaskName;
+		TaskTokens[enTaskID].enTaskType		= enTaskType;
+		TaskTokens[enTaskID].enTaskID		= enTaskID;
 
-	//create semaphore for task
-	vSemaphoreCreateBinary(TaskSemphrs[enTaskID]);
+		//create semaphore for task
+		vSemaphoreCreateBinary(TaskSemphrs[enTaskID]);
 
-	//exhaust task semaphore
-	xSemaphoreTake(TaskSemphrs[enTaskID], NO_BLOCK);
+		//exhaust task semaphore
+		xSemaphoreTake(TaskSemphrs[enTaskID], NO_BLOCK);
+	}
+	taskEXIT_CRITICAL();
 	
 	//return pointer to taks profile
 	return &TaskTokens[enTaskID];
@@ -183,11 +187,19 @@ TaskToken ActivateTask(TaskID 		enTaskID,
 
 unsigned portSHORT vActivateQueue(TaskToken taskToken, unsigned portSHORT usNumElement)
 {
-	//trim requested queue size
-	usNumElement = (usNumElement > MAX_QUEUE_REQ_SIZE) ? MAX_QUEUE_REQ_SIZE : usNumElement;
+	taskENTER_CRITICAL();
+	{
+		//detect queue already exist
+		//TODO work out how to return existing queue size
+		if (xTaskQueueHandles[taskToken->enTaskID] != NULL) return 0;
 
-	//create task queue memory
-	xTaskQueueHandles[taskToken->enTaskID] = xQueueCreate(usNumElement, sizeof(MessagePacket));
+		//trim requested queue size
+		usNumElement = (usNumElement > MAX_QUEUE_REQ_SIZE) ? MAX_QUEUE_REQ_SIZE : usNumElement;
+
+		//create task queue memory
+		xTaskQueueHandles[taskToken->enTaskID] = xQueueCreate(usNumElement, sizeof(MessagePacket));
+	}
+	taskEXIT_CRITICAL();
 
 	return usNumElement;
 }
@@ -215,7 +227,7 @@ void vSleep(unsigned portSHORT usTimeMS)
 	vTaskDelay( usTimeMS / portTICK_RATE_MS );
 }
 
-#if !defined(NO_DEBUG) && (INCLUDE_uxTaskGetStackHighWaterMark == 1)
+#if (INCLUDE_uxTaskGetStackHighWaterMark == 1)
 	#include "debug.h"
 	void vShowAllTaskUnusedStack(void)
 	{

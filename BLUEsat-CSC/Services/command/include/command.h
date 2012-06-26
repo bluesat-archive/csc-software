@@ -33,6 +33,7 @@ typedef enum
 	TASK_DEMO_APP_2,
 	TASK_GPIO_DEMO,
 	TASK_MEMORY_DEMO,
+	TASK_STORAGE_DEMO,
 	TASK_SWITCHING_DEMO,
 	TASK_MODEM_DEMO,
 	/** Task ID end **/
@@ -178,11 +179,13 @@ TaskID enGetTaskID(TaskToken taskToken);
  */
 void vSleep(unsigned portSHORT usTimeMS);
 
-#if !defined(NO_DEBUG) && (INCLUDE_uxTaskGetStackHighWaterMark == 1)
+#if (INCLUDE_uxTaskGetStackHighWaterMark == 1)
 	/**
 	 * \brief Print unused stack size for all tasks
 	 */
 	void vShowAllTaskUnusedStack(void);
+#else
+	#define vShowAllTaskUnusedStack()
 #endif
 
 #endif /* COMMAND_H_ */
