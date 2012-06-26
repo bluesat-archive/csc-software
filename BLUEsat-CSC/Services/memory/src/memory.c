@@ -40,17 +40,16 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 
 void *pvJMalloc(unsigned portLONG ulSize)
 {
-	unsigned portLONG ulMemoryPointer;
+	unsigned portLONG ulMemoryPointer = NULL;
 
 	taskENTER_CRITICAL();
 	{
-		if (xMemoryUsable == pdFALSE) return NULL;
+		if ((xMemoryUsable != pdFALSE) && ((ulFreeMemoryPointer + ulSize) < MEMORY_END_ADDR))
+		{
+			ulMemoryPointer = ulFreeMemoryPointer;
 
-		if ((ulFreeMemoryPointer + ulSize) >= MEMORY_END_ADDR) return NULL;
-
-		ulMemoryPointer = ulFreeMemoryPointer;
-
-		ulFreeMemoryPointer += ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
+			ulFreeMemoryPointer += ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
+		}
 	}
 	taskEXIT_CRITICAL();
 
