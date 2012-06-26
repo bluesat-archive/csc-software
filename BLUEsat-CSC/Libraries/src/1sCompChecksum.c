@@ -16,12 +16,12 @@
 
 unsigned portLONG ulAddToSum(unsigned portLONG ulDataSum,
 							unsigned portLONG ulAddr,
-							unsigned portSHORT usNumDataShorts)
+							unsigned portSHORT usNumShorts)
 {
 	unsigned portSHORT usIndex;
 	unsigned portSHORT *pusAddr = (unsigned portSHORT *)ulAddr;
 
-	for (usIndex = 0; usIndex < usNumDataShorts; ++usIndex)
+	for (usIndex = 0; usIndex < usNumShorts; ++usIndex)
 	{
 		ulDataSum += pusAddr[usIndex];
 	}

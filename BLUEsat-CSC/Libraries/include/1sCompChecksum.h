@@ -23,7 +23,7 @@
 //return new sum
 unsigned portLONG ulAddToSum(unsigned portLONG ulDataSum,
 							unsigned portLONG ulAddr,
-							unsigned portSHORT usNumDataShorts);
+							unsigned portSHORT usNumShorts);
 
 //create checksum from data sum
 unsigned portSHORT usGenerateChecksum(unsigned portLONG ulDataSum);
