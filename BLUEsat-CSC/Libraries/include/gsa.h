@@ -33,8 +33,6 @@ typedef enum
 
 typedef portBASE_TYPE 		(*WriteToMemSegPtr)	(unsigned portLONG ulMemSegAddr);
 typedef unsigned portSHORT 	(*ReadFromMemSegPtr)(unsigned portLONG ulMemSegAddr);
-typedef unsigned portLONG	(*GetNextMemSegPtr)	(void);
-typedef void 				(*DeleteMemSegPtr)	(unsigned portLONG ulMemSegAddr);
 typedef portBASE_TYPE		(*xIsMemSegFreePtr)	(unsigned portLONG ulMemSegAddr);
 
 #ifndef NO_DEBUG
@@ -44,8 +42,8 @@ typedef portBASE_TYPE		(*xIsMemSegFreePtr)	(unsigned portLONG ulMemSegAddr);
 												unsigned portLONG Insert3);
 #else
 
-	#define DebugTrace void *
-	#define	DebugTracePtr(a, b, c, d)	DebugTracePtr = NULL
+	#define DebugTracePtr void *
+	#define	DebugTrace(a, b, c, d)	DebugTrace = NULL
 
 #endif /* NO_DEBUG */
 
@@ -54,72 +52,31 @@ typedef struct
 	/****** Compulsory fields ******/
 	/* memory specification */
 	unsigned portLONG		StartAddr;
+	unsigned portLONG		EndAddr;
 	MEM_SEG_SIZE			MemSegSize;
 	/* management resource */
-	unsigned portSHORT		StateTableSize;
 	unsigned portCHAR *		StateTable;
-	unsigned portSHORT		DataTableSize;
-	void *					DataTable;
-	/* function pointers */
-	GetNextMemSegPtr		GetNextMemSeg;
-	DebugTracePtr			DebugTrace;
-
-	/******* Optional fields *******/
-	/* management resource */
-	unsigned portLONG *		MemSegBuffer;	//MUST have enough memory if WriteToMemSeg and/or ReadFromMemSeg NOT NULL
+	unsigned portSHORT		StateTableSize;
+	unsigned portLONG *		MemSegBuffer;
 	/* function pointers */
 	WriteToMemSegPtr		WriteToMemSeg;
-	ReadFromMemSegPtr		ReadFromMemSeg;
-	DeleteMemSegPtr			DeleteMemSeg;
 	xIsMemSegFreePtr		xIsMemSegFree;
+	DebugTracePtr			DebugTrace;
 
-	/******* DO NOT MODIFY GSA USE ONLY ******/
-	unsigned portSHORT		DataTableIndex;
+	/********** Optional ***********/
+	/* function pointer */
+	ReadFromMemSegPtr		ReadFromMemSeg;
 } GSACore;
 
-#define NUM_BITS_PER_BYTE		8
-#define STATE_SIZE_BIT			2
-#define NUM_STATES_PER_BYTE		(NUM_BITS_PER_BYTE / STATE_SIZE_BIT)
-//calculate state table size in bytes
-#define STATE_TABLE_SIZE(StartAddr, EndAddr, MemSegSize) ((((EndAddr - StartAddr) / MemSegSize) / NUM_STATES_PER_BYTE) + sizeof(unsigned portLONG)) //extra for padding
-
-#define DATA_TABLE_ENTRY_SIZE	8
-//calculate data table size in bytes
-#define DATA_TABLE_SIZE(NumEntry) (NumEntry * DATA_TABLE_ENTRY_SIZE)
+#define NUM_STATE_PER_BYTE		4
+#define STATE_TABLE_SIZE(StartAddr, EndAddr, MemSegSize)(((EndAddr-StartAddr)/MemSegSize)/NUM_STATE_PER_BYTE)+1	//+padding
 
 //initialise GSACore
 void vInitialiseCore(GSACore *pGSACore);
 
 //map out memory segments and assign state
-portBASE_TYPE xSurveyMemory(GSACore *pGSACore,
-					unsigned portLONG ulStartAddr,
-					unsigned portLONG ulEndAddr);
+portBASE_TYPE xSurveyMemory(GSACore *pGSACore);
 
-//build data table from memory range
-//accept application isolation build
-portBASE_TYPE xBuildDataTable(GSACore *pGSACore,
-					unsigned portLONG ulStartAddr,
-					unsigned portLONG ulEndAddr,
-					unsigned portCHAR ucIsolateBuild,
-					unsigned portCHAR ucAID);
-
-//find next free state memory segment in given range
-unsigned portLONG ulFindNextFreeState(GSACore *pGSACore,
-									unsigned portLONG ulStartAddr,
-									unsigned portLONG ulEndAddr);
-
-typedef enum
-{
-	STATE_DELETED		= 0,
-	STATE_FREE			= 1,
-	STATE_DATA			= 2
-} MEM_SEG_STATE;
-
-//count number of specified state in given range
-unsigned portSHORT usCountState(GSACore *pGSACore,
-								unsigned portLONG ulStartAddr,
-								unsigned portLONG ulEndAddr,
-								MEM_SEG_STATE enState);
 
 /************************************************* Operations ********************************************************/
 
