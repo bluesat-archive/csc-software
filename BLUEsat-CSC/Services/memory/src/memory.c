@@ -40,7 +40,7 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 
 void *pvJMalloc(unsigned portLONG ulSize)
 {
-	unsigned portLONG ulMemoryPointer = NULL;
+	unsigned portLONG ulMemoryPointer = (unsigned portLONG)NULL;
 
 	taskENTER_CRITICAL();
 	{
