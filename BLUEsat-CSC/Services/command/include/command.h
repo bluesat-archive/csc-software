@@ -23,7 +23,7 @@ typedef enum
 	/* Task ID start */
 	TASK_COMMAND,
 	TASK_DEBUG,
-	TASK_MEMORY,
+	TASK_STORAGE,
 	TASK_BEACON,
 	TASK_TELEM,
 	TASK_COMMS,
