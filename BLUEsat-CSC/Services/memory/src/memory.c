@@ -13,6 +13,7 @@
  */
  
 #include "service.h"
+#include "task.h"
 #include "memory.h"
 #include "emc.h"
 
@@ -41,13 +42,17 @@ void *pvJMalloc(unsigned portLONG ulSize)
 {
 	unsigned portLONG ulMemoryPointer;
 
-	if (xMemoryUsable == pdFALSE) return NULL;
+	taskENTER_CRITICAL();
+	{
+		if (xMemoryUsable == pdFALSE) return NULL;
 
-	if ((ulFreeMemoryPointer + ulSize) >= MEMORY_END_ADDR) return NULL;
+		if ((ulFreeMemoryPointer + ulSize) >= MEMORY_END_ADDR) return NULL;
 
-	ulMemoryPointer = ulFreeMemoryPointer;
+		ulMemoryPointer = ulFreeMemoryPointer;
 
-	ulFreeMemoryPointer += ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
+		ulFreeMemoryPointer += ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
+	}
+	taskEXIT_CRITICAL();
 
 	return (void *)ulMemoryPointer;
 }
@@ -98,94 +103,3 @@ UnivRetCode enMemoryTest(unsigned portLONG 	ulStartAddr,
 
 	return URC_SUCCESS;
 }
-
-#ifdef MEM_TEST
-	static void vMemoryTest(unsigned portLONG ulStartAddr, unsigned portLONG ulSize)
-	{
-		//8 bits test
-		vDebugPrint(Memory_TaskToken,
-					"8 bits test...%d\n\r",
-					enMemoryTest_8(ulStartAddr, ulSize) == URC_SUCCESS,
-					0,
-					0);
-
-		//16 bits test
-		vDebugPrint(Memory_TaskToken,
-					"16 bits test...%d\n\r",
-					enMemoryTest_16(ulStartAddr, ulSize) == URC_SUCCESS,
-					0,
-					0);
-
-		//32 bits test
-		vDebugPrint(Memory_TaskToken,
-					"32 bits test...%d\n\r",
-					enMemoryTest_32(ulStartAddr, ulSize) == URC_SUCCESS,
-					0,
-					0);
-	}
-
-	static UnivRetCode enMemoryTest_8(unsigned portLONG ulStartAddr, unsigned portLONG ulSize)
-	{
-		unsigned portCHAR ucValue;
-		unsigned portLONG ulAddress;
-
-		for (ulAddress = ulStartAddr, ucValue = 3;
-			ulAddress < ulStartAddr + ulSize;
-			ulAddress += sizeof(unsigned portCHAR), ++ucValue)
-		{
-			*(unsigned portCHAR *)ulAddress = ucValue;
-		}
-
-		for (ulAddress = ulStartAddr, ucValue = 3;
-			ulAddress < ulStartAddr + ulSize;
-			ulAddress += sizeof(unsigned portCHAR), ++ucValue)
-		{
-			if (*(unsigned portCHAR *)ulAddress != ucValue) return URC_FAIL;
-		}
-
-		return URC_SUCCESS;
-	}
-
-	static UnivRetCode enMemoryTest_16(unsigned portLONG ulStartAddr, unsigned portLONG ulSize)
-	{
-		unsigned portLONG ulAddress;
-		unsigned portSHORT usValue;
-
-		for (ulAddress = ulStartAddr, usValue = 3;
-			ulAddress < ulStartAddr + ulSize;
-			ulAddress += sizeof(unsigned portSHORT), ++usValue)
-		{
-			*(unsigned portSHORT *)ulAddress = usValue;
-		}
-
-		for (ulAddress = ulStartAddr, usValue = 3;
-			ulAddress < ulStartAddr + ulSize;
-			ulAddress += sizeof(unsigned portSHORT), ++usValue)
-		{
-			if (*(unsigned portSHORT *)ulAddress != usValue) return URC_FAIL;
-		}
-
-		return URC_SUCCESS;
-	}
-
-	static UnivRetCode enMemoryTest_32(unsigned portLONG ulStartAddr, unsigned portLONG ulSize)
-	{
-		unsigned portLONG ulAddress;
-
-		for (ulAddress = ulStartAddr;
-			ulAddress < ulStartAddr + ulSize;
-			ulAddress += sizeof(unsigned portLONG))
-		{
-			*(unsigned portLONG *)ulAddress = ulAddress + 1;
-		}
-
-		for (ulAddress = ulStartAddr;
-			ulAddress < ulStartAddr + ulSize;
-			ulAddress += sizeof(unsigned portLONG))
-		{
-			if (*(unsigned portLONG *)ulAddress != ulAddress + 1) return URC_FAIL;
-		}
-
-		return URC_SUCCESS;
-	}
-#endif
