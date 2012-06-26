@@ -1,7 +1,7 @@
  /**
  *  \file memory.h
  *
- *  \brief Provide storage to CSC
+ *  \brief Provide additional RAM to CSC
  *
  *  \author $Author: James Qin $
  *  \version 1.0
@@ -15,7 +15,7 @@
 #ifndef MEMORY_H_
 #define MEMORY_H_
 
-#include "command.h"
+#include "FreeRTOS.h"
 #include "UniversalReturnCode.h"
 
 /**
@@ -26,76 +26,10 @@
 void vMemory_Init(unsigned portBASE_TYPE uxPriority);
 
 /**
- * \brief Delete data given AID & DID
+ * \brief Request volatile memory
  *
- * \param[in] taskToken Task token from request task
- * \param[in] ucDID		Data ID
- *
- * \returns URC_SUCCESS or URC_FAIL of the operation
+ * \param[in] ulSize Size in bytes.
  */
-UnivRetCode enDataDelete(TaskToken taskToken,
-						unsigned portCHAR ucDID);
-
-/**
- * \brief Return the stored data size for given AID & DID
- *
- * \param[in] taskToken Task token from request task
- * \param[in] ucDID		Data ID
- * \param[out] pulSize	Pointer to location for storing return size
- *
- * \returns URC_SUCCESS or URC_FAIL of the operation
- */
-UnivRetCode enDataSize(TaskToken taskToken,
-						unsigned portCHAR ucDID,
-						unsigned portLONG *pulDataSize);
-
-/**
- * \brief Read stored data for given AID & DID
- *
- * \param[in] taskToken Task token from request task
- * \param[in] ucDID				Data ID
- * \param[in] ulOffset			Offset point for data read in bytes
- * \param[in] ulSize			Number of bytes to be read
- * \param[out] pucBuffer		Pointer to data return buffer
- * \param[out] pulReadRetSize	Pointer to location for storing return size
- *
- * \returns URC_SUCCESS or URC_FAIL of the operation
- */
-UnivRetCode enDataRead(TaskToken taskToken,
-						unsigned portCHAR ucDID,
-						unsigned portLONG ulOffset,
-						unsigned portLONG ulSize,
-						portCHAR *pucBuffer,
-						unsigned portLONG *pulReadRetSize);
-
-/**
- * \brief Store data for given AID & DID
- *
- * \param[in] taskToken Task token from request task
- * \param[in] ucDID		Data ID
- * \param[in] ulSize	Bytes of data to be stored
- * \param[in] pcData	Pointer to data
- *
- * \returns URC_SUCCESS or URC_FAIL of the operation
- */
-UnivRetCode enDataStore(TaskToken taskToken,
-						unsigned portCHAR ucDID,
-						unsigned portLONG ulSize,
-						portCHAR *pcData);
-
-/**
- * \brief Append data for given AID & DID
- *
- * \param[in] taskToken Task token from request task
- * \param[in] ucDID		Data ID
- * \param[in] ulSize	Bytes of data to be stored
- * \param[in] pcData	Pointer to data
- *
- * \returns URC_SUCCESS or URC_FAIL of the operation
- */
-UnivRetCode enDataAppend(TaskToken taskToken,
-						unsigned portCHAR ucDID,
-						unsigned portLONG ulSize,
-						portCHAR *pcData);
+void *pvJMalloc(unsigned portLONG ulSize);
 
 #endif /* MEMORY_H_ */
