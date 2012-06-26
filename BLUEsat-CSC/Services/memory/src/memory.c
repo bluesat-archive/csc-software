@@ -47,7 +47,7 @@ void *pvJMalloc(unsigned portLONG ulSize)
 
 	ulMemoryPointer = ulFreeMemoryPointer;
 
-	ulFreeMemoryPointer = ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
+	ulFreeMemoryPointer += ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
 
 	return (void *)ulMemoryPointer;
 }
