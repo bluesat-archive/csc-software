@@ -45,7 +45,7 @@
 		 * %% 		= Normal % character
 		 * %####s 	= Print a string where #### specify the max possible length of the string
 		 * %####x 	= Print a string in hex where #### specify the max possible length of the string
-		 * %h		= Print value in hex decimal
+		 * %p		= Print value as pointer in hex
 		 * %d		= Print value in decimal
 		 *
 		 * \param[in] taskToken Task token from request task

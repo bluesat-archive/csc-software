@@ -269,7 +269,7 @@ UnivRetCode enPrintInsertion(portCHAR const *	pcFormat,
 
 	//check pointer value is not NULL
 	if (ulInsertion == (unsigned portLONG)NULL
-			&& (pcFormat[*pulFormatIndex] != 'h' && pcFormat[*pulFormatIndex] != 'd'))
+			&& (pcFormat[*pulFormatIndex] != 'p' && pcFormat[*pulFormatIndex] != 'd'))
 	{
 		vPrintString(" - Missing insertion!\n\r", MAX_ERROR_MSG_LEN);
 		return URC_DEB_MISSING_INSERTION;
@@ -280,9 +280,9 @@ UnivRetCode enPrintInsertion(portCHAR const *	pcFormat,
 	{
 		case 's':	vPrintString((portCHAR const *)ulInsertion, usLength);
 					break;
-		case 'x':	vPrintHex((portCHAR const *)ulInsertion, usLength);
+		case 'x':	if (usLength > 0) vPrintHex((portCHAR const *)ulInsertion, usLength);
 					break;
-		case 'h':	vPrintHex((portCHAR const *)&ulInsertion, sizeof(unsigned portLONG));
+		case 'p':	vPrintHex((portCHAR const *)&ulInsertion, sizeof(unsigned portLONG));
 					break;
 		case 'd':	vPrintDecimal(ulInsertion);
 					break;
