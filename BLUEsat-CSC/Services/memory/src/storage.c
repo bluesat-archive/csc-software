@@ -84,7 +84,7 @@ static UnivRetCode enStorageForwardSwitch(TaskToken taskToken, StorageContent *p
 	//forward to different memory type
 	switch (outgoing_packet.Src)
 	{
-		case	TASK_MEMORY_DEMO:	outgoing_packet.Dest = TASK_MEM_INT_FLASH;
+		case	TASK_STORAGE_DEMO:	outgoing_packet.Dest = TASK_MEM_INT_FLASH;
 									break;
 
 		default					:	return URC_MEM_NOT_ON_STORAGE_LIST;
