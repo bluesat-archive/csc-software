@@ -99,9 +99,14 @@ unsigned int initApplications(void)
 	vDemoApp2_Init(APP_TASK_PRIORITY);
 #endif
 
-#ifdef MEMORYDEMO_H_
-	//Demonstration application memory
-	vMemDemo_Init(APP_TASK_PRIORITY);
+#ifdef MEMORY_DEMO_H_
+	//Demonstration additional volatile memory and stack memory usage
+	vMemoryDemo_Init(APP_TASK_PRIORITY);
+#endif
+
+#ifdef STORAGE_DEMO_H_
+	//Demonstration CSC storage
+	vStorageDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef GPIODEMO_H_
