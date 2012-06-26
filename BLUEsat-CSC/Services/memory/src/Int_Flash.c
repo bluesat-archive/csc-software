@@ -21,10 +21,10 @@
 
 #define FLASH_Q_SIZE	1
 
-#define DEFAULT_DATA_TABLE_SIZE		50
-#define NORMAL_DATA_TABLE_SIZE		100
-#define START_SECTOR				22
-#define END_SECTOR					MAX_NUM_SECTS
+#define START_SECTOR				26
+#define START_SECTOR_ADDR			SECTOR26ADDR
+#define END_SECTOR					28
+#define END_SECTOR_ADDR				SECTOR28ADDR
 #define	MEMORY_SEGMENT_SIZE			BYTE_512
 
 //task token for accessing services
@@ -32,24 +32,8 @@ static TaskToken Flash_TaskToken;
 
 static GSACore IntFlashCore;
 
-//TODO optimisation, try consolidate memory creation functions
-//GSACore state table memory maker task function
-//this function is used when malloc fail to create memory
-static portTASK_FUNCTION(vCreateStateTableMemory, pvParameters);
-
-//GSACore data table memory maker task function
-//this function is used when malloc fail to create memory
-static portTASK_FUNCTION(vCreateDataTableMemory, pvParameters);
-
-//GSACore buffer memory maker task function
-//this function is used when malloc fail to create memory
-static portTASK_FUNCTION(vCreateBuffereMemory, pvParameters);
-
 //prototype for task function
-static portTASK_FUNCTION(vFlashTask, pvParameters);
-
-//locate free memory segment
-unsigned portLONG GetNextMemSegFn(void);
+static portTASK_FUNCTION(vIntFlashTask, pvParameters);
 
 portBASE_TYPE WriteToMemSegFn(unsigned portLONG ulMemSegAddr);
 
@@ -65,122 +49,48 @@ static void DebugTraceFn (portCHAR *pcFormat,
 
 void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 {
-	void *pvTaskFn;
-	unsigned portSHORT usExtraMemory = 0;
-
-	//initialise GSACore
-	IntFlashCore.StartAddr = FlashSecAdds[START_SECTOR];
-	IntFlashCore.MemSegSize = MEMORY_SEGMENT_SIZE;
-
-	IntFlashCore.MemSegBuffer = NULL;	//TODO use malloc, currently simulate malloc return NULL
-
-	IntFlashCore.StateTableSize = STATE_TABLE_SIZE(FlashSecAdds[START_SECTOR],
-													FlashSecAdds[END_SECTOR],
-													MEMORY_SEGMENT_SIZE);
-	IntFlashCore.StateTable = NULL;		//TODO use malloc, currently simulate malloc return NULL
-
-	IntFlashCore.DataTableSize = NORMAL_DATA_TABLE_SIZE;
-	IntFlashCore.DataTable = NULL;		//TODO use malloc, currently simulate malloc return NULL
-
-	if (IntFlashCore.DataTable == NULL)
-	{
-		usExtraMemory += (DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE) / sizeof(unsigned portLONG))
-								+ (DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE) % sizeof(unsigned portLONG) > 0);
-		pvTaskFn = vCreateDataTableMemory;
-	}
-
-	if (IntFlashCore.StateTable == NULL)
-	{
-		usExtraMemory += (IntFlashCore.StateTableSize / sizeof(unsigned portLONG))
-								+ (IntFlashCore.StateTableSize % sizeof(unsigned portLONG) > 0);
-		pvTaskFn = vCreateStateTableMemory;
-	}
-
-	if (IntFlashCore.MemSegBuffer == NULL)
-	{
-		usExtraMemory += (MEMORY_SEGMENT_SIZE / sizeof(unsigned portLONG))
-								+ (MEMORY_SEGMENT_SIZE % sizeof(unsigned portLONG) > 0);
-		pvTaskFn = vCreateBuffereMemory;
-	}
-
-	IntFlashCore.GetNextMemSeg = GetNextMemSegFn;
-	IntFlashCore.xIsMemSegFree = xIsMemSegFreeFn;
-	IntFlashCore.WriteToMemSeg = WriteToMemSegFn;
-	
-#ifndef NO_DEBUG
-	IntFlashCore.DebugTrace = DebugTraceFn;
-#endif /* NO_DEBUG */
-
 	Flash_TaskToken = ActivateTask(TASK_MEM_INT_FLASH,
 									"IntFlash",
 									SEV_TASK_TYPE,
 									uxPriority,
-									SERV_STACK_SIZE + usExtraMemory,
-									pvTaskFn);
+									SERV_STACK_SIZE,
+									vIntFlashTask);
 
 	vActivateQueue(Flash_TaskToken, FLASH_Q_SIZE);
 }
 
-static portTASK_FUNCTION(vCreateStateTableMemory, pvParameters)
-{
-	(void) pvParameters;
-	unsigned portCHAR ucMemory[STATE_TABLE_SIZE(FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], MEMORY_SEGMENT_SIZE)];
+static unsigned portLONG MemSegBuffer[MEMORY_SEGMENT_SIZE / sizeof(portLONG)];
+static unsigned portCHAR StateTable[STATE_TABLE_SIZE(START_SECTOR_ADDR, END_SECTOR_ADDR, MEMORY_SEGMENT_SIZE)];
 
-	IntFlashCore.StateTable = ucMemory;
-
-	if (IntFlashCore.DataTable == NULL) vCreateDataTableMemory(NULL);
-
-	vFlashTask(NULL);
-}
-
-static portTASK_FUNCTION(vCreateDataTableMemory, pvParameters)
-{
-	(void) pvParameters;
-	unsigned portCHAR ucMemory[DATA_TABLE_SIZE(DEFAULT_DATA_TABLE_SIZE)];
-
-	IntFlashCore.DataTableSize = DEFAULT_DATA_TABLE_SIZE;
-	
-	IntFlashCore.DataTable = (void *)ucMemory;
-
-	vFlashTask(NULL);
-}
-
-static portTASK_FUNCTION(vCreateBuffereMemory, pvParameters)
-{
-	(void) pvParameters;
-	unsigned portLONG ulMemory[MEMORY_SEGMENT_SIZE / sizeof(unsigned portLONG)];
-
-	IntFlashCore.MemSegBuffer = ulMemory;
-
-	if (IntFlashCore.StateTable == NULL) vCreateStateTableMemory(NULL);
-
-	if (IntFlashCore.DataTable == NULL) vCreateDataTableMemory(NULL);
-
-	vFlashTask(NULL);
-}
-
-static portTASK_FUNCTION(vFlashTask, pvParameters)
+static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 {
 	(void) pvParameters;
 	UnivRetCode enResult;
 	MessagePacket incoming_packet;
-	MemoryContent *pContentHandle;
+	StorageContent *pContentHandle;
+
+	IntFlashCore.StartAddr = FlashSecAdds[START_SECTOR];
+	IntFlashCore.EndAddr = FlashSecAdds[END_SECTOR];
+	IntFlashCore.MemSegSize = MEMORY_SEGMENT_SIZE;
+
+	IntFlashCore.StateTable = StateTable;
+	IntFlashCore.StateTableSize = STATE_TABLE_SIZE(FlashSecAdds[START_SECTOR],
+													FlashSecAdds[END_SECTOR],
+													MEMORY_SEGMENT_SIZE);
+	IntFlashCore.MemSegBuffer = MemSegBuffer;
+
+	//initialise GSACore
+	IntFlashCore.xIsMemSegFree = xIsMemSegFreeFn;
+	IntFlashCore.WriteToMemSeg = WriteToMemSegFn;
+#ifndef NO_DEBUG
+	IntFlashCore.DebugTrace = DebugTraceFn;
+#endif /* NO_DEBUG */
 
     vDebugPrint(Flash_TaskToken, "Initialisation!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 	vInitialiseCore(&IntFlashCore);
 
     vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-	xSurveyMemory(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
-
-	xBuildDataTable(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], pdTRUE, TASK_MEM_INT_FLASH);
-	xBuildDataTable(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], pdFALSE, 0);
-
-	vDebugPrint(Flash_TaskToken, "Free blocks: %d\n\rData blocks: %d\n\rDead blocks: %d\n\r",
-				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_FREE),
-				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_DATA),
-				usCountState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR], STATE_DELETED));
-
-	vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	xSurveyMemory(&IntFlashCore);
 
 	for ( ; ; )
 	{
@@ -188,7 +98,7 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 
 		if (enResult != URC_SUCCESS) continue;
 
-		pContentHandle = (MemoryContent *)incoming_packet.Data;
+		pContentHandle = (StorageContent *)incoming_packet.Data;
 
 		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
 																	incoming_packet.Src,
@@ -197,12 +107,6 @@ static portTASK_FUNCTION(vFlashTask, pvParameters)
 }
 
 /*********************************** function pointers *********************************/
-unsigned portLONG GetNextMemSegFn(void)
-{
-	//TODO make this function evenly wear out memory
-	return ulFindNextFreeState(&IntFlashCore, FlashSecAdds[START_SECTOR], FlashSecAdds[END_SECTOR]);
-}
-
 portBASE_TYPE WriteToMemSegFn(unsigned portLONG ulMemSegAddr)
 {
 	if (Ram_To_Flash((void *)ulMemSegAddr, (void *)IntFlashCore.MemSegBuffer, IntFlashCore.MemSegSize) != CMD_SUCCESS) return pdFALSE;
