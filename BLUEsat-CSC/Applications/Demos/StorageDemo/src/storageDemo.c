@@ -136,7 +136,7 @@ static portTASK_FUNCTION(vStorageDemoTask, pvParameters)
 		}
 
 		vDebugPrint(StorageDemo_TaskToken,
-					"Result = %h\n\r",
+					"Result = %d\n\r",
 					enResult,
 					NO_INSERT,
 					NO_INSERT);
