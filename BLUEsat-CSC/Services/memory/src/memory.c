@@ -18,32 +18,30 @@
 
 #define MEMORY_START_ADDR	STATIC_BANK_1_START_ADDR
 #define MEMORY_SIZE			STATIC_BANK_1_SIZE
-#define MEMORY_END_ADDR		(STATIC_BANK_1_START_ADDR + STATIC_BANK_1_SIZE)
+#define MEMORY_END_ADDR		(MEMORY_START_ADDR + MEMORY_SIZE)
 #define WORD_SIZE			sizeof(portLONG)
 
-#ifdef MEM_TEST
-	static void vMemoryTest(unsigned portLONG ulStartAddr, unsigned portLONG ulSize);
-	static UnivRetCode enMemoryTest_8(unsigned portLONG ulStartAddr, unsigned portLONG ulSize);
-	static UnivRetCode enMemoryTest_16(unsigned portLONG ulStartAddr, unsigned portLONG ulSize);
-	static UnivRetCode enMemoryTest_32(unsigned portLONG ulStartAddr, unsigned portLONG ulSize);
-#endif
-
 unsigned portLONG	ulFreeMemoryPointer;
-UnivRetCode 		enMemoryTestResult;
+portBASE_TYPE 		xMemoryUsable		= pdFALSE;
 
 void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 {
 	(void)uxPriority;
 
 	ulFreeMemoryPointer = MEMORY_START_ADDR;
-	enMemoryTestResult 	= URC_SUCCESS;
+
+	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_8_BITS) == URC_FAIL) return;
+	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_16_BITS) == URC_FAIL) return;
+	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_32_BITS) == URC_FAIL) return;
+
+	xMemoryUsable = pdTRUE;
 }
 
 void *pvJMalloc(unsigned portLONG ulSize)
 {
 	unsigned portLONG ulMemoryPointer;
 
-	if (enMemoryTestResult == URC_FAIL) return NULL;
+	if (xMemoryUsable == pdFALSE) return NULL;
 
 	if ((ulFreeMemoryPointer + ulSize) >= MEMORY_END_ADDR) return NULL;
 
@@ -52,6 +50,53 @@ void *pvJMalloc(unsigned portLONG ulSize)
 	ulFreeMemoryPointer = ((ulSize / WORD_SIZE) + ((ulSize % WORD_SIZE) > 0)) * WORD_SIZE;
 
 	return (void *)ulMemoryPointer;
+}
+
+#define INIT_TEST_VALUE		7
+UnivRetCode enMemoryTest(unsigned portLONG 	ulStartAddr,
+						unsigned portLONG 	ulSize,
+						TestType			enTestType)
+{
+	unsigned portLONG ulAddr;
+	unsigned portLONG ulTestValue;
+	unsigned portCHAR ucTestSize = enTestType;
+
+	//restrict input size to match test parameter
+	ulSize = (ulSize / ucTestSize) * ucTestSize;
+
+	for (ulAddr = ulStartAddr, ulTestValue = INIT_TEST_VALUE;
+		ulAddr < ulStartAddr + ulSize;
+		ulAddr += ucTestSize, ++ulTestValue)
+	{
+		switch(enTestType)
+		{
+			case(TEST_8_BITS)	:	*((unsigned char *)ulAddr) = (unsigned char)ulTestValue;
+									break;
+			case(TEST_16_BITS)	:	*((unsigned short *)ulAddr) = (unsigned short)ulTestValue;
+									break;
+			case(TEST_32_BITS)	:	*((unsigned long *)ulAddr) = (unsigned long)ulTestValue;
+									break;
+			default				:	break;
+		}
+	}
+
+	for (ulAddr = ulStartAddr, ulTestValue = INIT_TEST_VALUE;
+		ulAddr < ulStartAddr + ulSize;
+		ulAddr += ucTestSize, ++ulTestValue)
+	{
+		switch(enTestType)
+		{
+			case(TEST_8_BITS)	:	if (*((unsigned char *)ulAddr) != (unsigned char)ulTestValue) return URC_FAIL;
+									break;
+			case(TEST_16_BITS)	:	if (*((unsigned short *)ulAddr) != (unsigned short)ulTestValue) return URC_FAIL;
+									break;
+			case(TEST_32_BITS)	:	if (*((unsigned long *)ulAddr) != (unsigned long)ulTestValue) return URC_FAIL;
+									break;
+			default				:	break;
+		}
+	}
+
+	return URC_SUCCESS;
 }
 
 #ifdef MEM_TEST

@@ -28,8 +28,28 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority);
 /**
  * \brief Request volatile memory
  *
- * \param[in] ulSize Size in bytes.
+ * \param[in] ulSize Size in bytes
  */
 void *pvJMalloc(unsigned portLONG ulSize);
+
+typedef enum
+{
+	TEST_8_BITS		=	1,
+	TEST_16_BITS	=	2,
+	TEST_32_BITS	=	4
+} TestType;
+
+/**
+ * \brief Request volatile memory
+ *
+ * \param[in] ulStartAddr Start of memory address
+ *
+ * \param[in] ulSize Size in bytes best fit test parameters
+ *
+ * \param[in] enTestType Test to be run
+ */
+UnivRetCode enMemoryTest(unsigned portLONG 	ulStartAddr,
+						unsigned portLONG 	ulSize,
+						TestType			enTestType);
 
 #endif /* MEMORY_H_ */
