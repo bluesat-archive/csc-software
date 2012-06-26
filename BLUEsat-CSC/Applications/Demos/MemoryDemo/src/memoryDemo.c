@@ -17,7 +17,6 @@
 #include "memoryDemo.h"
 #include "memory.h"
 #include "debug.h"
-#include "lib_string.h"
 
 #define MAX_FIB_SIZE			48
 #define MAX_ARITH_PROG_SIZE		251
