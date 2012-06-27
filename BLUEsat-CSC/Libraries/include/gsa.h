@@ -27,13 +27,13 @@ typedef enum
 	BYTE_2048	= 2048,	//67,108,864 bytes
 	BYTE_4096	= 4096,	//134,217,728 bytes
 	BYTE_8192	= 8192	//268,435,456 bytes
-} MEM_SEG_SIZE;
+} GSA_BLOCK_SIZE;
 
-#define MIN_MEM_SEG_SIZE BYTE_64
+#define MIN_BLOCK_SIZE		BYTE_64
 
-typedef portBASE_TYPE 		(*WriteToMemSegPtr)	(unsigned portLONG ulMemSegAddr);
-typedef unsigned portSHORT 	(*ReadFromMemSegPtr)(unsigned portLONG ulMemSegAddr);
-typedef portBASE_TYPE		(*xIsMemSegFreePtr)	(unsigned portLONG ulMemSegAddr);
+typedef unsigned portLONG	(*WriteBufferPtr)	(void);
+//typedef unsigned portSHORT 	(*ReadBlockToBufPtr)(unsigned portLONG ulBlockAddr);
+typedef portBASE_TYPE		(*xIsBlockFreePtr)	(unsigned portLONG ulBlockAddr);
 
 #ifndef NO_DEBUG
 	typedef void			(*DebugTracePtr)	(portCHAR *pcFormat,
@@ -49,51 +49,82 @@ typedef portBASE_TYPE		(*xIsMemSegFreePtr)	(unsigned portLONG ulMemSegAddr);
 
 typedef struct
 {
+	unsigned portLONG AID:		6;
+	unsigned portLONG DID:		8;
+	unsigned portLONG LastHBI:	15;
+	unsigned portLONG Upadding:	3;	//usable padding
+	unsigned portLONG Size;
+} Data_Table_Entry;
+
+typedef struct
+{
+	Data_Table_Entry 	*DataTable;
+	unsigned portSHORT	DataTableIndex;
+} GSA_Optimisation;
+
+typedef struct
+{
 	/****** Compulsory fields ******/
 	/* memory specification */
 	unsigned portLONG		StartAddr;
 	unsigned portLONG		EndAddr;
-	MEM_SEG_SIZE			MemSegSize;
+	GSA_BLOCK_SIZE			BlockSize;
 	/* management resource */
 	unsigned portCHAR *		StateTable;
 	unsigned portSHORT		StateTableSize;
-	unsigned portLONG *		MemSegBuffer;
+	/* buffer */
+	unsigned portLONG *		BlockBuffer;
 	/* function pointers */
-	WriteToMemSegPtr		WriteToMemSeg;
-	xIsMemSegFreePtr		xIsMemSegFree;
+	WriteBufferPtr			WriteBuffer;
+	xIsBlockFreePtr			xIsBlockFree;
 	DebugTracePtr			DebugTrace;
-
 	/********** Optional ***********/
+	//TODO implement and enable indirectly read memory
 	/* function pointer */
-	ReadFromMemSegPtr		ReadFromMemSeg;
+	//ReadBlockToBufPtr		ReadBlockToBuf;
+	/*  optimisation */
+	GSA_Optimisation *		Optimisation;
 } GSACore;
 
+#define STATE_SIZE_BIT			2
 #define NUM_STATE_PER_BYTE		4
-#define STATE_TABLE_SIZE(StartAddr, EndAddr, MemSegSize)(((EndAddr-StartAddr)/MemSegSize)/NUM_STATE_PER_BYTE)+1	//+padding
+#define STATE_TABLE_SIZE(StartAddr, EndAddr, BlockSize)(((EndAddr-StartAddr)/BlockSize)/NUM_STATE_PER_BYTE)+1	//+padding
 
 //initialise GSACore
-void vInitialiseCore(GSACore *pGSACore);
+void vInitialiseCore(GSACore const *pGSACore);
 
-//map out memory segments and assign state
-portBASE_TYPE xSurveyMemory(GSACore *pGSACore);
+typedef enum
+{
+	GSA_EXT_STATE_FREE,
+	GSA_EXT_STATE_DEAD,
+	GSA_EXT_STATE_VALID
+} GSA_EXT_STATE;
 
+unsigned portSHORT usBlockStateCount(GSACore const *	pGSACore,
+									unsigned portLONG 	ulStartAddr,
+									unsigned portLONG 	ulEndAddr,
+									GSA_EXT_STATE		enState);
+
+unsigned portLONG ulGetNextFreeBlock(GSACore const *	pGSACore,
+									unsigned portLONG 	ulStartAddr,
+									unsigned portLONG 	ulEndAddr);
 
 /************************************************* Operations ********************************************************/
 
-portBASE_TYPE xGSAWrite(GSACore *pGSACore,
+portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 						unsigned portCHAR ucAID,
 						unsigned portCHAR ucDID,
 						unsigned portLONG ulSize,
 						portCHAR *pcData);
 
-unsigned portLONG ulGSARead(GSACore *pGSACore,
+unsigned portLONG ulGSARead(GSACore const *pGSACore,
 							unsigned portCHAR ucAID,
 							unsigned portCHAR ucDID,
 							unsigned portLONG ulOffset,
 							unsigned portLONG ulSize,
 							portCHAR *pucBuffer);
 						
-unsigned portLONG ulGSASize(GSACore *pGSACore,
+unsigned portLONG ulGSASize(GSACore const *pGSACore,
 							unsigned portCHAR ucAID,
 							unsigned portCHAR ucDID);
 
