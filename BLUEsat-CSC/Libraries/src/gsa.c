@@ -51,7 +51,7 @@ typedef union
 typedef struct
 {
 	unsigned portLONG	DataSize;
-} Tree_Info;
+} TreeInfo;
 
 /*************************************** Start Internal Function Prototypes  ****************************************/
 typedef enum
@@ -65,6 +65,14 @@ typedef enum
 
 //map out all block in memory and assign state
 static portBASE_TYPE xSurveyMemory(GSACore const *pGSACore);
+
+static void vIsolateLastHeadBlock(GSACore const *pGSACore);
+
+static void vBuildMemory(GSACore const *pGSACore);
+
+static portBASE_TYPE xCheckDataBranch(GSACore const *pGSACore,
+									unsigned portLONG ulBlockAddr);
+
 
 typedef enum
 {
@@ -86,6 +94,17 @@ static GSA_INT_STATE enAccessStateTable(StateTableOp enOperation,
 										GSACore const *pGSACore,
 										unsigned portLONG ulBlockAddr,
 										GSA_INT_STATE enState);
+
+static unsigned portLONG ulFindBlockViaState(GSACore const *	pGSACore,
+											unsigned portLONG 	ulStartAddr,
+											unsigned portLONG 	ulEndAddr,
+											GSA_INT_STATE 		enState);
+
+static unsigned portLONG ulPrevHeadBlock(GSACore const *pGSACore,
+										unsigned portLONG ulBlockAddr);
+
+static unsigned portLONG ulNextDataBlock(GSACore const *pGSACore,
+										unsigned portLONG ulBlockAddr);
 
 static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore,
 										unsigned portLONG ulAddr);
@@ -125,6 +144,10 @@ void vInitialiseCore(GSACore const *pGSACore)
 	(void)vRemoveDataTableEntry;
 
 	xSurveyMemory(pGSACore);
+
+	vIsolateLastHeadBlock(pGSACore);
+
+	vBuildMemory(pGSACore);
 }
 
 unsigned portSHORT usBlockStateCount(GSACore const *	pGSACore,
@@ -159,13 +182,7 @@ unsigned portLONG ulGetNextFreeBlock(GSACore const *	pGSACore,
 									unsigned portLONG 	ulStartAddr,
 									unsigned portLONG 	ulEndAddr)
 {
-	//go through range and look for block with free state
-	for (; ulStartAddr < ulEndAddr; ulStartAddr += pGSACore->BlockSize)
-	{
-		if (enAccessStateTable(OP_STATE_TABLE_GET, pGSACore, ulStartAddr, 0) == GSA_INT_BLOCK_STATE_FREE) return ulStartAddr;
-	}
-
-	return (unsigned portLONG)NULL;
+	return ulFindBlockViaState(pGSACore, ulStartAddr, ulEndAddr, GSA_INT_BLOCK_STATE_FREE);
 }
 
 /************************************************* Operations ********************************************************/
@@ -237,16 +254,80 @@ static portBASE_TYPE xSurveyMemory(GSACore const *pGSACore)
 			}
 		}
 		//verify block integrity
-		if (xBlockChecksum(OP_BLOCK_CHECK_VERIFY, ulBlockAddr, pGSACore->BlockSize) && ((Header *)ulBlockAddr)->H)
+		if (xBlockChecksum(OP_BLOCK_CHECK_VERIFY, ulBlockAddr, pGSACore->BlockSize))
 		{
 			//set block state as Head Block
-			enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_HB);
+			if (((Header *)ulBlockAddr)->H)
+			{
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_HB);
+			}
+			else
+			{
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
+			}
 		}
 	}
 
 	pGSACore->DebugTrace("Memory surveyed\n\r", 0,0,0);
 
 	return pdTRUE;
+}
+
+static void vIsolateLastHeadBlock(GSACore const *pGSACore)
+{
+	unsigned portLONG ulLastHBlockAddr, ulPrevHBlockAddr;
+
+	for (ulLastHBlockAddr = ulFindBlockViaState(pGSACore,
+											pGSACore->StartAddr,
+											pGSACore->EndAddr,
+											GSA_INT_BLOCK_STATE_HB);
+		ulLastHBlockAddr != (unsigned portLONG)NULL;
+		ulLastHBlockAddr += pGSACore->BlockSize,
+		ulLastHBlockAddr = ulFindBlockViaState(pGSACore,
+											ulLastHBlockAddr,
+											pGSACore->EndAddr,
+											GSA_INT_BLOCK_STATE_HB))
+	{
+		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_LHB);
+
+		for(ulPrevHBlockAddr = ulPrevHeadBlock(pGSACore, ulLastHBlockAddr);
+			ulPrevHBlockAddr != (unsigned portLONG)NULL;
+			ulPrevHBlockAddr = ulPrevHeadBlock(pGSACore, ulPrevHBlockAddr))
+		{
+			if (!xCheckDataBranch(pGSACore, ulPrevHBlockAddr))
+			{
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulPrevHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
+				break;
+			}
+			if ((((Header *)ulLastHBlockAddr)->AID != ((Header *)ulPrevHBlockAddr)->AID) ||
+				(((Header *)ulLastHBlockAddr)->DID != ((Header *)ulPrevHBlockAddr)->DID))
+			{
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
+				break;
+			}
+			if (enAccessStateTable(OP_STATE_TABLE_GET, pGSACore, ulPrevHBlockAddr, 0) == GSA_INT_BLOCK_STATE_LHB)
+					enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_HB);
+		}
+	}
+}
+
+static void vBuildMemory(GSACore const *pGSACore)
+{
+	(void)pGSACore;
+	(void)ulNextDataBlock;
+}
+
+static portBASE_TYPE xCheckDataBranch(GSACore const *pGSACore,
+									unsigned portLONG ulBlockAddr)
+{
+	for (; ulBlockAddr != (unsigned portLONG)NULL;
+		ulBlockAddr = ulNextDataBlock(pGSACore, ulBlockAddr))
+	{
+		if (enAccessStateTable(OP_STATE_TABLE_GET, pGSACore, ulBlockAddr, 0) == GSA_INT_BLOCK_STATE_DEAD) return pdFAIL;
+	}
+
+	return pdPASS;
 }
 
 static portBASE_TYPE xBlockChecksum(BlockCheckOp enOperation,
@@ -262,7 +343,9 @@ static portBASE_TYPE xBlockChecksum(BlockCheckOp enOperation,
 	ulDataSum = ulAddToSum(0, ulBlockAddr, sizeof(Header) / sizeof(short));
 
 	//add tree info data value together
-	ulDataSum = ulAddToSum(ulDataSum, ulBlockAddr + BlockSize - sizeof(Tree_Info), sizeof(Tree_Info) / sizeof(short));
+	ulDataSum = ulAddToSum(ulDataSum,
+							ulBlockAddr + BlockSize - sizeof(TreeInfo),
+							sizeof(TreeInfo) / sizeof(short));
 
 	//return verification result if verifying
 	if (enOperation == OP_BLOCK_CHECK_VERIFY) return xVerifyChecksum(ulDataSum);
@@ -304,12 +387,53 @@ static GSA_INT_STATE enAccessStateTable(StateTableOp enOperation,
 	return GSA_INT_BLOCK_STATE_DEAD;
 }
 
-static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore, unsigned portLONG ulAddr)
+static unsigned portLONG ulFindBlockViaState(GSACore const *	pGSACore,
+											unsigned portLONG 	ulStartAddr,
+											unsigned portLONG 	ulEndAddr,
+											GSA_INT_STATE 		enState)
+{
+	//go through range and look for block with free state
+	for (; ulStartAddr < ulEndAddr; ulStartAddr += pGSACore->BlockSize)
+	{
+		if (enAccessStateTable(OP_STATE_TABLE_GET, pGSACore, ulStartAddr, 0) == enState) return ulStartAddr;
+	}
+
+	return (unsigned portLONG)NULL;
+}
+
+static unsigned portLONG ulPrevHeadBlock(GSACore const *pGSACore,
+										unsigned portLONG ulBlockAddr)
+{
+	if (((Header *)ulBlockAddr)->H == 0 || ((Header *)ulBlockAddr)->Terminal) return (unsigned portLONG)NULL;
+
+	return ulIndexToAddr(pGSACore, ((Header *)ulBlockAddr)->PrevHBI);
+}
+
+static unsigned portLONG ulNextDataBlock(GSACore const *pGSACore,
+										unsigned portLONG ulBlockAddr)
+{
+	if (((Header *)ulBlockAddr)->H)
+	{
+		if (((Header *)ulBlockAddr)->FDBI_U)
+			return ulIndexToAddr(pGSACore, ((Header *)ulBlockAddr)->FDBI);
+	}
+	else
+	{
+		if (ulIndexToAddr(pGSACore, ((Header *)ulBlockAddr)->NDBI) != ulBlockAddr)
+			return ulIndexToAddr(pGSACore, ((Header *)ulBlockAddr)->NDBI);
+	}
+
+	return (unsigned portLONG)NULL;
+}
+
+static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore,
+										unsigned portLONG ulAddr)
 {
 	return ((ulAddr - pGSACore->StartAddr) / pGSACore->BlockSize);
 }
 
-static unsigned portLONG ulIndexToAddr(GSACore const *pGSACore, unsigned portSHORT usBlockIndex)
+static unsigned portLONG ulIndexToAddr(GSACore const *pGSACore,
+										unsigned portSHORT usBlockIndex)
 {
 	return (usBlockIndex * pGSACore->BlockSize + pGSACore->StartAddr);
 }
