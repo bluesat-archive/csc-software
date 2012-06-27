@@ -21,11 +21,11 @@
 
 #define FLASH_Q_SIZE	1
 
-#define START_SECTOR				26
-#define START_SECTOR_ADDR			SECTOR26ADDR
-#define END_SECTOR					28
-#define END_SECTOR_ADDR				SECTOR28ADDR
-#define	MEMORY_SEGMENT_SIZE			BYTE_512
+#define INTFLASH_START_SECTOR				26
+#define INTFLASH_START_SECTOR_ADDR			SECTOR26ADDR
+#define INTFLASH_END_SECTOR					28
+#define INTFLASH_END_SECTOR_ADDR			SECTOR28ADDR
+#define	INTFLASH_BLOCK_SIZE					BYTE_512
 
 //task token for accessing services
 static TaskToken Flash_TaskToken;
@@ -35,10 +35,9 @@ static GSACore IntFlashCore;
 //prototype for task function
 static portTASK_FUNCTION(vIntFlashTask, pvParameters);
 
-portBASE_TYPE WriteToMemSegFn(unsigned portLONG ulMemSegAddr);
+static unsigned portLONG WriteBufferFn(void);
 
-//check memory segment is free
-static portBASE_TYPE xIsMemSegFreeFn(unsigned portLONG ulMemSegAddr);
+static portBASE_TYPE xIsBlockFreeFn(unsigned portLONG ulBlockAddr);
 
 #ifndef NO_DEBUG
 static void DebugTraceFn (portCHAR *pcFormat,
@@ -59,8 +58,10 @@ void vIntFlash_Init(unsigned portBASE_TYPE uxPriority)
 	vActivateQueue(Flash_TaskToken, FLASH_Q_SIZE);
 }
 
-static unsigned portLONG MemSegBuffer[MEMORY_SEGMENT_SIZE / sizeof(portLONG)];
-static unsigned portCHAR StateTable[STATE_TABLE_SIZE(START_SECTOR_ADDR, END_SECTOR_ADDR, MEMORY_SEGMENT_SIZE)];
+static unsigned portLONG IntFlashBlockBuffer[INTFLASH_BLOCK_SIZE / sizeof(portLONG)];
+static unsigned portCHAR IntFlashStateTable[STATE_TABLE_SIZE(INTFLASH_START_SECTOR_ADDR,
+													INTFLASH_END_SECTOR_ADDR,
+													INTFLASH_BLOCK_SIZE)];
 
 static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 {
@@ -69,28 +70,42 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 	MessagePacket incoming_packet;
 	StorageContent *pContentHandle;
 
-	IntFlashCore.StartAddr = FlashSecAdds[START_SECTOR];
-	IntFlashCore.EndAddr = FlashSecAdds[END_SECTOR];
-	IntFlashCore.MemSegSize = MEMORY_SEGMENT_SIZE;
-
-	IntFlashCore.StateTable = StateTable;
-	IntFlashCore.StateTableSize = STATE_TABLE_SIZE(FlashSecAdds[START_SECTOR],
-													FlashSecAdds[END_SECTOR],
-													MEMORY_SEGMENT_SIZE);
-	IntFlashCore.MemSegBuffer = MemSegBuffer;
-
-	//initialise GSACore
-	IntFlashCore.xIsMemSegFree = xIsMemSegFreeFn;
-	IntFlashCore.WriteToMemSeg = WriteToMemSegFn;
+	//setup GSACore
+	IntFlashCore.StartAddr 		= FlashSecAdds[INTFLASH_START_SECTOR];
+	IntFlashCore.EndAddr 		= FlashSecAdds[INTFLASH_END_SECTOR];
+	IntFlashCore.BlockSize		= INTFLASH_BLOCK_SIZE;
+	IntFlashCore.BlockBuffer 	= IntFlashBlockBuffer;
+	IntFlashCore.StateTable 	= IntFlashStateTable;
+	IntFlashCore.StateTableSize = STATE_TABLE_SIZE(INTFLASH_START_SECTOR_ADDR,
+													INTFLASH_END_SECTOR_ADDR,
+													INTFLASH_BLOCK_SIZE);
+	//setup optimisation
+	IntFlashCore.Optimisation = NULL;
+	//setup function pointers
+	IntFlashCore.xIsBlockFree 	= xIsBlockFreeFn;
+	IntFlashCore.WriteBuffer 	= WriteBufferFn;
 #ifndef NO_DEBUG
-	IntFlashCore.DebugTrace = DebugTraceFn;
+	IntFlashCore.DebugTrace 	= DebugTraceFn;
 #endif /* NO_DEBUG */
 
-    vDebugPrint(Flash_TaskToken, "Initialisation!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+	//initialise GSACore
 	vInitialiseCore(&IntFlashCore);
+    vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
-    vDebugPrint(Flash_TaskToken, "Survey memory!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
-	xSurveyMemory(&IntFlashCore);
+    vDebugPrint(Flash_TaskToken,
+				"Free: %d, Valid: %d, Dead %d!\n\r",
+				usBlockStateCount(&IntFlashCore,
+									INTFLASH_START_SECTOR_ADDR,
+									INTFLASH_END_SECTOR_ADDR,
+									GSA_EXT_STATE_FREE),
+				usBlockStateCount(&IntFlashCore,
+									INTFLASH_START_SECTOR_ADDR,
+									INTFLASH_END_SECTOR_ADDR,
+									GSA_EXT_STATE_VALID),
+				usBlockStateCount(&IntFlashCore,
+									INTFLASH_START_SECTOR_ADDR,
+									INTFLASH_END_SECTOR_ADDR,
+									GSA_EXT_STATE_DEAD));
 
 	for ( ; ; )
 	{
@@ -107,20 +122,28 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 }
 
 /*********************************** function pointers *********************************/
-portBASE_TYPE WriteToMemSegFn(unsigned portLONG ulMemSegAddr)
+static unsigned portLONG WriteBufferFn(void)
 {
-	if (Ram_To_Flash((void *)ulMemSegAddr, (void *)IntFlashCore.MemSegBuffer, IntFlashCore.MemSegSize) != CMD_SUCCESS) return pdFALSE;
+	unsigned portLONG ulFreeBlockAddr;
 
-	return pdTRUE;
+	//TODO implement smart wear leveling free block selection scheme
+	//TODO implement data write treatment on write failure
+	ulFreeBlockAddr = ulGetNextFreeBlock(&IntFlashCore, INTFLASH_START_SECTOR_ADDR, INTFLASH_END_SECTOR_ADDR);
+
+	if (ulFreeBlockAddr == (unsigned portLONG)NULL) return (unsigned portLONG)NULL;
+
+	if (Ram_To_Flash((void *)ulFreeBlockAddr, (void *)IntFlashCore.BlockBuffer, IntFlashCore.BlockSize) != CMD_SUCCESS) return 0;
+
+	return ulFreeBlockAddr;
 }
 
-static portBASE_TYPE xIsMemSegFreeFn(unsigned portLONG ulMemSegAddr)
+static portBASE_TYPE xIsBlockFreeFn(unsigned portLONG ulBlockAddr)
 {
 	unsigned portLONG *pulTmpPtr;
 
-	//fresh erase all bits = 1
-	for (pulTmpPtr = (unsigned portLONG *)ulMemSegAddr;
-		pulTmpPtr < (unsigned portLONG *)(ulMemSegAddr + IntFlashCore.MemSegSize);
+	//fresh erase all bits == 1
+	for (pulTmpPtr = (unsigned portLONG *)ulBlockAddr;
+		pulTmpPtr < (unsigned portLONG *)(ulBlockAddr + IntFlashCore.BlockSize);
 		++pulTmpPtr)
 	{
 		if (*pulTmpPtr != 0xffffffff) return pdFALSE;
