@@ -19,16 +19,37 @@
 
 #define DEFAULT_VALID_CHECKSUM	0x0000ffff
 
-//add data short to existing sum
-//return new sum
+/**
+ * \brief Summation of data for 1s complement calculation
+ *
+ * \param[in] ulDataSum Previous data sum
+ *
+ * \param[in] ulAddr Address to new data
+ *
+ * \param[in] usNumShorts Number of data shorts to add
+ *
+ * \returns New data sum
+ */
 unsigned portLONG ulAddToSum(unsigned portLONG ulDataSum,
 							unsigned portLONG ulAddr,
 							unsigned portSHORT usNumShorts);
 
-//create checksum from data sum
+/**
+ * \brief Generate checksum from collected data sum
+ *
+ * \param[in] ulDataSum Data sum checksum to be generated on
+ *
+ * \returns 1s complement checksum
+ */
 unsigned portSHORT usGenerateChecksum(unsigned portLONG ulDataSum);
 
-//verify checksum from data sum
+/**
+ * \brief Verify checksum from collected data sum INCLUDE checksum
+ *
+ * \param[in] ulDataSum Data sum INCLUDE checksum
+ *
+ * \returns PASS or FAIL
+ */
 portBASE_TYPE xVerifyChecksum(unsigned portLONG ulDataSum);
 
 #endif /* ONES_COMP_CHECKSUM_H_ */
