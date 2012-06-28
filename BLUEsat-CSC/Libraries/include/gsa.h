@@ -129,3 +129,43 @@ unsigned portLONG ulGSASize(GSACore const *pGSACore,
 							unsigned portCHAR ucDID);
 
 #endif	/* GSA_H_ */
+
+/* reference only */
+
+///******************************** Block Info ********************************/
+//typedef union
+//{
+//	struct
+//	{
+//		/* word 0 */
+//		unsigned portLONG Checksum:    	16;	//header checksum
+//		unsigned portLONG H:			 1;	//head block bit
+//		unsigned portLONG NDBI:	  		15;	//Next Data Block Index
+//	};
+//
+//	struct
+//	{
+//		/* word 0 */
+//		unsigned portLONG Checksum:    	16;	//header checksum
+//		unsigned portLONG H:			 1; //head block bit
+//		unsigned portLONG PrevHBI:		15;	//previous Head Block Index
+//		/* word 1 */
+//		unsigned portLONG AID:			 6; //Application ID
+//		unsigned portLONG DID:			 8; //Data ID
+//		unsigned portLONG Terminal:		 1; //terminal block flag
+//		unsigned portLONG FDBI_U:		 1;	//First Data Block Index used
+//		//extended short
+//		unsigned portLONG FDBI:			15;	//First Data Block Index
+//		unsigned portLONG UUpadding:  	 1;	//unusable padding
+//	};
+//} Header;
+
+//#define HB_HEADER_SIZE 		sizeof(Header)
+//#define HB_SML_HEADER_SIZE 	(HB_HEADER_SIZE - 2)
+//#define DB_HEADER_SIZE 		(HB_HEADER_SIZE - 4)
+//
+//typedef struct
+//{
+//	unsigned portLONG	DataSize;
+//} TreeInfo;
+
