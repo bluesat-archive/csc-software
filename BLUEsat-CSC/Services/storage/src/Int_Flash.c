@@ -115,6 +115,24 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 
 		pContentHandle = (StorageContent *)incoming_packet.Data;
 
+#ifndef NO_DEBUG
+		if (pContentHandle->Operation == STORAGE_FORMAT)
+		{
+			Erase_Sector(INTFLASH_START_SECTOR, INTFLASH_END_SECTOR - 1);
+
+			vDebugPrint(Flash_TaskToken,
+						"Sectors %d to %d erased!\n\r",
+						INTFLASH_START_SECTOR,
+						INTFLASH_END_SECTOR - 1,
+						NO_INSERT);
+
+			vInitialiseCore(&IntFlashCore);
+
+			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
+			continue;
+		}
+#endif
+
 		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
 																	incoming_packet.Src,
 																	pContentHandle));
