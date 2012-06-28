@@ -123,6 +123,9 @@ static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore,
 static unsigned portLONG ulIndexToAddr(GSACore const *pGSACore,
 										unsigned portSHORT usBlockIndex);
 
+static unsigned portLONG ulLookUpDataEntry(GSACore const *pGSACore,
+											unsigned portCHAR ucAID,
+											unsigned portCHAR ucDID);
 
 /******************************************** Data Table Optimisation ***********************************************/
 //find corresponding data table entry
@@ -214,8 +217,8 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 	unsigned portLONG ulBlockAddr;
 	//simple write
 
-	ulSize = (ulSize > DATA_FIELD_SIZE(pGSACore->BlockSize,HB_SML_HEADER_SIZE)) ?
-						DATA_FIELD_SIZE(pGSACore->BlockSize,HB_SML_HEADER_SIZE) :
+	ulSize = (ulSize > DATA_FIELD_SIZE(pGSACore->BlockSize, HB_SML_HEADER_SIZE)) ?
+						DATA_FIELD_SIZE(pGSACore->BlockSize, HB_SML_HEADER_SIZE) :
 						ulSize;
 
 	ulBlockAddr = (unsigned portLONG)pGSACore->BlockBuffer;
@@ -235,7 +238,7 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 
 	ulBlockAddr = pGSACore->WriteBuffer();
 
-	//pGSACore->DebugTrace("%p\n\r%512x\n\r", ulBlockAddr, ulBlockAddr, 0);
+	pGSACore->DebugTrace("%p\n\r%512x\n\r%d\n\r", ulBlockAddr, ulBlockAddr, ulSize);
 
 	//set branch to be valid
 	if (ulBlockAddr != (unsigned portLONG)NULL) vSetDataBranch(pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
@@ -250,25 +253,31 @@ unsigned portLONG ulGSARead(GSACore const *pGSACore,
 							unsigned portLONG ulSize,
 							portCHAR *pucBuffer)
 {
-	(void) pGSACore;
-	(void) ucAID;
-	(void) ucDID;
-	(void) ulSize;
-	(void) ulOffset;
-	(void) pucBuffer;
+	(void)ulOffset;
+	unsigned portLONG ulLastHBlockAddr;
 
-	return 0;
+	ulLastHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
+
+	if (ulLastHBlockAddr == (unsigned portLONG)NULL) return 0;
+
+	ulSize = ((TreeInfo *)INFO_START_ADDR(ulLastHBlockAddr, pGSACore->BlockSize))->DataSize;
+
+	memcpy((void *)pucBuffer, (void *)DATA_START_ADDR(ulLastHBlockAddr, HB_SML_HEADER_SIZE), ulSize);
+
+	return ulSize;
 }
 
 unsigned portLONG ulGSASize(GSACore const *pGSACore,
 							unsigned portCHAR ucAID,
 							unsigned portCHAR ucDID)
 {
-	(void) pGSACore;
-	(void) ucAID;
-	(void) ucDID;
+	unsigned portLONG ulLastHBlockAddr;
 
-	return 0;
+	ulLastHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
+
+	if (ulLastHBlockAddr == (unsigned portLONG)NULL) return 0;
+
+	return ((TreeInfo *)INFO_START_ADDR(ulLastHBlockAddr, pGSACore->BlockSize))->DataSize;
 }
 
 /************************************************* Internal Functions *************************************************/
@@ -344,8 +353,8 @@ static void vIsolateLastHeadBlock(GSACore const *pGSACore)
 				break;
 			}
 			//check head block credential match current LHB
-			if ((((Header *)ulLastHBlockAddr)->AID != ((Header *)ulHBlockAddr)->AID) ||
-				(((Header *)ulLastHBlockAddr)->DID != ((Header *)ulHBlockAddr)->DID))
+			if (((Header *)ulLastHBlockAddr)->AID != ((Header *)ulHBlockAddr)->AID ||
+				((Header *)ulLastHBlockAddr)->DID != ((Header *)ulHBlockAddr)->DID)
 			{
 				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
 				break;
@@ -553,6 +562,32 @@ static unsigned portLONG ulIndexToAddr(GSACore const *pGSACore,
 										unsigned portSHORT usBlockIndex)
 {
 	return (usBlockIndex * pGSACore->BlockSize + pGSACore->StartAddr);
+}
+
+static unsigned portLONG ulLookUpDataEntry(GSACore const *pGSACore,
+											unsigned portCHAR ucAID,
+											unsigned portCHAR ucDID)
+{
+	unsigned portLONG ulLastHBlockAddr;
+
+	//TODO implement optimisation via data table
+
+	for (ulLastHBlockAddr = ulFindBlockViaState(pGSACore,
+											pGSACore->StartAddr,
+											pGSACore->EndAddr,
+											GSA_INT_BLOCK_STATE_LHB);
+		ulLastHBlockAddr != (unsigned portLONG)NULL;
+		ulLastHBlockAddr += pGSACore->BlockSize,
+		ulLastHBlockAddr = ulFindBlockViaState(pGSACore,
+											ulLastHBlockAddr,
+											pGSACore->EndAddr,
+											GSA_INT_BLOCK_STATE_LHB))
+	{
+		if (((Header *)ulLastHBlockAddr)->AID == ucAID &&
+			((Header *)ulLastHBlockAddr)->DID == ucDID) break;
+	}
+
+	return ulLastHBlockAddr;
 }
 
 /******************************************** Data Table Optimisation ***********************************************/
