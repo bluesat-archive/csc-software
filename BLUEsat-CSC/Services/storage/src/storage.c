@@ -106,7 +106,7 @@ UnivRetCode enDataDelete(TaskToken taskToken,
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	storageContent.Operation		= MEM_DELETE;
+	storageContent.Operation	= STORAGE_DELETE;
 	storageContent.DID			= ucDID;
 	storageContent.pulRetValue	= NULL;
 	storageContent.Ptr			= NULL;
@@ -122,7 +122,7 @@ UnivRetCode enDataSize(TaskToken taskToken,
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	storageContent.Operation 	= MEM_SIZE;
+	storageContent.Operation 	= STORAGE_SIZE;
 	storageContent.DID			= ucDID;
 	storageContent.pulRetValue	= pulDataSize;
 	storageContent.Ptr			= NULL;
@@ -141,7 +141,7 @@ UnivRetCode enDataRead(TaskToken taskToken,
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	storageContent.Operation 	= MEM_READ;
+	storageContent.Operation 	= STORAGE_READ;
 	storageContent.DID			= ucDID;
 	storageContent.Offset		= ulOffset;
 	storageContent.Ptr			= pucBuffer;
@@ -160,7 +160,7 @@ UnivRetCode enDataStore(TaskToken taskToken,
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	storageContent.Operation 	= MEM_STORE;
+	storageContent.Operation 	= STORAGE_STORE;
 	storageContent.DID			= ucDID;
 	storageContent.Ptr			= pcData;
 	storageContent.Size			= ulSize;
@@ -178,7 +178,7 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 
 	if (ucDID >= (1 << DID_BIT_SIZE)) return URC_MEM_INVALID_DID;
 
-	storageContent.Operation 	= MEM_APPEND;
+	storageContent.Operation 	= STORAGE_APPEND;
 	storageContent.DID			= ucDID;
 	storageContent.Ptr			= pcData;
 	storageContent.Size			= ulSize;
@@ -186,3 +186,19 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 
 	return enStorageForwardSwitch(taskToken, &storageContent);
 }
+
+#ifndef NO_DEBUG
+	UnivRetCode enMgmtSysCmd(TaskToken taskToken,
+							unsigned portCHAR ucCommand)
+	{
+		StorageContent storageContent;
+
+		storageContent.Operation 	= ucCommand;
+		storageContent.DID			= 0;
+		storageContent.Ptr			= 0;
+		storageContent.Size			= 0;
+		storageContent.pulRetValue	= NULL;
+
+		return enStorageForwardSwitch(taskToken, &storageContent);
+	}
+#endif

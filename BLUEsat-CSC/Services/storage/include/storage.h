@@ -98,4 +98,17 @@ UnivRetCode enDataAppend(TaskToken taskToken,
 						unsigned portLONG ulSize,
 						portCHAR *pcData);
 
+#ifndef NO_DEBUG
+	/**
+	 * \brief Send no data command for debug purpose
+	 *
+	 * \param[in] taskToken Task token from request task
+	 * \param[in] ucCommand	Command
+	 *
+	 * \returns URC_SUCCESS or URC_FAIL of the operation
+	 */
+	UnivRetCode enMgmtSysCmd(TaskToken taskToken,
+							unsigned portCHAR ucCommand);
+#endif
+
 #endif /* STORAGE_H_ */
