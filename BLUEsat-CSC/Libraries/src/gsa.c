@@ -301,8 +301,13 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 	if (ulBlockAddr == (unsigned portLONG)NULL) return pdFAIL;
 	//set branch to be valid
 	vSetDataBranch(pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
-	//set new LHB
+	//set new LHB or transfer LHB state from previous LHB
 	enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_LHB);
+
+	ulBlockAddr = ulPrevHeadBlock(pGSACore, ulBlockAddr);
+
+	if (ulBlockAddr != (unsigned portLONG)NULL)
+		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
 
 	return pdPASS;
 }
@@ -684,7 +689,7 @@ static unsigned portLONG ulBuildHeadBlock(GSACore const *pGSACore,
 	((Header *)ulBlockAddr)->Terminal	= (ulPrevHBlockAddr == (unsigned portLONG)NULL);
 	((Header *)ulBlockAddr)->AID		= ucAID;
 	((Header *)ulBlockAddr)->DID		= ucDID;
-	((Header *)ulBlockAddr)->PrevHBI	= usAddrToIndex(pGSACore, ulPrevHBlockAddr);
+	((Header *)ulBlockAddr)->PrevHBI	= (((Header *)ulBlockAddr)->Terminal) ? 0 : usAddrToIndex(pGSACore, ulPrevHBlockAddr);
 	((Header *)ulBlockAddr)->FDBI_U		= !(ulFirstDBlockAddr == pGSACore->EndAddr);
 
 	if (ulFirstDBlockAddr == pGSACore->EndAddr)
