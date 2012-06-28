@@ -20,15 +20,15 @@
 
 typedef enum
 {
-	MEM_STORE,      	//store and overwrite previous data
-	MEM_APPEND,     	//append to previous data
-	MEM_DELETE,     	//remove data
-	MEM_SIZE,       	//get size of data currently stored
-	MEM_READ,    		//read stored data
+	STORAGE_STORE,      	//store and overwrite previous data
+	STORAGE_APPEND,     	//append to previous data
+	STORAGE_DELETE,     	//remove data
+	STORAGE_SIZE,       	//get size of data currently stored
+	STORAGE_READ,    		//read stored data
 	//temp op code
-	MEM_FORMAT, 		//format flash sectors
-	MEM_STATUS, 		//print flash status
-} MEM_OPERATIONS;
+	STORAGE_FORMAT, 		//format flash sectors
+	STORAGE_STATUS, 		//print flash status
+} STORAGE_OPERATIONS;
 
 #define OP_BIT_SIZE		3
 #define DID_BIT_SIZE	6
