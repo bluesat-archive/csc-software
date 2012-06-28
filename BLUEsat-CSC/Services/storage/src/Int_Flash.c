@@ -23,8 +23,8 @@
 
 #define INTFLASH_START_SECTOR				26
 #define INTFLASH_START_SECTOR_ADDR			SECTOR26ADDR
-#define INTFLASH_END_SECTOR					28
-#define INTFLASH_END_SECTOR_ADDR			SECTOR28ADDR
+#define INTFLASH_END_SECTOR					27
+#define INTFLASH_END_SECTOR_ADDR			SECTOR27ADDR
 #define	INTFLASH_BLOCK_SIZE					BYTE_512
 
 //task token for accessing services
@@ -118,6 +118,21 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
 																	incoming_packet.Src,
 																	pContentHandle));
+
+	    vDebugPrint(Flash_TaskToken,
+					"Free: %d, Valid: %d, Dead %d!\n\r",
+					usBlockStateCount(&IntFlashCore,
+										INTFLASH_START_SECTOR_ADDR,
+										INTFLASH_END_SECTOR_ADDR,
+										GSA_EXT_STATE_FREE),
+					usBlockStateCount(&IntFlashCore,
+										INTFLASH_START_SECTOR_ADDR,
+										INTFLASH_END_SECTOR_ADDR,
+										GSA_EXT_STATE_VALID),
+					usBlockStateCount(&IntFlashCore,
+										INTFLASH_START_SECTOR_ADDR,
+										INTFLASH_END_SECTOR_ADDR,
+										GSA_EXT_STATE_DEAD));
 	}
 }
 
