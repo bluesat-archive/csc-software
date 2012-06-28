@@ -301,6 +301,8 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 	if (ulBlockAddr == (unsigned portLONG)NULL) return pdFAIL;
 	//set branch to be valid
 	vSetDataBranch(pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
+	//set new LHB
+	enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_LHB);
 
 	return pdPASS;
 }
@@ -392,32 +394,42 @@ static void vIsolateLastHeadBlock(GSACore const *pGSACore)
 											pGSACore->EndAddr,
 											GSA_INT_BLOCK_STATE_HB))
 	{
-		//assign LHB state to HB
-		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_LHB);
-
+		if (((Header *)ulLastHBlockAddr)->Terminal)
+		{
+			//terminal block immediate LHB status
+			enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_LHB);
+			continue;
+		}
+		//set potential LHB as dead
+		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
 		//go thorugh head block chain
 		for(ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulLastHBlockAddr);
 			ulHBlockAddr != (unsigned portLONG)NULL;
 			ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulHBlockAddr))
 		{
-			//check validity of each data block chain
+			//check validity data block chain
 			if (!xCheckDataBranch(pGSACore, ulHBlockAddr))
 			{
-				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
 				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
 				break;
 			}
 			//check head block credential match current LHB
 			if (((Header *)ulLastHBlockAddr)->AID != ((Header *)ulHBlockAddr)->AID ||
-				((Header *)ulLastHBlockAddr)->DID != ((Header *)ulHBlockAddr)->DID)
-			{
-				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
-				break;
-			}
+				((Header *)ulLastHBlockAddr)->DID != ((Header *)ulHBlockAddr)->DID) break;
+
 			//check HB is previously found LHB
 			if (enAccessStateTable(OP_STATE_TABLE_GET, pGSACore, ulHBlockAddr, 0) == GSA_INT_BLOCK_STATE_LHB)
 			{
-				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_HB);
+				//set previously found LHB back to HB
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_HB);
+				//transfer LHB state to new Last Head Block
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_LHB);
+				break;
+			}
+			if (((Header *)ulHBlockAddr)->Terminal)
+			{
+				//set potential LHB to be new LHB
+				enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_LHB);
 				break;
 			}
 		}
@@ -448,7 +460,6 @@ static void vBuildMemory(GSACore const *pGSACore)
 			enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_VALID);
 		}
 	}
-
 	//find remaining HB
 	for (ulHBlockAddr = ulFindBlockViaState(pGSACore,
 											pGSACore->StartAddr,
@@ -698,7 +709,7 @@ static unsigned portLONG ulBuildHeadBlock(GSACore const *pGSACore,
 	((TreeInfo *)INFO_START_ADDR(ulBlockAddr, pGSACore->BlockSize))->DataSize = ulSize;
 	//assign checksum
 	xBlockChecksum(OP_BLOCK_CHECK_APPLY, ulBlockAddr, pGSACore->BlockSize);
-pGSACore->DebugTrace("%p\n\r%512x\n\r%d\n\r", ulBlockAddr, ulBlockAddr, ulSize);
+//pGSACore->DebugTrace("%p\n\r%512x\n\r%d\n\r", ulBlockAddr, ulBlockAddr, ulSize);
 	//return result from memory management
 	return pGSACore->WriteBuffer();
 }
