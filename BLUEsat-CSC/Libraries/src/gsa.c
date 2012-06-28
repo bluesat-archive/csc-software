@@ -69,16 +69,18 @@ typedef enum
 
 //map out all block in memory and assign state
 static portBASE_TYPE xSurveyMemory(GSACore const *pGSACore);
-
+//isolate valid Last Head Blocks
 static void vIsolateLastHeadBlock(GSACore const *pGSACore);
-
+//construct memory from LHBs
 static void vBuildMemory(GSACore const *pGSACore);
-
+//finalise state table according to confiuration
 static void vFinaliseStateTable(GSACore const *pGSACore);
 
+//check no dead block exist in branch
 static portBASE_TYPE xCheckDataBranch(GSACore const *pGSACore,
 									unsigned portLONG ulBlockAddr);
 
+//assign specify block state to all blocks in branch
 static void vSetDataBranch(GSACore const *pGSACore,
 							unsigned portLONG ulBlockAddr,
 							GSA_INT_STATE enState);
@@ -90,6 +92,7 @@ typedef enum
 	OP_BLOCK_CHECK_APPLY
 } BlockCheckOp;
 
+//set or verify block checksums
 static portBASE_TYPE xBlockChecksum(BlockCheckOp enOperation,
 									unsigned portLONG ulBlockAddr,
 									GSA_BLOCK_SIZE BlockSize);
@@ -100,22 +103,27 @@ typedef enum
 	OP_STATE_TABLE_GET
 } StateTableOp;
 
+//set or get state table
 static GSA_INT_STATE enAccessStateTable(StateTableOp enOperation,
 										GSACore const *pGSACore,
 										unsigned portLONG ulBlockAddr,
 										GSA_INT_STATE enState);
 
+//search for first block in range matching specfied block state
 static unsigned portLONG ulFindBlockViaState(GSACore const *	pGSACore,
 											unsigned portLONG 	ulStartAddr,
 											unsigned portLONG 	ulEndAddr,
 											GSA_INT_STATE 		enState);
 
+//get previous head block in chain
 static unsigned portLONG ulPrevHeadBlock(GSACore const *pGSACore,
 										unsigned portLONG ulBlockAddr);
 
+//get next data block in chain
 static unsigned portLONG ulNextDataBlock(GSACore const *pGSACore,
 										unsigned portLONG ulBlockAddr);
 
+//convert address into block index
 static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore,
 										unsigned portLONG ulAddr);
 
@@ -123,6 +131,7 @@ static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore,
 static unsigned portLONG ulIndexToAddr(GSACore const *pGSACore,
 										unsigned portSHORT usBlockIndex);
 
+//look up existing data entry matching given AID and DID
 static unsigned portLONG ulLookUpDataEntry(GSACore const *pGSACore,
 											unsigned portCHAR ucAID,
 											unsigned portCHAR ucDID);
@@ -158,7 +167,6 @@ void vInitialiseCore(GSACore const *pGSACore)
 
 	xSurveyMemory(pGSACore);
 	pGSACore->DebugTrace("Memory surveyed\n\r", 0,0,0);
-	//return;
 	vIsolateLastHeadBlock(pGSACore);
 	pGSACore->DebugTrace("LHB isolated\n\r", 0,0,0);
 	vBuildMemory(pGSACore);
@@ -238,12 +246,19 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 
 	ulBlockAddr = pGSACore->WriteBuffer();
 
-	pGSACore->DebugTrace("%p\n\r%512x\n\r%d\n\r", ulBlockAddr, ulBlockAddr, ulSize);
+	//pGSACore->DebugTrace("%p\n\r%512x\n\r%d\n\r", ulBlockAddr, ulBlockAddr, ulSize);
 
 	//set branch to be valid
-	if (ulBlockAddr != (unsigned portLONG)NULL) vSetDataBranch(pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
+	if (ulBlockAddr != (unsigned portLONG)NULL)
+	{
+		vSetDataBranch(pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
+	}
+	else
+	{
+		return pdFAIL;
+	}
 
-	return pdTRUE;
+	return pdPASS;
 }
 
 unsigned portLONG ulGSARead(GSACore const *pGSACore,
