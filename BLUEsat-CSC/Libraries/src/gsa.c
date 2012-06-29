@@ -444,7 +444,21 @@ static void vIsolateLastHeadBlock(GSACore const *pGSACore)
 static void vBuildMemory(GSACore const *pGSACore)
 {
 	unsigned portLONG ulLastHBlockAddr, ulHBlockAddr;
+	GSA_INT_STATE enBlockState;
 
+	//mark all NON-LHB block as dead
+	for (ulHBlockAddr = pGSACore->StartAddr;
+		ulHBlockAddr < pGSACore->EndAddr;
+		ulHBlockAddr += pGSACore->BlockSize)
+	{
+		//get block state
+		enBlockState = enAccessStateTable(OP_STATE_TABLE_GET, pGSACore, ulHBlockAddr, 0);
+
+		if (enBlockState != GSA_INT_BLOCK_STATE_DEAD && enBlockState != GSA_INT_BLOCK_STATE_LHB)
+		{
+			enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
+		}
+	}
 	//find all LHB
 	for (ulLastHBlockAddr = ulFindBlockViaState(pGSACore,
 											pGSACore->StartAddr,
@@ -457,30 +471,16 @@ static void vBuildMemory(GSACore const *pGSACore)
 											pGSACore->EndAddr,
 											GSA_INT_BLOCK_STATE_LHB))
 	{
-		//go through all HB mark them valid
-		for(ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulLastHBlockAddr);
+		//mark all data branches valid
+		for(ulHBlockAddr = ulLastHBlockAddr;
 			ulHBlockAddr != (unsigned portLONG)NULL;
 			ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulHBlockAddr))
 		{
-			enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_VALID);
+			//set branch as valid
+			vSetDataBranch(pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_VALID);
 		}
-	}
-	//find remaining HB
-	for (ulHBlockAddr = ulFindBlockViaState(pGSACore,
-											pGSACore->StartAddr,
-											pGSACore->EndAddr,
-											GSA_INT_BLOCK_STATE_HB);
-		ulHBlockAddr != (unsigned portLONG)NULL;
-		ulHBlockAddr += pGSACore->BlockSize,
-		ulHBlockAddr = ulFindBlockViaState(pGSACore,
-											ulHBlockAddr,
-											pGSACore->EndAddr,
-											GSA_INT_BLOCK_STATE_HB))
-	{
-		// mark them dead
-		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
-		//remove connected data branch
-		vSetDataBranch(pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
+		// remark Last Head Block as LHB because vSetDataBranch also set Last Head Block as valid
+		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulLastHBlockAddr, GSA_INT_BLOCK_STATE_LHB);
 	}
 }
 
