@@ -35,7 +35,7 @@ static GSACore IntFlashCore;
 //prototype for task function
 static portTASK_FUNCTION(vIntFlashTask, pvParameters);
 
-static unsigned portLONG WriteBufferFn(void);
+static unsigned portLONG WriteBufferFn(unsigned portLONG ulBlockAddr);
 
 static portBASE_TYPE xIsBlockFreeFn(unsigned portLONG ulBlockAddr);
 
@@ -92,23 +92,23 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 	vInitialiseCore(&IntFlashCore);
     vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
 
-    vDebugPrint(Flash_TaskToken,
-				"Free: %d, Valid: %d, Dead %d!\n\r",
-				usBlockStateCount(&IntFlashCore,
-									INTFLASH_START_SECTOR_ADDR,
-									INTFLASH_END_SECTOR_ADDR,
-									GSA_EXT_STATE_FREE),
-				usBlockStateCount(&IntFlashCore,
-									INTFLASH_START_SECTOR_ADDR,
-									INTFLASH_END_SECTOR_ADDR,
-									GSA_EXT_STATE_VALID),
-				usBlockStateCount(&IntFlashCore,
-									INTFLASH_START_SECTOR_ADDR,
-									INTFLASH_END_SECTOR_ADDR,
-									GSA_EXT_STATE_DEAD));
-
 	for ( ; ; )
 	{
+	    vDebugPrint(Flash_TaskToken,
+					"Free: %d, Valid: %d, Dead %d!\n\r",
+					usBlockStateCount(&IntFlashCore,
+										INTFLASH_START_SECTOR_ADDR,
+										INTFLASH_END_SECTOR_ADDR,
+										GSA_EXT_STATE_FREE),
+					usBlockStateCount(&IntFlashCore,
+										INTFLASH_START_SECTOR_ADDR,
+										INTFLASH_END_SECTOR_ADDR,
+										GSA_EXT_STATE_VALID),
+					usBlockStateCount(&IntFlashCore,
+										INTFLASH_START_SECTOR_ADDR,
+										INTFLASH_END_SECTOR_ADDR,
+										GSA_EXT_STATE_DEAD));
+
 		enResult = enGetRequest(Flash_TaskToken, &incoming_packet, portMAX_DELAY);
 
 		if (enResult != URC_SUCCESS) continue;
@@ -136,38 +136,21 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
 																	incoming_packet.Src,
 																	pContentHandle));
-
-	    vDebugPrint(Flash_TaskToken,
-					"Free: %d, Valid: %d, Dead %d!\n\r",
-					usBlockStateCount(&IntFlashCore,
-										INTFLASH_START_SECTOR_ADDR,
-										INTFLASH_END_SECTOR_ADDR,
-										GSA_EXT_STATE_FREE),
-					usBlockStateCount(&IntFlashCore,
-										INTFLASH_START_SECTOR_ADDR,
-										INTFLASH_END_SECTOR_ADDR,
-										GSA_EXT_STATE_VALID),
-					usBlockStateCount(&IntFlashCore,
-										INTFLASH_START_SECTOR_ADDR,
-										INTFLASH_END_SECTOR_ADDR,
-										GSA_EXT_STATE_DEAD));
 	}
 }
 
 /*********************************** function pointers *********************************/
-static unsigned portLONG WriteBufferFn(void)
+static unsigned portLONG WriteBufferFn(unsigned portLONG ulBlockAddr)
 {
-	unsigned portLONG ulFreeBlockAddr;
-
 	//TODO implement smart wear leveling free block selection scheme
 	//TODO implement data write treatment on write failure
-	ulFreeBlockAddr = ulGetNextFreeBlock(&IntFlashCore, INTFLASH_START_SECTOR_ADDR, INTFLASH_END_SECTOR_ADDR);
+	if (ulBlockAddr == (unsigned portLONG)NULL) ulBlockAddr = ulGetNextFreeBlock(&IntFlashCore, INTFLASH_START_SECTOR_ADDR, INTFLASH_END_SECTOR_ADDR);
+	if (ulBlockAddr == (unsigned portLONG)NULL) return ulBlockAddr;
 
-	if (ulFreeBlockAddr == (unsigned portLONG)NULL) return (unsigned portLONG)NULL;
+	if (Ram_To_Flash((void *)ulBlockAddr, (void *)IntFlashCore.BlockBuffer, IntFlashCore.BlockSize) != CMD_SUCCESS) return 0;
 
-	if (Ram_To_Flash((void *)ulFreeBlockAddr, (void *)IntFlashCore.BlockBuffer, IntFlashCore.BlockSize) != CMD_SUCCESS) return 0;
-
-	return ulFreeBlockAddr;
+	vDebugPrint(Flash_TaskToken, "Free block * = %p\n\r", ulBlockAddr, NO_INSERT, NO_INSERT);
+	return ulBlockAddr;
 }
 
 static portBASE_TYPE xIsBlockFreeFn(unsigned portLONG ulBlockAddr)
