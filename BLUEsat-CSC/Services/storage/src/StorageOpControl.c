@@ -23,6 +23,7 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 	switch (pStorageContent->Operation)
 	{
 		case STORAGE_STORE	:pGSACore->DebugTrace("AID: %d storing %d bytes\n\r", ucAID, pStorageContent->Size, 0);
+							xGSADelete(pGSACore, ucAID, pStorageContent->DID);
 							return xGSAWrite(pGSACore,
 											ucAID,
 											pStorageContent->DID,
@@ -30,10 +31,14 @@ UnivRetCode enProcessStorageReq(GSACore *pGSACore,
 											pStorageContent->Ptr);
 
 		case STORAGE_APPEND	:pGSACore->DebugTrace("AID: %d requested Append\n\r", ucAID, 0, 0);
-							break;
+							return xGSAWrite(pGSACore,
+											ucAID,
+											pStorageContent->DID,
+											pStorageContent->Size,
+											pStorageContent->Ptr);
 
 		case STORAGE_DELETE	:pGSACore->DebugTrace("AID: %d requested Delete\n\r", ucAID, 0, 0);
-							break;
+							return xGSADelete(pGSACore, ucAID, pStorageContent->DID);
 
 		case STORAGE_SIZE	:pGSACore->DebugTrace("AID: %d requested Size\n\r", ucAID, 0, 0);
 							ulRetVal = ulGSASize(pGSACore,
