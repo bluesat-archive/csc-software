@@ -56,7 +56,8 @@ typedef struct
 	unsigned portLONG	DataSize;
 } TreeInfo;
 
-#define DATA_FIELD_SIZE(BlockSize, HeaderSize)(BlockSize-(sizeof(TreeInfo)+HeaderSize))
+#define HB_DATA_FIELD_SIZE(BlockSize, HeaderSize)(BlockSize-(sizeof(TreeInfo)+HeaderSize))
+#define DB_DATA_FIELD_SIZE(BlockSize)(BlockSize-DB_HEADER_SIZE)
 #define DATA_START_ADDR(BlockAddr, HeaderSize)(BlockAddr+HeaderSize)
 #define INFO_START_ADDR(BlockAddr, BlockSize)(BlockAddr+BlockSize-sizeof(TreeInfo))
 
@@ -153,6 +154,15 @@ static unsigned portLONG ulBuildDataBlock(GSACore const *pGSACore,
 											unsigned portLONG ulNextDBlockAddr,
 											unsigned portSHORT usSize,
 											portCHAR *pcData);
+
+static unsigned portLONG ulGetBranchSize(GSACore const *pGSACore,
+										unsigned portLONG ulHBlockAddr);
+
+static portBASE_TYPE xReadFromBranch(GSACore const *pGSACore,
+										unsigned portLONG ulBlockAddr,
+										unsigned portLONG ulOffset,
+										unsigned portLONG ulSize,
+										portCHAR *pucBuffer);
 
 /******************************************** Data Table Optimisation ***********************************************/
 //find corresponding data table entry
@@ -259,14 +269,14 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 	//calculate address to the end of data
 	ulTmpAddr = (unsigned portLONG)pcData + ulSize;
 
-	if (ulSize > DATA_FIELD_SIZE(pGSACore->BlockSize, HB_SML_HEADER_SIZE))
+	if (ulSize > HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_SML_HEADER_SIZE))
 	{
 		//calculate data block chain data size
-		ulTmpSize = ulSize - DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE);
-		//calculate number of data block data chaindata split into
-		usNumDBlock = ulTmpSize / DATA_FIELD_SIZE(pGSACore->BlockSize, DB_HEADER_SIZE);
+		ulTmpSize = ulSize - HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE);
+		//calculate number of data blocks data will split into
+		usNumDBlock = ulTmpSize / DB_DATA_FIELD_SIZE(pGSACore->BlockSize);
 		//calculate last data block size
-		ulTmpSize %= DATA_FIELD_SIZE(pGSACore->BlockSize, DB_HEADER_SIZE);
+		ulTmpSize %= DB_DATA_FIELD_SIZE(pGSACore->BlockSize);
 		//[Common case] last data block is not fully filled
 		if (ulTmpSize > 0)
 		{
@@ -282,11 +292,11 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 	for (usIndex = 0; usIndex < usNumDBlock; ++usIndex)
 	{
 		//calculate starting point of block data
-		ulTmpAddr -= DATA_FIELD_SIZE(pGSACore->BlockSize, DB_HEADER_SIZE);
+		ulTmpAddr -= DB_DATA_FIELD_SIZE(pGSACore->BlockSize);
 		//create data block
 		ulBlockAddr = ulBuildDataBlock(pGSACore,
 										ulBlockAddr,
-										DATA_FIELD_SIZE(pGSACore->BlockSize, DB_HEADER_SIZE),
+										DB_DATA_FIELD_SIZE(pGSACore->BlockSize),
 										(portCHAR *)ulTmpAddr);
 		//check data block is created successfully
 		if (ulBlockAddr == (unsigned portLONG)NULL) return pdFAIL;
@@ -319,16 +329,64 @@ unsigned portLONG ulGSARead(GSACore const *pGSACore,
 							unsigned portLONG ulSize,
 							portCHAR *pucBuffer)
 {
-	(void)ulOffset;
-	unsigned portLONG ulLastHBlockAddr;
+	unsigned portLONG ulHBlockAddr;
+	unsigned portLONG ulBranchSize, ulTmpSize;
+	unsigned portLONG ulBufferEndAddr;
 
-	ulLastHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
+	//look up entry
+	ulHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
 
-	if (ulLastHBlockAddr == (unsigned portLONG)NULL) return 0;
+	if (ulHBlockAddr == (unsigned portLONG)NULL) return 0;
+	//get data size stored
+	ulTmpSize = ((TreeInfo *)INFO_START_ADDR(ulHBlockAddr, pGSACore->BlockSize))->DataSize;
 
-	ulSize = ((TreeInfo *)INFO_START_ADDR(ulLastHBlockAddr, pGSACore->BlockSize))->DataSize;
+	if (ulOffset > ulTmpSize) return 0;
+	//readjust input read size if requested size is greater than exist
+	ulSize = (ulOffset + ulSize > ulTmpSize) ? (ulTmpSize - ulOffset) : ulSize;
 
-	memcpy((void *)pucBuffer, (void *)DATA_START_ADDR(ulLastHBlockAddr, HB_SML_HEADER_SIZE), ulSize);
+	//calculate offset of last data from the end of memory tree
+	ulOffset = ulTmpSize - (ulOffset + ulSize);
+
+	//copy data size remaining
+	ulTmpSize = ulSize;
+
+	ulBufferEndAddr = (unsigned portLONG)pucBuffer + ulSize;
+
+	//go through memory tree
+	for (; ulHBlockAddr != (unsigned portLONG)NULL && ulTmpSize > 0;
+		ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulHBlockAddr))
+	{
+		//get branch size
+		ulBranchSize = ulGetBranchSize(pGSACore, ulHBlockAddr);
+		//reducing offset
+		if (ulOffset > 0)
+		{
+			if (ulOffset >= ulBranchSize)
+			{
+				ulOffset -= ulBranchSize;
+				continue;
+			}
+			ulBranchSize -= ulOffset;
+			ulOffset = 0;
+		}
+		//if execution reach here ulOffset no longer holds information
+		//so use it to store offset from the front of current branch
+		ulOffset = (ulBranchSize > ulTmpSize) ? ulBranchSize - ulTmpSize : 0;
+		//caluclate the size of data to be copied from branch
+		ulBranchSize = (ulBranchSize > ulTmpSize) ? ulTmpSize : ulBranchSize;
+		//adjust buffer pointer to correct start location
+		ulBufferEndAddr -= ulBranchSize;
+
+		xReadFromBranch(pGSACore,
+						ulHBlockAddr,
+						ulOffset,
+						ulBranchSize,
+						(portCHAR *)ulBufferEndAddr);
+		//reset offset back to 0 its origin value
+		ulOffset = 0;
+		//reduce remaining size of data to be copied
+		ulTmpSize -= ulBranchSize;
+	}
 
 	return ulSize;
 }
@@ -702,7 +760,7 @@ static unsigned portLONG ulBuildHeadBlock(GSACore const *pGSACore,
 		//there is data block chain store maximum size
 		memcpy((void *)DATA_START_ADDR(ulBlockAddr, HB_HEADER_SIZE),
 				(void *)pcData,
-				DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE));
+				HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE));
 	}
 
 	if (ulPrevHBlockAddr != (unsigned portLONG)NULL)
@@ -738,6 +796,80 @@ static unsigned portLONG ulBuildDataBlock(GSACore const *pGSACore,
 	xBlockChecksum(OP_BLOCK_CHECK_APPLY, ulBlockAddr, pGSACore->BlockSize);
 	//return result from memory management
 	return pGSACore->WriteBuffer();
+}
+
+static unsigned portLONG ulGetBranchSize(GSACore const *pGSACore,
+										unsigned portLONG ulHBlockAddr)
+{
+	unsigned portLONG ulSize;
+
+	//read data size from head block
+	ulSize = ((TreeInfo *)INFO_START_ADDR(ulHBlockAddr, pGSACore->BlockSize))->DataSize;
+	//if terminal block, read size is branch data size
+	if (((Header *)ulHBlockAddr)->Terminal) return ulSize;
+	//get previous head block
+	ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulHBlockAddr);
+	//return 0 if ERROR on no block
+	if (ulHBlockAddr == (unsigned portLONG)NULL) return 0;
+	//subtract remaining tree size to get branch size
+	ulSize -= ((TreeInfo *)INFO_START_ADDR(ulHBlockAddr, pGSACore->BlockSize))->DataSize;
+
+	return ulSize;
+}
+
+static portBASE_TYPE xReadFromBranch(GSACore const *pGSACore,
+											unsigned portLONG ulBlockAddr,
+											unsigned portLONG ulOffset,
+											unsigned portLONG ulSize,
+											portCHAR *pucBuffer)
+{
+	unsigned portLONG ulBranchSize;
+	unsigned portSHORT usBlockDataSize;
+
+	//get data size in branch
+	ulBranchSize = ulGetBranchSize(pGSACore, ulBlockAddr);
+
+	//copy data from single block entry
+	if (((Header *)ulBlockAddr)->FDBI_U == 0)
+	{
+		memcpy((void *)pucBuffer,
+				(void *)(DATA_START_ADDR(ulBlockAddr, HB_SML_HEADER_SIZE) + ulOffset),
+				ulSize);
+
+		return pdPASS;
+	}
+	//copy data from multiple data block entry
+	for (usBlockDataSize = HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE);
+		ulSize > 0;
+		ulBlockAddr = ulNextDataBlock(pGSACore, ulBlockAddr),
+			usBlockDataSize = DB_DATA_FIELD_SIZE(pGSACore->BlockSize))
+	{
+		//reduce offset
+		if (ulOffset > 0)
+		{
+			if (ulOffset >= usBlockDataSize)
+			{
+				ulOffset -= usBlockDataSize;
+				continue;
+			}
+			usBlockDataSize -= ulOffset;
+		}
+		//adjust size if data in block is more than remaining
+		usBlockDataSize = (usBlockDataSize > ulSize) ? ulSize : usBlockDataSize;
+
+		memcpy((void *)pucBuffer,
+				(void *)(DATA_START_ADDR(ulBlockAddr, DB_HEADER_SIZE) + ulOffset),
+				usBlockDataSize);
+
+		//adjust buffer pointer to the end of data been wrote
+		pucBuffer = (portCHAR *)((unsigned portLONG)pucBuffer + usBlockDataSize);
+		//calculate remaining size
+		ulSize -= usBlockDataSize;
+		//offset used should now be 0
+		ulOffset = 0;
+	}
+
+	return pdPASS;
 }
 
 /******************************************** Data Table Optimisation ***********************************************/
