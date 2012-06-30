@@ -187,8 +187,6 @@ static void vRemoveDataTableEntry(GSACore const *pGSACore,
 //initialise GSACore
 void vInitialiseCore(GSACore const *pGSACore)
 {
-	(void)usAddrToIndex;
-	(void)ulIndexToAddr;
 	(void)pFindDataTableEntry;
 	(void)xAddDataTableEntry;
 	(void)vRemoveDataTableEntry;
@@ -261,10 +259,10 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 						portCHAR *pcData)
 {
 	unsigned portLONG ulTmpAddr;
-	unsigned portLONG ulBlockAddr		= pGSACore->EndAddr;
+	unsigned portLONG ulBlockAddr		= (unsigned portLONG)NULL;
 	unsigned portLONG ulTmpSize 		= 0;
-	unsigned portSHORT  usIndex;
 	unsigned portSHORT usNumDBlock 		= 0;
+	unsigned portSHORT  usIndex;
 
 	//calculate address to the end of data
 	ulTmpAddr = (unsigned portLONG)pcData + ulSize;
@@ -305,7 +303,7 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 	ulBlockAddr = ulBuildHeadBlock(pGSACore,
 									ucAID, ucDID,
 									ulBlockAddr,
-									ulTmpAddr-(unsigned portLONG)pcData,
+									ulSize,
 									pcData);
 	//check head block is created successfully
 	if (ulBlockAddr == (unsigned portLONG)NULL) return pdFAIL;
@@ -316,6 +314,7 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 
 	ulBlockAddr = ulPrevHeadBlock(pGSACore, ulBlockAddr);
 
+pGSACore->DebugTrace("HB * = %p\n\r", ulBlockAddr, 0,0);
 	if (ulBlockAddr != (unsigned portLONG)NULL)
 		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
 
@@ -626,7 +625,7 @@ static GSA_INT_STATE enAccessStateTable(StateTableOp enOperation,
 	unsigned portCHAR ucStateShiftFactor;
 
 	//convert address to block index space
-	usStateTableIndex = usAddrToIndex(pGSACore, ulBlockAddr);
+	usStateTableIndex = (ulBlockAddr - pGSACore->StartAddr) / pGSACore->BlockSize;
 	//calculate shift factor
 	ucStateShiftFactor = (usStateTableIndex % NUM_STATE_PER_BYTE) * STATE_SIZE_BIT;
 	//calculate state table index
@@ -678,7 +677,7 @@ static unsigned portLONG ulNextDataBlock(GSACore const *pGSACore,
 	}
 	else
 	{
-		if (ulIndexToAddr(pGSACore, ((Header *)ulBlockAddr)->NDBI) != pGSACore->EndAddr)
+		if (((Header *)ulBlockAddr)->NDBI != 0)
 			return ulIndexToAddr(pGSACore, ((Header *)ulBlockAddr)->NDBI);
 	}
 
@@ -688,13 +687,13 @@ static unsigned portLONG ulNextDataBlock(GSACore const *pGSACore,
 static unsigned portSHORT usAddrToIndex(GSACore const *pGSACore,
 										unsigned portLONG ulAddr)
 {
-	return ((ulAddr - pGSACore->StartAddr) / pGSACore->BlockSize);
+	return (((ulAddr - pGSACore->StartAddr) / pGSACore->BlockSize) + 1);
 }
 
 static unsigned portLONG ulIndexToAddr(GSACore const *pGSACore,
 										unsigned portSHORT usBlockIndex)
 {
-	return (usBlockIndex * pGSACore->BlockSize + pGSACore->StartAddr);
+	return ((usBlockIndex - 1) * pGSACore->BlockSize + pGSACore->StartAddr);
 }
 
 static unsigned portLONG ulLookUpDataEntry(GSACore const *pGSACore,
@@ -736,43 +735,47 @@ static unsigned portLONG ulBuildHeadBlock(GSACore const *pGSACore,
 											unsigned portLONG ulSize,
 											portCHAR *pcData)
 {
-	unsigned portLONG ulBlockAddr, ulPrevHBlockAddr;
+	unsigned portLONG ulBlockAddr, ulEntryHBlockAddr;
 
 	//search for existing data entry
-	ulPrevHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
+	ulEntryHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
 	//get buffer address
 	ulBlockAddr = (unsigned portLONG)pGSACore->BlockBuffer;
 	//set block attribute
 	((Header *)ulBlockAddr)->H 			= 1;
-	((Header *)ulBlockAddr)->Terminal	= (ulPrevHBlockAddr == (unsigned portLONG)NULL);
+	((Header *)ulBlockAddr)->Terminal	= (ulEntryHBlockAddr == (unsigned portLONG)NULL);
 	((Header *)ulBlockAddr)->AID		= ucAID;
 	((Header *)ulBlockAddr)->DID		= ucDID;
-	((Header *)ulBlockAddr)->PrevHBI	= (((Header *)ulBlockAddr)->Terminal) ? 0 : usAddrToIndex(pGSACore, ulPrevHBlockAddr);
-	((Header *)ulBlockAddr)->FDBI_U		= !(ulFirstDBlockAddr == pGSACore->EndAddr);
+	((Header *)ulBlockAddr)->PrevHBI	= (((Header *)ulBlockAddr)->Terminal) ? 0 : usAddrToIndex(pGSACore, ulEntryHBlockAddr);
+	((Header *)ulBlockAddr)->FDBI_U		= !(ulFirstDBlockAddr == (unsigned portLONG)NULL);
 
-	if (ulFirstDBlockAddr == pGSACore->EndAddr)
+	if (ulFirstDBlockAddr == (unsigned portLONG)NULL)
 	{
 		//NO data block chain, ulSize contain size of data to be stored
 		memcpy((void *)DATA_START_ADDR(ulBlockAddr, HB_SML_HEADER_SIZE), (void *)pcData, ulSize);
 	}
 	else
 	{
+		//convert and assign first data block index
+		((Header *)ulBlockAddr)->FDBI = usAddrToIndex(pGSACore, ulFirstDBlockAddr);
 		//there is data block chain store maximum size
 		memcpy((void *)DATA_START_ADDR(ulBlockAddr, HB_HEADER_SIZE),
 				(void *)pcData,
 				HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE));
 	}
 
-	if (ulPrevHBlockAddr != (unsigned portLONG)NULL)
+	if (ulEntryHBlockAddr != (unsigned portLONG)NULL)
 	{
 		//there exist data entry, include previous data entry size in our data size
-		ulSize += ((TreeInfo *)INFO_START_ADDR(ulFirstDBlockAddr, pGSACore->BlockSize))->DataSize;
+		ulSize += ((TreeInfo *)INFO_START_ADDR(ulEntryHBlockAddr, pGSACore->BlockSize))->DataSize;
 	}
 	//store data size
 	((TreeInfo *)INFO_START_ADDR(ulBlockAddr, pGSACore->BlockSize))->DataSize = ulSize;
 	//assign checksum
 	xBlockChecksum(OP_BLOCK_CHECK_APPLY, ulBlockAddr, pGSACore->BlockSize);
-//pGSACore->DebugTrace("%p\n\r%512x\n\r%d\n\r", ulBlockAddr, ulBlockAddr, ulSize);
+pGSACore->DebugTrace("write buffer * = %p\n\r", (unsigned portLONG)pGSACore->WriteBuffer, 0, 0);
+pGSACore->DebugTrace("HB:%d\n\r%512x\n\r", ulSize, ulBlockAddr, 0);
+
 	//return result from memory management
 	return pGSACore->WriteBuffer();
 }
@@ -789,11 +792,14 @@ static unsigned portLONG ulBuildDataBlock(GSACore const *pGSACore,
 	ulBlockAddr = (unsigned portLONG)pGSACore->BlockBuffer;
 	//set block attribute
 	((Header *)ulBlockAddr)->H 		= 0;
-	((Header *)ulBlockAddr)->NDBI 	= usAddrToIndex(pGSACore, ulNextDBlockAddr);
+	((Header *)ulBlockAddr)->NDBI 	= (ulNextDBlockAddr == (unsigned portLONG)NULL)
+										? 0
+										: usAddrToIndex(pGSACore, ulNextDBlockAddr);
 	//copy data to buffer
 	memcpy((void *)DATA_START_ADDR(ulBlockAddr, DB_HEADER_SIZE), (void *)pcData, usSize);
 	//assigne checksum
 	xBlockChecksum(OP_BLOCK_CHECK_APPLY, ulBlockAddr, pGSACore->BlockSize);
+pGSACore->DebugTrace("DB:%d\n\r%512x\n\r", usSize, ulBlockAddr, 0);
 	//return result from memory management
 	return pGSACore->WriteBuffer();
 }
@@ -825,6 +831,7 @@ static portBASE_TYPE xReadFromBranch(GSACore const *pGSACore,
 {
 	unsigned portLONG ulBranchSize;
 	unsigned portSHORT usBlockDataSize;
+	unsigned portSHORT usHeaderSize;
 
 	//get data size in branch
 	ulBranchSize = ulGetBranchSize(pGSACore, ulBlockAddr);
@@ -839,10 +846,12 @@ static portBASE_TYPE xReadFromBranch(GSACore const *pGSACore,
 		return pdPASS;
 	}
 	//copy data from multiple data block entry
-	for (usBlockDataSize = HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE);
+	for (usBlockDataSize = HB_DATA_FIELD_SIZE(pGSACore->BlockSize, HB_HEADER_SIZE),
+			usHeaderSize = HB_HEADER_SIZE;
 		ulSize > 0;
 		ulBlockAddr = ulNextDataBlock(pGSACore, ulBlockAddr),
-			usBlockDataSize = DB_DATA_FIELD_SIZE(pGSACore->BlockSize))
+			usBlockDataSize = DB_DATA_FIELD_SIZE(pGSACore->BlockSize),
+				usHeaderSize = DB_HEADER_SIZE)
 	{
 		//reduce offset
 		if (ulOffset > 0)
@@ -858,7 +867,7 @@ static portBASE_TYPE xReadFromBranch(GSACore const *pGSACore,
 		usBlockDataSize = (usBlockDataSize > ulSize) ? ulSize : usBlockDataSize;
 
 		memcpy((void *)pucBuffer,
-				(void *)(DATA_START_ADDR(ulBlockAddr, DB_HEADER_SIZE) + ulOffset),
+				(void *)(DATA_START_ADDR(ulBlockAddr, usHeaderSize) + ulOffset),
 				usBlockDataSize);
 
 		//adjust buffer pointer to the end of data been wrote

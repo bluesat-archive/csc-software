@@ -18,15 +18,15 @@
 #include "FreeRTOS.h"
 
 typedef enum
-{						//Maximum memory supported 2^15 * Segment Size
-	BYTE_64		= 64,	//2,097,152 bytes
-	BYTE_128	= 128,	//4,194,304 bytes
-	BYTE_256	= 256,	//8,388,608 bytes
-	BYTE_512	= 512,	//16,777,216 bytes
-	BYTE_1024	= 1024,	//33,554,432 bytes
-	BYTE_2048	= 2048,	//67,108,864 bytes
-	BYTE_4096	= 4096,	//134,217,728 bytes
-	BYTE_8192	= 8192	//268,435,456 bytes
+{						//Maximum memory supported (2^15 - 1) * Segment Size
+	BYTE_64		= 64,	//2,097,152 bytes	- 64
+	BYTE_128	= 128,	//4,194,304 bytes	- 128
+	BYTE_256	= 256,	//8,388,608 bytes	- 256
+	BYTE_512	= 512,	//16,777,216 bytes	- 512
+	BYTE_1024	= 1024,	//33,554,432 bytes	- 1024
+	BYTE_2048	= 2048,	//67,108,864 bytes	- 2048
+	BYTE_4096	= 4096,	//134,217,728 bytes - 4096
+	BYTE_8192	= 8192	//268,435,456 bytes	- 8192
 } GSA_BLOCK_SIZE;
 
 #define MIN_BLOCK_SIZE		BYTE_64
