@@ -21,8 +21,8 @@
 
 #define FLASH_Q_SIZE	1
 
-#define INTFLASH_START_SECTOR				26
-#define INTFLASH_START_SECTOR_ADDR			SECTOR26ADDR
+#define INTFLASH_START_SECTOR				20
+#define INTFLASH_START_SECTOR_ADDR			SECTOR20ADDR
 #define INTFLASH_END_SECTOR					28
 #define INTFLASH_END_SECTOR_ADDR			SECTOR28ADDR
 #define	INTFLASH_BLOCK_SIZE					BYTE_512
@@ -175,20 +175,20 @@ static void vUpdateSectorStatus(void)
 
 			break;
 		}
+	}
 
-		for (usIndex = 0, usEraseFlag = 0; usIndex < NUM_SECTORS; ++usIndex)
-		{
-			vDebugPrint(Flash_TaskToken,
-						"Sector %d:\n\r",
-						usIndex + INTFLASH_START_SECTOR,
-						NO_INSERT,
-						NO_INSERT);
-			vDebugPrint(Flash_TaskToken,
-						"Free: %d, Valid: %d, Dead %d\n\r",
-						ucSectorStatus[usIndex][BLOCK_TYPE_FREE],
-						ucSectorStatus[usIndex][BLOCK_TYPE_VALID],
-						ucSectorStatus[usIndex][BLOCK_TYPE_DEAD]);
-		}
+	for (usIndex = 0; usIndex < NUM_SECTORS; ++usIndex)
+	{
+		vDebugPrint(Flash_TaskToken,
+					"Sector %d:\n\r",
+					usIndex + INTFLASH_START_SECTOR,
+					NO_INSERT,
+					NO_INSERT);
+		vDebugPrint(Flash_TaskToken,
+					"Free: %d, Valid: %d, Dead %d\n\r",
+					ucSectorStatus[usIndex][BLOCK_TYPE_FREE],
+					ucSectorStatus[usIndex][BLOCK_TYPE_VALID],
+					ucSectorStatus[usIndex][BLOCK_TYPE_DEAD]);
 	}
 }
 
