@@ -31,7 +31,7 @@ typedef enum
 
 #define MIN_BLOCK_SIZE		BYTE_64
 
-typedef unsigned portLONG	(*WriteBufferPtr)	(void);
+typedef unsigned portLONG	(*WriteBufferPtr)	(unsigned portLONG ulBlockAddr);
 //typedef unsigned portSHORT 	(*ReadBlockToBufPtr)(unsigned portLONG ulBlockAddr);
 typedef portBASE_TYPE		(*xIsBlockFreePtr)	(unsigned portLONG ulBlockAddr);
 
@@ -125,6 +125,10 @@ unsigned portLONG ulGSARead(GSACore const *pGSACore,
 							portCHAR *pucBuffer);
 						
 unsigned portLONG ulGSASize(GSACore const *pGSACore,
+							unsigned portCHAR ucAID,
+							unsigned portCHAR ucDID);
+
+portBASE_TYPE xGSADelete(GSACore const *pGSACore,
 							unsigned portCHAR ucAID,
 							unsigned portCHAR ucDID);
 

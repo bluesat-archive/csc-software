@@ -198,7 +198,7 @@ void vInitialiseCore(GSACore const *pGSACore)
 	vBuildMemory(pGSACore);
 	pGSACore->DebugTrace("Memory built\n\r", 0,0,0);
 	vFinaliseStateTable(pGSACore);
-	pGSACore->DebugTrace("ST finalised\n\r", 0,0,0);
+	pGSACore->DebugTrace("State Table finalised\n\r", 0,0,0);
 }
 
 unsigned portSHORT usBlockStateCount(GSACore const *	pGSACore,
@@ -314,7 +314,6 @@ portBASE_TYPE xGSAWrite(GSACore const *pGSACore,
 
 	ulBlockAddr = ulPrevHeadBlock(pGSACore, ulBlockAddr);
 
-pGSACore->DebugTrace("HB * = %p\n\r", ulBlockAddr, 0,0);
 	if (ulBlockAddr != (unsigned portLONG)NULL)
 		enAccessStateTable(OP_STATE_TABLE_SET, pGSACore, ulBlockAddr, GSA_INT_BLOCK_STATE_VALID);
 
@@ -401,6 +400,35 @@ unsigned portLONG ulGSASize(GSACore const *pGSACore,
 	if (ulLastHBlockAddr == (unsigned portLONG)NULL) return 0;
 
 	return ((TreeInfo *)INFO_START_ADDR(ulLastHBlockAddr, pGSACore->BlockSize))->DataSize;
+}
+
+portBASE_TYPE xGSADelete(GSACore const *pGSACore,
+							unsigned portCHAR ucAID,
+							unsigned portCHAR ucDID)
+{
+	unsigned portLONG ulHBlockAddr;
+
+	//look up entry
+	ulHBlockAddr = ulLookUpDataEntry(pGSACore, ucAID, ucDID);
+
+	for (; ulHBlockAddr != (unsigned portLONG)NULL;
+			ulHBlockAddr = ulPrevHeadBlock(pGSACore, ulHBlockAddr))
+	{
+		vSetDataBranch(pGSACore, ulHBlockAddr, GSA_INT_BLOCK_STATE_DEAD);
+
+		if (((Header *)ulHBlockAddr)->Terminal)
+		{
+			memcpy((void *)pGSACore->BlockBuffer, (void *)ulHBlockAddr, pGSACore->BlockSize);
+
+			((Header *)pGSACore->BlockBuffer)->Checksum = 0;
+
+			pGSACore->WriteBuffer(ulHBlockAddr);
+
+			break;
+		}
+	}
+
+	return pdTRUE;
 }
 
 /************************************************* Internal Functions *************************************************/
@@ -721,8 +749,7 @@ static unsigned portLONG ulLookUpDataEntry(GSACore const *pGSACore,
 		if (((Header *)ulLastHBlockAddr)->AID == ucAID &&
 			((Header *)ulLastHBlockAddr)->DID == ucDID) break;
 	}
-
-	pGSACore->DebugTrace("Fail matching %d blocks\n\r", usCounter, 0, 0);
+	pGSACore->DebugTrace("Look up cost: %d blocks\n\r", usCounter, 0, 0);
 
 	return ulLastHBlockAddr;
 }
@@ -773,11 +800,9 @@ static unsigned portLONG ulBuildHeadBlock(GSACore const *pGSACore,
 	((TreeInfo *)INFO_START_ADDR(ulBlockAddr, pGSACore->BlockSize))->DataSize = ulSize;
 	//assign checksum
 	xBlockChecksum(OP_BLOCK_CHECK_APPLY, ulBlockAddr, pGSACore->BlockSize);
-pGSACore->DebugTrace("write buffer * = %p\n\r", (unsigned portLONG)pGSACore->WriteBuffer, 0, 0);
-pGSACore->DebugTrace("HB:%d\n\r%512x\n\r", ulSize, ulBlockAddr, 0);
 
 	//return result from memory management
-	return pGSACore->WriteBuffer();
+	return pGSACore->WriteBuffer(0);
 }
 
 //create data block
@@ -799,9 +824,9 @@ static unsigned portLONG ulBuildDataBlock(GSACore const *pGSACore,
 	memcpy((void *)DATA_START_ADDR(ulBlockAddr, DB_HEADER_SIZE), (void *)pcData, usSize);
 	//assigne checksum
 	xBlockChecksum(OP_BLOCK_CHECK_APPLY, ulBlockAddr, pGSACore->BlockSize);
-pGSACore->DebugTrace("DB:%d\n\r%512x\n\r", usSize, ulBlockAddr, 0);
+
 	//return result from memory management
-	return pGSACore->WriteBuffer();
+	return pGSACore->WriteBuffer(0);
 }
 
 static unsigned portLONG ulGetBranchSize(GSACore const *pGSACore,
