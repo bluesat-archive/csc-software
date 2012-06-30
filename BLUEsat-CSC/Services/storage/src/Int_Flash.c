@@ -23,8 +23,8 @@
 
 #define INTFLASH_START_SECTOR				26
 #define INTFLASH_START_SECTOR_ADDR			SECTOR26ADDR
-#define INTFLASH_END_SECTOR					27
-#define INTFLASH_END_SECTOR_ADDR			SECTOR27ADDR
+#define INTFLASH_END_SECTOR					28
+#define INTFLASH_END_SECTOR_ADDR			SECTOR28ADDR
 #define	INTFLASH_BLOCK_SIZE					BYTE_512
 
 //task token for accessing services
@@ -34,6 +34,10 @@ static GSACore IntFlashCore;
 
 //prototype for task function
 static portTASK_FUNCTION(vIntFlashTask, pvParameters);
+
+static void vSetupCore(void);
+
+static void vUpdateSectorStatus(void);
 
 static unsigned portLONG WriteBufferFn(unsigned portLONG ulBlockAddr);
 
@@ -63,6 +67,13 @@ static unsigned portCHAR IntFlashStateTable[STATE_TABLE_SIZE(INTFLASH_START_SECT
 													INTFLASH_END_SECTOR_ADDR,
 													INTFLASH_BLOCK_SIZE)];
 
+#define BLOCK_TYPE_FREE		0
+#define BLOCK_TYPE_VALID	1
+#define BLOCK_TYPE_DEAD		2
+#define TOTAL_BLOCK_TYPES	3
+#define NUM_SECTORS 		INTFLASH_END_SECTOR-INTFLASH_START_SECTOR
+unsigned portCHAR ucSectorStatus[NUM_SECTORS][TOTAL_BLOCK_TYPES];
+
 static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 {
 	(void) pvParameters;
@@ -70,9 +81,46 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 	MessagePacket incoming_packet;
 	StorageContent *pContentHandle;
 
+	vSetupCore();
+	//initialise GSACore
+	vInitialiseCore(&IntFlashCore);
+    vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+
+	for ( ; ; )
+	{
+		vUpdateSectorStatus();
+
+		enResult = enGetRequest(Flash_TaskToken, &incoming_packet, portMAX_DELAY);
+
+		if (enResult != URC_SUCCESS) continue;
+
+		pContentHandle = (StorageContent *)incoming_packet.Data;
+
+#ifndef NO_DEBUG
+		if (pContentHandle->Operation == STORAGE_FORMAT)
+		{
+			Erase_Sector(INTFLASH_START_SECTOR, INTFLASH_END_SECTOR - 1);
+
+			vDebugPrint(Flash_TaskToken, "Sectors %d to %d erased!\n\r", INTFLASH_START_SECTOR, INTFLASH_END_SECTOR - 1, NO_INSERT);
+
+			vInitialiseCore(&IntFlashCore);
+
+			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
+			continue;
+		}
+#endif
+
+		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
+																	incoming_packet.Src,
+																	pContentHandle));
+	}
+}
+
+static void vSetupCore(void)
+{
 	//setup GSACore
-	IntFlashCore.StartAddr 		= FlashSecAdds[INTFLASH_START_SECTOR];
-	IntFlashCore.EndAddr 		= FlashSecAdds[INTFLASH_END_SECTOR];
+	IntFlashCore.StartAddr 		= INTFLASH_START_SECTOR_ADDR;
+	IntFlashCore.EndAddr 		= INTFLASH_END_SECTOR_ADDR;
 	IntFlashCore.BlockSize		= INTFLASH_BLOCK_SIZE;
 	IntFlashCore.BlockBuffer 	= IntFlashBlockBuffer;
 	IntFlashCore.StateTable 	= IntFlashStateTable;
@@ -87,55 +135,60 @@ static portTASK_FUNCTION(vIntFlashTask, pvParameters)
 #ifndef NO_DEBUG
 	IntFlashCore.DebugTrace 	= DebugTraceFn;
 #endif /* NO_DEBUG */
+}
 
-	//initialise GSACore
-	vInitialiseCore(&IntFlashCore);
-    vDebugPrint(Flash_TaskToken, "Ready!\n\r", NO_INSERT, NO_INSERT, NO_INSERT);
+static void vUpdateSectorStatus(void)
+{
+	unsigned portSHORT usIndex;
+	unsigned portSHORT usEraseFlag = 1;
 
-	for ( ; ; )
+	while (usEraseFlag)
 	{
-	    vDebugPrint(Flash_TaskToken,
-					"Free: %d, Valid: %d, Dead %d!\n\r",
-					usBlockStateCount(&IntFlashCore,
-										INTFLASH_START_SECTOR_ADDR,
-										INTFLASH_END_SECTOR_ADDR,
-										GSA_EXT_STATE_FREE),
-					usBlockStateCount(&IntFlashCore,
-										INTFLASH_START_SECTOR_ADDR,
-										INTFLASH_END_SECTOR_ADDR,
-										GSA_EXT_STATE_VALID),
-					usBlockStateCount(&IntFlashCore,
-										INTFLASH_START_SECTOR_ADDR,
-										INTFLASH_END_SECTOR_ADDR,
-										GSA_EXT_STATE_DEAD));
-
-		enResult = enGetRequest(Flash_TaskToken, &incoming_packet, portMAX_DELAY);
-
-		if (enResult != URC_SUCCESS) continue;
-
-		pContentHandle = (StorageContent *)incoming_packet.Data;
-
-#ifndef NO_DEBUG
-		if (pContentHandle->Operation == STORAGE_FORMAT)
+		for (usIndex = 0, usEraseFlag = 0; usIndex < NUM_SECTORS; ++usIndex)
 		{
-			Erase_Sector(INTFLASH_START_SECTOR, INTFLASH_END_SECTOR - 1);
+			ucSectorStatus[usIndex][BLOCK_TYPE_FREE] = usBlockStateCount(&IntFlashCore,
+																		FlashSecAdds[usIndex+INTFLASH_START_SECTOR],
+																		FlashSecAdds[usIndex+INTFLASH_START_SECTOR+1],
+																		GSA_EXT_STATE_FREE);
+			ucSectorStatus[usIndex][BLOCK_TYPE_VALID] = usBlockStateCount(&IntFlashCore,
+																		FlashSecAdds[usIndex+INTFLASH_START_SECTOR],
+																		FlashSecAdds[usIndex+INTFLASH_START_SECTOR+1],
+																		GSA_EXT_STATE_VALID);
+			ucSectorStatus[usIndex][BLOCK_TYPE_DEAD] = usBlockStateCount(&IntFlashCore,
+																		FlashSecAdds[usIndex+INTFLASH_START_SECTOR],
+																		FlashSecAdds[usIndex+INTFLASH_START_SECTOR+1],
+																		GSA_EXT_STATE_DEAD);
+
+			if (ucSectorStatus[usIndex][BLOCK_TYPE_FREE] + ucSectorStatus[usIndex][BLOCK_TYPE_VALID] > 0) continue;
+
+			Erase_Sector(usIndex + INTFLASH_START_SECTOR, usIndex + INTFLASH_START_SECTOR);
 
 			vDebugPrint(Flash_TaskToken,
-						"Sectors %d to %d erased!\n\r",
-						INTFLASH_START_SECTOR,
-						INTFLASH_END_SECTOR - 1,
+						"Sector %d erased\n\r",
+						usIndex + INTFLASH_START_SECTOR,
+						NO_INSERT,
 						NO_INSERT);
 
 			vInitialiseCore(&IntFlashCore);
 
-			vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
-			continue;
-		}
-#endif
+			usEraseFlag = 1;
 
-		vCompleteRequest(incoming_packet.Token, enProcessStorageReq(&IntFlashCore,
-																	incoming_packet.Src,
-																	pContentHandle));
+			break;
+		}
+
+		for (usIndex = 0, usEraseFlag = 0; usIndex < NUM_SECTORS; ++usIndex)
+		{
+			vDebugPrint(Flash_TaskToken,
+						"Sector %d:\n\r",
+						usIndex + INTFLASH_START_SECTOR,
+						NO_INSERT,
+						NO_INSERT);
+			vDebugPrint(Flash_TaskToken,
+						"Free: %d, Valid: %d, Dead %d\n\r",
+						ucSectorStatus[usIndex][BLOCK_TYPE_FREE],
+						ucSectorStatus[usIndex][BLOCK_TYPE_VALID],
+						ucSectorStatus[usIndex][BLOCK_TYPE_DEAD]);
+		}
 	}
 }
 
