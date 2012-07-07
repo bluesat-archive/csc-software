@@ -12,7 +12,7 @@
 #include "UniversalReturnCode.h"
 #include "i2c.h"
 
-typedef short int sensor_result;
+typedef short sensor_result;
 
 typedef struct {
 	unsigned short address;
