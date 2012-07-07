@@ -31,6 +31,14 @@ typedef struct
    Level rate;
 }Entity_sweep_params;
 
+
+typedef struct
+{
+   short high:1;
+   short medium:1;
+   short low:1;
+}Request_Resolution;
+
 typedef enum
 {
    critical_systems = 0,
@@ -49,5 +57,14 @@ const Entity_group Entity_Mappings []={{0,21},
                                        {63,21},
                                        {84,21},
                                        {105,21}};
+
+const Entity_group Entity_Default = {low,high};
+
+
+UnivRetCode Init_Sweep();
+UnivRetCode Alter_Sweep_Entity();
+UnivRetCode Req_Sweep_Entities (Request_Resolution Resolutions);
+UnivRetCode Get_Next_Entity (Entity_group* Next_Entity, Level* Resolution);
+
 
 #endif
