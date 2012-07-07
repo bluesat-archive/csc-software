@@ -37,7 +37,7 @@ typedef struct
    short high:1;
    short medium:1;
    short low:1;
-}Request_Resolution;
+}Request_Rate;
 
 typedef enum
 {
@@ -63,7 +63,7 @@ const Entity_group Entity_Default = {low,high};
 
 UnivRetCode Init_Sweep();
 UnivRetCode Alter_Sweep_Entity();
-UnivRetCode Req_Sweep_Entities (Request_Resolution Resolutions);
+UnivRetCode Req_Sweep_Entities (Request_Rate Rates);
 UnivRetCode Get_Next_Entity (Entity_group* Next_Entity, Level* Resolution);
 
 
