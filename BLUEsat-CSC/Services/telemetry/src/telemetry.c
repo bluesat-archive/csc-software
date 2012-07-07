@@ -67,6 +67,16 @@ static portTASK_FUNCTION(vTelemTask, pvParameters);
 static unsigned int uiLoad_results (sensor_result * buffer, unsigned int size);
 static UnivRetCode enRead_sensor(sensor_lc* location);
 
+static inline Request_Rate
+uiEvent_Check(unsigned int eventCount)
+{
+	Request_Rate returnRate;
+	returnRate.high = 1;
+	returnRate.medium = !(eventCount % medium);
+	returnRate.low = !(eventCount % low);
+	return returnRate;
+}
+
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 {
 	telemTask_token = ActivateTask(TASK_TELEM,
