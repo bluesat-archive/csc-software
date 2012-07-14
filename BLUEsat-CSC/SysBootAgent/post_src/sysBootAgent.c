@@ -21,27 +21,27 @@ unsigned int initDrivers(void)
 	Comms_UART_Init();
 #endif
 
-/*#ifdef EMC_H_
+#ifdef EMC_H_
 	//External Memory Controller driver
 	vEMC_Init();
-#endif//*/
+#endif//
 
 #ifdef I2C_H_
 	Comms_I2C_Init();
 #endif//*/
 
-/*#ifdef SWITCHING_H_
+#ifdef SWITCHING_H_
 	Switching_Init();
-#endif//*/
+#endif//
 
-/*#ifdef MODEM_H_
+#ifdef MODEM_H_
 	Comms_Modem_Timer_Init();
-#endif//*/
+#endif//
 
 #ifdef IAP_H_
 	//Internal Application Programming (IAP)
 	/* NO INITIALISATION REQUIRED */
-#endif//*/
+#endif//
 
 	return 0;
 }
@@ -52,29 +52,29 @@ unsigned int initDrivers(void)
 unsigned int initServices(void)
 {
 
-/*#ifdef MEMORY_H_
+#ifdef MEMORY_H_
 	//memory task
 	vMemory_Init(SERV_TASK_PRIORITY);
-#endif//*/
+#endif//
 
 #ifdef COMMAND_H_
 	//Command task
 	vCommand_Init(SERV_TASK_PRIORITY + 1);
 #endif
 
-/*#ifdef STORAGE_H_
+#ifdef STORAGE_H_
 	//memory task
 	vStorage_Init(SERV_TASK_PRIORITY);
-#endif//*/
+#endif//
 
 #ifdef DEBUG_H_
 	//debug task
 	vDebug_Init(SERV_TASK_PRIORITY);
 #endif//*/
 
-/*#ifdef BEACON_H_
+#ifdef BEACON_H_
 	vBeacon_Init(SERV_TASK_PRIORITY + 1);
-#endif//*/
+#endif//
 
 #ifdef TELEMETRY_H_
 	vTelem_Init(SERV_TASK_PRIORITY);
@@ -110,11 +110,11 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef GPIODEMO_H_
-	vGpioDemo_Init(APP_TASK_PRIORITY);
+	//vGpioDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef SWITCHINGDEMO_H_
-//	vSwitchingDemo_Init(APP_TASK_PRIORITY);
+	//vSwitchingDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef MODEMDEMO_H_
