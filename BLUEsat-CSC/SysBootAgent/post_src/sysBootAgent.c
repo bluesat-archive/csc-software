@@ -75,10 +75,10 @@ unsigned int initServices(void)
 #ifdef BEACON_H_
 	vBeacon_Init(SERV_TASK_PRIORITY + 1);
 #endif//*/
-/*
+
 #ifdef TELEM_H_
 	vTelem_Init(SERV_TASK_PRIORITY);
-#endif//*/
+#endif//
 
 	return 0;
 }
