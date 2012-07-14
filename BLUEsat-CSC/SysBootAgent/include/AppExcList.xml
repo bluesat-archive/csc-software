@@ -47,19 +47,19 @@ files:   A list of space seperated files to ignore from the
    <MemoryDemo_Application>
       <name>Memory Demo</name>
       <desc>Demo application using additional memory and checking stack memory</desc>
-      <disable>NO</disable>
+      <disable>YES</disable>
       <files>memoryDemo.c</files>
    </MemoryDemo_Application>
    <StorageDemo_Application>
       <name>Storage Demo</name>
       <desc>Demo application for using CSC storage</desc>
-      <disable>NO</disable>
+      <disable>YES</disable>
       <files>storageDemo.c</files>
    </StorageDemo_Application>
    <GpioDemo>
       <name>GPIO Demo</name>
       <desc>Demo application to test GPIO</desc>
-      <disable>YES</disable>
+      <disable>NO</disable>
       <files>gpioDemo.c</files>
    </GpioDemo>
    <SwitchingDemo>

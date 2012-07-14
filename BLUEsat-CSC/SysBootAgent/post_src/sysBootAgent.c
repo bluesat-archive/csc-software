@@ -19,7 +19,7 @@ unsigned int initDrivers(void)
 #ifdef UART_H_
 	//UART driver
 	Comms_UART_Init();
-#endif//*/
+#endif
 
 /*#ifdef EMC_H_
 	//External Memory Controller driver
@@ -76,7 +76,7 @@ unsigned int initServices(void)
 	vBeacon_Init(SERV_TASK_PRIORITY + 1);
 #endif//*/
 
-#ifdef TELEM_H_
+#ifdef TELEMETRY_H_
 	vTelem_Init(SERV_TASK_PRIORITY);
 #endif
 
@@ -110,7 +110,7 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef GPIODEMO_H_
-	//vGpioDemo_Init(APP_TASK_PRIORITY);
+	vGpioDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef SWITCHINGDEMO_H_
