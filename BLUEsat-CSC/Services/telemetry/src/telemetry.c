@@ -223,6 +223,8 @@ static UnivRetCode perform_set_sweep(Telem_Cmd *cmd)
 
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 {
+	vDebugPrint(telemTask_token, "YOU MAD YOU JELLY 1\n", NO_INSERT, NO_INSERT, NO_INSERT);
+
 	telemTask_token = ActivateTask(TASK_TELEM,
 								"Telem",
 								SEV_TASK_TYPE,
@@ -246,6 +248,8 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	UnivRetCode result;
 	unsigned int triggerCount = 0;
 	Request_Rate currentRate = uiTriggerCount_Check(triggerCount);
+
+	vDebugPrint(telemTask_token, "YOU MAD YOU JELLY\n", NO_INSERT, NO_INSERT, NO_INSERT);
 
 	for (;;)
 	{
