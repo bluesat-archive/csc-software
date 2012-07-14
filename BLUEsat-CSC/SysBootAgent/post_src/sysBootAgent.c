@@ -62,10 +62,10 @@ unsigned int initServices(void)
 	vCommand_Init(SERV_TASK_PRIORITY + 1);
 #endif
 
-#ifdef STORAGE_H_
+/*#ifdef STORAGE_H_
 	//memory task
 	vStorage_Init(SERV_TASK_PRIORITY);
-#endif//
+#endif//*/
 
 #ifdef DEBUG_H_
 	//debug task
@@ -114,11 +114,15 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef SWITCHINGDEMO_H_
-	//vSwitchingDemo_Init(APP_TASK_PRIORITY);
+//	vSwitchingDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef MODEMDEMO_H_
 	//vModemDemo_Init(APP_TASK_PRIORITY);
+#endif
+
+#ifdef TELEMETRYDEMO_H_
+	vTelemetryDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 	return 0;
