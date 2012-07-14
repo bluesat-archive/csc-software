@@ -14,14 +14,14 @@ unsigned int initDrivers(void)
 
 #ifdef GPIO_H_
 	Gpio_Init();
-#endif//*/
+#endif//
 
 #ifdef UART_H_
 	//UART driver
 	Comms_UART_Init();
 #endif//*/
 
-#ifdef EMC_H_
+/*#ifdef EMC_H_
 	//External Memory Controller driver
 	vEMC_Init();
 #endif//*/
@@ -30,11 +30,11 @@ unsigned int initDrivers(void)
 	Comms_I2C_Init();
 #endif//*/
 
-#ifdef SWITCHING_H_
+/*#ifdef SWITCHING_H_
 	Switching_Init();
 #endif//*/
 
-#ifdef MODEM_H_
+/*#ifdef MODEM_H_
 	Comms_Modem_Timer_Init();
 #endif//*/
 
@@ -52,7 +52,7 @@ unsigned int initDrivers(void)
 unsigned int initServices(void)
 {
 
-#ifdef MEMORY_H_
+/*#ifdef MEMORY_H_
 	//memory task
 	vMemory_Init(SERV_TASK_PRIORITY);
 #endif//*/
@@ -62,7 +62,7 @@ unsigned int initServices(void)
 	vCommand_Init(SERV_TASK_PRIORITY + 1);
 #endif
 
-#ifdef STORAGE_H_
+/*#ifdef STORAGE_H_
 	//memory task
 	vStorage_Init(SERV_TASK_PRIORITY);
 #endif//*/
@@ -72,13 +72,13 @@ unsigned int initServices(void)
 	vDebug_Init(SERV_TASK_PRIORITY);
 #endif//*/
 
-#ifdef BEACON_H_
+/*#ifdef BEACON_H_
 	vBeacon_Init(SERV_TASK_PRIORITY + 1);
 #endif//*/
 
 #ifdef TELEM_H_
 	vTelem_Init(SERV_TASK_PRIORITY);
-#endif//
+#endif
 
 	return 0;
 }
@@ -91,26 +91,26 @@ unsigned int initApplications(void)
 
 #ifdef DEMO_APPLICATION_1_H_
 	//Demonstration application 1
-	vDemoApp1_Init(APP_TASK_PRIORITY);
+	//vDemoApp1_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef DEMO_APPLICATION_2_H_
 	//Demonstration application 2
-	vDemoApp2_Init(APP_TASK_PRIORITY);
+	//vDemoApp2_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef MEMORY_DEMO_H_
 	//Demonstration additional volatile memory and stack memory usage
-	vMemoryDemo_Init(APP_TASK_PRIORITY);
+	//vMemoryDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef STORAGE_DEMO_H_
 	//Demonstration CSC storage
-	vStorageDemo_Init(APP_TASK_PRIORITY);
+	//vStorageDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef GPIODEMO_H_
-	vGpioDemo_Init(APP_TASK_PRIORITY);
+	//vGpioDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef SWITCHINGDEMO_H_
@@ -118,7 +118,7 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef MODEMDEMO_H_
-	vModemDemo_Init(APP_TASK_PRIORITY);
+	//vModemDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 	return 0;
