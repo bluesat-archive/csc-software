@@ -1,8 +1,8 @@
 /*
  * telemetry.c
- *
- *  Created on: 16/06/2012
- *      Author: andyc
+ * Telemetry service
+ * Created on: 16/06/2012
+ * Author: andyc, colint
  */
 
 #include "service.h"
@@ -13,7 +13,8 @@
 #include "sensor_sweep.h"
 #include "debug.h"
 
-#define MAX127_COUNT 		       16 /*8 on each bus as MAX127 address is limited to 3 bits + 5 chip bits*/
+/*8 on each bus as MAX127 address is limited to 3 bits + 5 chip bits*/
+#define MAX127_COUNT 		       16
 #define MAX127_SENSOR_COUNT		   8
 #define MAX127_BUS_LIMIT           8
 #define TELEM_QUEUE_SIZE           16
