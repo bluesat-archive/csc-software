@@ -23,7 +23,7 @@ unsigned int initDrivers(void)
 
 #ifdef EMC_H_
 	//External Memory Controller driver
-	vEMC_Init();
+	//vEMC_Init();
 #endif//
 
 #ifdef I2C_H_
@@ -31,11 +31,11 @@ unsigned int initDrivers(void)
 #endif//*/
 
 #ifdef SWITCHING_H_
-	Switching_Init();
+	//Switching_Init();
 #endif//
 
 #ifdef MODEM_H_
-	Comms_Modem_Timer_Init();
+	//Comms_Modem_Timer_Init();
 #endif//
 
 #ifdef IAP_H_
@@ -54,7 +54,7 @@ unsigned int initServices(void)
 
 #ifdef MEMORY_H_
 	//memory task
-	vMemory_Init(SERV_TASK_PRIORITY);
+	//vMemory_Init(SERV_TASK_PRIORITY);
 #endif//
 
 #ifdef COMMAND_H_
@@ -73,7 +73,7 @@ unsigned int initServices(void)
 #endif//*/
 
 #ifdef BEACON_H_
-	vBeacon_Init(SERV_TASK_PRIORITY + 1);
+	//vBeacon_Init(SERV_TASK_PRIORITY + 1);
 #endif//
 
 #ifdef TELEMETRY_H_

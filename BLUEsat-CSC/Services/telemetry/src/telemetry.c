@@ -7,10 +7,10 @@
 
 #include "service.h"
 #include "telemetry.h"
+#include "i2c.h"
 #include "semphr.h"
 #include "UniversalReturnCode.h"
 #include "lib_string.h"
-#include "sensor_sweep.h"
 #include "debug.h"
 
 /*8 on each bus as MAX127 address is limited to 3 bits + 5 chip bits*/
@@ -41,6 +41,8 @@
 
 #define MAX127_TOTAL_RESULT_ELEMENTS  	MAX127_SENSOR_COUNT * MAX127_COUNT
 
+#define SET_SWEEP_MESSAGE_ARG_NUM 3
+
 typedef enum
 {
 	SETSWEEP,
@@ -59,11 +61,11 @@ typedef struct
 } Telem_Cmd;
 
 static TaskToken telemTask_token;
+static Telem_Cmd cmd;
 
-//typedef sensor_result all_sensors_per_max127[MAX127_SENSOR_COUNT];
 static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
+static Entity_sweep_params current_setting[MAX_NUM_GROUPS];
 
-//const all_sensors_per_max127 *latest_data_buffer = (all_sensors_per_max127 *)latest_data;
 const sensor_result *latest_data_buffer = (sensor_result*)latest_data;
 
 static portTASK_FUNCTION(vTelemTask, pvParameters);
@@ -91,23 +93,12 @@ static inline UnivRetCode setup_sensor_lc(sensor_lc *location, unsigned int sens
 	return URC_SUCCESS;
 }
 
-static inline unsigned int uiAddress_to_index (unsigned short address, I2C_BUS_CHOICE bus)
+static inline unsigned int uiAddress_to_index (unsigned short address, unsigned char bus)
 {
 	unsigned int result = 0;
 	unsigned short mask = 0x7; // Mask out lower 3 bits
 	result = (mask && address) + MAX127_BUS_LIMIT * bus;
 	return result;
-}
-
-static inline void telem_debug_print(void)
-{
-	int i;
-	for (i = 0; i < MAX127_SENSOR_COUNT * MAX127_COUNT; ++i)
-	{
-		vDebugPrint(telemTask_token, "result is %d\n",
-				latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT],
-				NO_INSERT, NO_INSERT);
-	}
 }
 
 /*void * memcpy(void * dest, const void *src, unsigned long count)
@@ -199,19 +190,20 @@ static UnivRetCode perform_current_sweep(Request_Rate currentRate)
 	return sweepResult;
 }
 
-static UnivRetCode perform_set_sweep(Telem_Cmd *cmd)
+static UnivRetCode perform_set_sweep(Telem_Cmd *telemCmd)
 {
 	int i;
 	int result;
 
-	if (cmd->size < MAX_NUM_GROUPS)
+	if (telemCmd->size < MAX_NUM_GROUPS)
 	{
 		return URC_FAIL;
 	}
 
 	for (i = 0; i < MAX_NUM_GROUPS; ++i)
 	{
-		result = Alter_Sweep_Entity(i, cmd->paramBuffer[i].resolution, cmd->paramBuffer[i].rate);
+		result = Alter_Sweep_Entity(i, telemCmd->paramBuffer[i].resolution,
+				telemCmd->paramBuffer[i].rate);
 		if (result != URC_SUCCESS)
 		{
 			return URC_FAIL;
@@ -221,10 +213,62 @@ static UnivRetCode perform_set_sweep(Telem_Cmd *cmd)
 	return URC_SUCCESS;
 }
 
+void telem_debug_print(void)
+{
+	int i;
+	for (i = 0; i < MAX127_SENSOR_COUNT * MAX127_COUNT; ++i)
+	{
+		vDebugPrint(telemTask_token, "SENSOR %d: result is %d\n\r", i,
+				latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT],
+				NO_INSERT);
+	}
+}
+
+static UnivRetCode
+enTelemServiceMessageSend(TaskToken taskToken)
+{
+	MessagePacket outgoing_packet;
+
+	//create packet with printing request information
+	outgoing_packet.Src			= enGetTaskID(taskToken);
+	outgoing_packet.Dest		= TASK_TELEM;
+	outgoing_packet.Token		= taskToken;
+	outgoing_packet.Data		= (unsigned portLONG)&cmd;
+	//store message in a struct and tag along with the request packet
+
+	return enProcessRequest(&outgoing_packet, portMAX_DELAY);
+}
+
+void
+vTelemReadSweep(void *buffer, TaskToken token)
+{
+	cmd.operation = READSWEEP;
+	cmd.size = MAX127_COUNT * MAX127_SENSOR_COUNT;
+	/* Pass in the data for processing. */
+	cmd.buffer = (sensor_result*)buffer;
+	enTelemServiceMessageSend(token);
+}
+
+/* This sets all the entities groups to the same setting. */
+void
+vTelemSampleSetSweep(int resolution, int rate, TaskToken token)
+{
+	int i;
+	cmd.operation = SETSWEEP;
+	cmd.size = SET_SWEEP_MESSAGE_ARG_NUM;
+	for (i = 0; i < MAX_NUM_GROUPS; ++i)
+	{
+		current_setting[i].resolution = resolution;
+		current_setting[i].rate = rate;
+	}
+
+	cmd.paramBuffer = current_setting;
+	enTelemServiceMessageSend(token);
+}
+
+
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 {
-	vDebugPrint(telemTask_token, "YOU MAD YOU JELLY 1\n", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	telemTask_token = ActivateTask(TASK_TELEM,
 								"Telem",
 								SEV_TASK_TYPE,
@@ -249,8 +293,6 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	unsigned int triggerCount = 0;
 	Request_Rate currentRate = uiTriggerCount_Check(triggerCount);
 
-	vDebugPrint(telemTask_token, "YOU MAD YOU JELLY\n", NO_INSERT, NO_INSERT, NO_INSERT);
-
 	for (;;)
 	{
 		enResult = enGetRequest(telemTask_token, &incoming_packet, DEF_SWEEP_TIME);
@@ -258,9 +300,6 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		{
 			//Perform sweep and update buffer.
 			result = perform_current_sweep(currentRate);
-			vDebugPrint(telemTask_token, "result is %d\n", result, NO_INSERT, NO_INSERT);
-
-			telem_debug_print();
 			continue;
 		}
 		//Process command
@@ -272,7 +311,6 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 				if (result != URC_SUCCESS) break;
 				//Perform sweep and update buffer.
 				result = perform_current_sweep(currentRate);
-				vDebugPrint(telemTask_token, "result is %d\n", result, NO_INSERT, NO_INSERT);
 				break;
 			case READSWEEP:
 				// load sweep

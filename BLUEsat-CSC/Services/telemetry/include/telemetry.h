@@ -10,20 +10,22 @@
 
 
 #include "UniversalReturnCode.h"
-#include "i2c.h"
+#include "sensor_sweep.h"
 
 typedef short sensor_result;
 
 typedef struct {
 	unsigned short address;
 	unsigned char channel_mask;
-	I2C_BUS_CHOICE bus : 8;
+	unsigned char bus;
 } sensor_lc;
 
+void telem_debug_print(void);
 
+void vTelemSampleSetSweep(int resolution, int rate, TaskToken token);
+
+void vTelemReadSweep(void *buffer, TaskToken token);
 
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
-
-
 
 #endif /* TELEMETRY_H_ */
