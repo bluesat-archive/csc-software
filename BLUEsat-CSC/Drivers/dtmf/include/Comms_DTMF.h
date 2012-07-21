@@ -34,7 +34,7 @@ void Comms_DTMF_Init(void);
  * \param[in] xBlockTime Time to block. This should be infinite
  * \param[in] elem Pointer to receive buffer
  */
-signed portBASE_TYPE Comms_DTMF_Read(DtmfTone *elem, portTickType xBlockTime);
+void Comms_DTMF_Read( DtmfTone *DTMF_elem, int *new, portTickType xBlockTime );
 
 
 #endif /* COMMS_DTMF_H_ */

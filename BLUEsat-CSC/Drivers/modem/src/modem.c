@@ -210,14 +210,14 @@ void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT 
 {
 	const signed portCHAR *pxNext;
 	unsigned portSHORT usLength = 0;
-
+	//signed portBASE_TYPE ret;
 	/* Send each character in the string, one at a time. */
 	pxNext = ( const signed portCHAR * ) pcString;
 	{
 		while( *pxNext && (usLength < usStringLength))
 		{
-			signed portBASE_TYPE ret;
-			while((ret = Comms_Modem_Write_Char( *pxNext, 1, sel )) != pdPASS);
+
+			Comms_Modem_Write_Char( *pxNext, 1, sel );
 			pxNext++;
 			usLength++;
 		}

@@ -56,7 +56,7 @@
 #define IO2IntEnF (*(volatile unsigned long *)(0xE00280B4))
 #define IO2IntClr (*(volatile unsigned long *)(0xE00280AC))
 
-xQueueHandle DTMF_BUFF;
+//xQueueHandle DTMF_BUFF;
 
 void Comms_DTMF_Wrapper(void) __attribute__ ((naked));
 void Comms_DTMF_Handler (void);
@@ -84,10 +84,13 @@ enum eBoolean {
 */
 typedef enum eBoolean Boolean;
 
+DtmfTone tone;
+int newData;
+
 void Comms_DTMF_Init(void)
 {
 	/*Set up Queue and content counter*/
-	DTMF_BUFF = xQueueCreate( DTMF_BUFF_LENGTH, ( unsigned portBASE_TYPE ) sizeof( DtmfTone ) );
+	//DTMF_BUFF = xQueueCreate( DTMF_BUFF_LENGTH, ( unsigned portBASE_TYPE ) sizeof( DtmfTone ) );
 
 	//disable EXT3 interrupt first, noting all P[2] GPIO pins share EXT3 Interrupt
 	VICIntEnable &= ~(0x1<<17);
@@ -164,7 +167,6 @@ void Comms_DTMF_Handler (void)
 	//ported to lpc2468, this ought to work
 	//Interrupts have been disabled should check for decoders before and after pulling data
    portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
-   DtmfTone tone;
 //   char s[3];
    Boolean bPriDecodeFailed = true;
    if (FIO2PIN&DTMF_INT_PINS_SIN)//Will only be necessary/have effect if we have other GPIO Interrupt sources
@@ -173,16 +175,17 @@ void Comms_DTMF_Handler (void)
       {//Check if the First decoder is ready
          tone.decoder = DTMF_DECODER1;
          tone.tone = (FIO1PIN&(0xF<<DTMF_1_OFFSET))>>DTMF_1_OFFSET;
-         xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
+         newData = 1;
+         //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
          bPriDecodeFailed = false;
-         //Comms_UART_Write_Str("a",1 );
+         //Comms_UART_Write_Str("a",1 );k
 
        }
       if (FIO2PIN&(DTMF_INT_2))
       {//Check if the second decoder is ready
          tone.decoder = DTMF_DECODER2;
          tone.tone = (FIO1PIN&(0xF<<DTMF_2_OFFSET))>>DTMF_2_OFFSET;
-         xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
+         //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
      	//Comms_UART_Write_Str("b",1 );
 
       }
@@ -190,7 +193,7 @@ void Comms_DTMF_Handler (void)
       {// If the first decoder was not ready try it again
          tone.decoder = DTMF_DECODER1;
          tone.tone = (FIO1PIN&(0xF<<DTMF_1_OFFSET))>>DTMF_1_OFFSET;
-         xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
+         //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
      	//Comms_UART_Write_Str("c",1 );
 
       }
@@ -213,8 +216,12 @@ void Comms_DTMF_Wrapper(void)
    portRESTORE_CONTEXT();  // Restore the context
 }
 
-signed portBASE_TYPE Comms_DTMF_Read( DtmfTone *DTMF_elem, portTickType xBlockTime )
+/*signed portBASE_TYPE*/void Comms_DTMF_Read( DtmfTone *DTMF_elem, int *new, portTickType xBlockTime )
 {
-   return xQueueReceive(DTMF_BUFF,DTMF_elem,xBlockTime);
+	(void) xBlockTime;
+	*new = newData;
+	*DTMF_elem = tone;
+	newData = 0;
+//   return xQueueReceive(DTMF_BUFF,DTMF_elem,xBlockTime);
 }
 
