@@ -15,8 +15,15 @@
 #include "commsControl.h"
 #include "switching.h"
 #include "modem.h"
+#include "debug.h"
 
-#define COMMS_Q_SIZE	128
+#define COMMS_Q_SIZE	16
+
+typedef struct
+{
+	int size;
+	char *data;
+} Message;
 
 //task token for accessing services
 static TaskToken Comms_TaskToken;
@@ -51,6 +58,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		enResult = enGetRequest(Comms_TaskToken, &incoming_packet, portMAX_DELAY);
 		if (enResult != URC_SUCCESS) continue;
 
+
 		// grab semaphore
 		switching_takeSemaphore();
 
@@ -64,29 +72,47 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		{
 			switching_TX_Device(AFSK_1);
 			switching_TX(TX_1);
-			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_1 );
+
+			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
 			modem_takeSemaphore(MODEM_1);
 		} else if (counter_should_not_be_final % 4 == 1)
 		{
 			switching_TX_Device(AFSK_1);
 			switching_TX(TX_2);
-			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_1 );
+			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
 			modem_takeSemaphore(MODEM_1);
 		} else if (counter_should_not_be_final % 4 == 2)
 		{
 			switching_TX_Device(AFSK_2);
 			switching_TX(TX_1);
-			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_2 );
+			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
 			modem_takeSemaphore(MODEM_2);
 		} else {
 			switching_TX_Device(AFSK_2);
 			switching_TX(TX_2);
-			Comms_Modem_Write_Str( (char*)&incoming_packet, 100, MODEM_2 );
+			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
 			modem_takeSemaphore(MODEM_2);
 		}
 
 		// release semaphore
 		switching_giveSemaphore();
+		vDebugPrint(Comms_TaskToken,"The sentence is %11s\n\r",(long)((Message*)incoming_packet.Data)->data,NO_INSERT,NO_INSERT);
+
+		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		counter_should_not_be_final++;
 	}
+}
+
+int iSendData(TaskToken token, char *data, int size)
+{
+	Message m;
+	m.data = data;
+	m.size = size;
+	MessagePacket mp;
+	mp.Src = token->enTaskID;
+	mp.Dest = TASK_COMMS;
+	mp.Token = Comms_TaskToken;
+	mp.Data = (unsigned long)&m;
+
+	return enProcessRequest(&mp,  0);;
 }

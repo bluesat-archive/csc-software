@@ -16,5 +16,6 @@
 
 void vComms_Init(unsigned portBASE_TYPE uxPriority);
 
+int iSendData(TaskToken token, char *data, int size);
 
 #endif /* COMMS_H_ */
