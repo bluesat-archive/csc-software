@@ -16,6 +16,7 @@
 #include "task.h"
 #include "memory.h"
 #include "emc.h"
+#include "debug.h"
 
 #define MEMORY_START_ADDR	STATIC_BANK_1_START_ADDR
 #define MEMORY_SIZE			STATIC_BANK_1_SIZE
@@ -36,6 +37,16 @@ void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_32_BITS) == URC_FAIL) return;
 
 	xMemoryUsable = pdTRUE;
+
+	if (xMemoryUsable)
+	{
+		vDebugPrint(NULL, "External RAM Test ... Pass!\n\r", 0, 0, 0);
+	}
+	else
+	{
+		vDebugPrint(NULL, "External RAM Test ... Fail!\n\r", 0, 0, 0);
+	}
+
 }
 
 void *pvJMalloc(unsigned portLONG ulSize)
