@@ -17,7 +17,9 @@
  #define MAX_PAYLOAD        SIZE_ADDR+SIZE_CTRL+SIZE_PID+SIZE_ACT_INFO+SIZE_FCS
  #define MAX_FIELDS         5
  #define FLAG               0x7E
- typedef enum
+ #define AX25_CRC_POLYNOMIAL_FLIPED 0x8408 // AX25 crc polynomial reversed bits by bits
+
+typedef enum
  {
    address = 0,
    control,
@@ -27,54 +29,20 @@
  }fields;
 
 
-
-//testing procedures:
-
-//crafted/obtained message without bit stuffing, hard-wired FCS
-
-//crafted message without bit stuffing, our calculated FCS should matches the correct value
-
-//particularly nastily crafted message ?
-
-//random messages
+ typedef struct {
+    enum PROTOCOL_TO_USE_SENDING protocol;
+    char * data;
+    //size must be in bytes
+    unsigned int size;
+ } protMessage;
 
 
 /*
  * AX. 25
  */
 
-//#define FLAG_SENDING_PERIOD_IN_MS 1//probably not necessary
-
-#define N_FLAGS_BETWEEN_PACKETS 10
-
-//SSIDs
-#define BLUESAT_GS_SSID 0x0
-#define BLUESAT_SAT_SSID 0x0
-
-//NOTE : this number is randomly picked, replace it with a proper one
-#define MAX_AX25_INFO_FIELD_BYTES 50
-
-
-
-#define AX25_CRC_POLYNOMIAL_FLIPED 0x8408 // AX25 crc polynomial reversed bits by bits
 
 void AX25fcsCalc( char input[], unsigned int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
-
-
-
-
-typedef struct {
-	enum PROTOCOL_TO_USE_SENDING protocol;
-	char * data;
-	//size must be in bytes
-	unsigned int size;
-} protMessage;
-
-
-
-
-
-
 
 
 static portTASK_FUNCTION(vProtocolsTask, pvParameters);
