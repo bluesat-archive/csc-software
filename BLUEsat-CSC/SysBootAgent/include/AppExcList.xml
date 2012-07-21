@@ -59,7 +59,7 @@ files:   A list of space seperated files to ignore from the
    <GpioDemo>
       <name>GPIO Demo</name>
       <desc>Demo application to test GPIO</desc>
-      <disable>NO</disable>
+      <disable>YES</disable>
       <files>gpioDemo.c</files>
    </GpioDemo>
    <SwitchingDemo>
@@ -74,4 +74,16 @@ files:   A list of space seperated files to ignore from the
       <disable>YES</disable>
       <files>modemDemo.c</files>
    </ModemDemo>
+   <DTMFDemo>
+      <name>DTMF Demo</name>
+      <desc>Demo application to test DTMF</desc>
+      <disable>NO</disable>
+      <files>DTMFDemo.c</files>
+   </DTMFDemo>
+   <CommsDemo>
+      <name>Comms Demo</name>
+      <desc>Demo application to test Comms</desc>
+      <disable>YES</disable>
+      <files>commsCtrlDemo.c</files>
+   </CommsDemo>
 </applist>
