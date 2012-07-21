@@ -80,6 +80,10 @@ unsigned int initServices(void)
 	vTelem_Init(SERV_TASK_PRIORITY);
 #endif
 
+#ifdef PROTOCOLS_H_
+	vProtocols_Service_Init(SERV_TASK_PRIORITY);
+#endif
+
 	return 0;
 }
 
