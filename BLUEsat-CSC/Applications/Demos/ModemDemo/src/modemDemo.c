@@ -26,7 +26,7 @@ static portTASK_FUNCTION(vDemoTask, pvParameters);
 void vModemDemo_Init(unsigned portBASE_TYPE uxPriority)
 {
 	DEMO_TaskToken = ActivateTask(TASK_MODEM_DEMO,
-								"gpio_demo",
+								"modem_demo",
 								APP_TASK_TYPE,
 								uxPriority,
 								APP_STACK_SIZE,
