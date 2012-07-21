@@ -19,6 +19,10 @@
  #define FLAG               0x7E
  #define AX25_CRC_POLYNOMIAL_FLIPED 0x8408 // AX25 crc polynomial reversed bits by bits
 
+ #define NO_L3_PROTO        0xF0
+
+
+
 typedef enum
  {
    address = 0,
@@ -27,6 +31,20 @@ typedef enum
    info,
    fcs
  }fields;
+
+typedef enum
+{
+   poll = 0,
+   final
+}pfBit;
+
+ typedef struct
+ {
+    rec_seq:7;    //receive sequence number [bit 5 (or bit 9 for modulo 128) is the LSB]
+    pf_bit:1;     //Poll/Final bit
+    send_seq:7;   //send sequence number (bit 1 is the LSB)
+    pad:0;
+ } ctrlField;
 
 
  typedef struct {
