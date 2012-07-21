@@ -35,8 +35,14 @@ typedef struct
 
 //all static declaration goes in here
 #ifndef NO_DEBUG
+	static struct taskToken preScheduler_TaskToken = {	.pcTaskName = "BootSys",
+														.enTaskType = TYPE_SERVICE,
+														.enTaskID 	= NO_TASK,
+														.enRetVal	= 0};
 	//task token for accessing services
-	static TaskToken Debug_TaskToken;
+	static TaskToken PreScheduler_TaskToken = &preScheduler_TaskToken;
+	//task token for accessing services
+	static TaskToken Debug_TaskToken = NULL;
 
 	//prototype for task function
 	static portTASK_FUNCTION(vDebugTask, pvParameters);
@@ -159,6 +165,16 @@ void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength);
 		unsigned portLONG pulInsertions[MAX_INSERTIONS] =	{pcInsertion_1,
 															pcInsertion_2,
 															pcInsertion_3};
+		//use pre-scheduler token for pre-scheduler print
+		if (Debug_TaskToken == NULL)
+		{
+			taskToken = PreScheduler_TaskToken;
+		}
+		else if (taskToken == NULL)
+		{
+			return;
+		}
+
 		//identify requester
 		if (taskToken->enTaskType == TYPE_SERVICE)
 		{
