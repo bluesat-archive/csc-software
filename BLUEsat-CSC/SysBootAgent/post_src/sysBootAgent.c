@@ -31,11 +31,11 @@ unsigned int initDrivers(void)
 #endif//*/
 
 #ifdef SWITCHING_H_
-	//Switching_Init();
+	Switching_Init();
 #endif//
 
 #ifdef MODEM_H_
-	//Comms_Modem_Timer_Init();
+	Comms_Modem_Timer_Init();
 #endif//
 
 #ifdef IAP_H_
@@ -77,13 +77,20 @@ unsigned int initServices(void)
 #endif//
 
 #ifdef TELEMETRY_H_
-	vTelem_Init(SERV_TASK_PRIORITY);
+	//vTelem_Init(SERV_TASK_PRIORITY);
 #endif
 
 #ifdef PROTOCOLS_H_
 	vProtocols_Service_Init(SERV_TASK_PRIORITY);
 #endif
 
+#ifdef COMMS_DTMF_H_
+	Comms_DTMF_Init();
+#endif
+
+#ifdef COMMS_H_
+	vComms_Init(SERV_TASK_PRIORITY);
+#endif
 	return 0;
 }
 
@@ -122,12 +129,19 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef MODEMDEMO_H_
-	//vModemDemo_Init(APP_TASK_PRIORITY);
+	vModemDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef TELEMETRYDEMO_H_
-	vTelemetryDemo_Init(APP_TASK_PRIORITY);
+	//vTelemetryDemo_Init(APP_TASK_PRIORITY);
 #endif
 
+#ifdef DTMFDEMO_H_
+	vDTMFDemo_Init(APP_TASK_PRIORITY);
+#endif
+
+#ifdef COMMSDEMO_H_
+	vCommsDemo_Init(APP_TASK_PRIORITY);
+#endif
 	return 0;
 }
