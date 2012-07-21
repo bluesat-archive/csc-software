@@ -2,7 +2,31 @@
 #include "debug.h"
 #include "Protocols.h"
 
-#define PROCTOCOLS_Q_SIZE 5
+ #define PROCTOCOLS_Q_SIZE  5
+ #define SIZE_FLAG          1   //Byte
+ #define SIZE_ADDR          14
+ #define SIZE_CTRL          1
+ #define SIZE_FCS           2
+ #define SIZE_PID           1
+ #define SIZE_MAX_INFO      256
+ #define SIZE_PACK          SIZE_FLAG+SIZE_ADDR+SIZE_CTRL+SIZE_PID+SIZE_MAX_INFO+SIZE_FCS+SIZE_FLAG
+ #define SIZE_STUFF         (SIZE_PACK*2)/8
+
+ /*Actual max amount of data that can be sent in a packet taking into account stuffing and a fixed maximum info field size*/
+ #define SIZE_ACT_INFO      SIZE_MAX_INFO - SIZE_STUFF
+ #define MAX_PAYLOAD        SIZE_ADDR+SIZE_CTRL+SIZE_PID+SIZE_ACT_INFO+SIZE_FCS
+ #define MAX_FIELDS         5
+ #define FLAG               0x7E
+ typedef enum
+ {
+   address = 0,
+   control,
+   pid,
+   info,
+   fcs
+ }fields;
+
+
 
 //testing procedures:
 
