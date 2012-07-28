@@ -53,7 +53,7 @@ CFLAGS	= $(WARNINGS) $(CDEFINES) -I. $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) 
 LINKER_FLAGS=-lgcc -Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(IMAGE_DIR)/csc.map
 
 TESTWARNINGS 	=-Wall
-TESTCFLAGS 		=-I$(UNIT_TESTS_DIR) $(patsubst %,-I%,$(subst :, ,$(INC_DIRS)))
+TESTCFLAGS 		=-I$(UNIT_TESTS_DIR) $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -DUNIT_TEST
 TESTOUT			=-o $(IMAGE_DIR)/$(<F).exe
 #--------------
 # Source files
@@ -114,7 +114,6 @@ $(ALL_PRE): %.i : %.c
 $(ALL_POST_PRE): %.i : %.c
 	$(PP) $(CFLAGS) $< -o $(BUILDS_DIR)/$(@F)
 
-   
 #-------------------------------------------
 # End of Selective Compilation and Linking
 #-------------------------------------------
@@ -142,7 +141,7 @@ $(ALL_OBJ): %.o : %.c
 # Start of Unit Testing
 #-------------------------------------------
 $(ALL_TESTS) : %.o : %.c
-	$(C) $(TEST_CORE) $< $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
+	$(C) $(TEST_CORE) $< $(subst /test/,/src/,$(subst test_,,$<)) $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
 	
 unitTests: tests runAllTests
 
@@ -150,7 +149,7 @@ tests: $(ALL_TESTS)
 	
 runAllTests: 
 	sh run_tests.sh $(IMAGE_DIR)
-
+	
 #-------------------------------------------
 # End of Unit Testing
 #-------------------------------------------
