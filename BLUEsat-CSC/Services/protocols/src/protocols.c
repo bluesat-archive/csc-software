@@ -116,8 +116,12 @@ static portTASK_FUNCTION(vProtocolsTask, pvParameters){
 
 UnivRetCode buildPacket (rawPacket * inputDetails )
 {
-   inputDetails = 0;
-   return URC_SUCCESS;
+   UnivRetCode result = URC_SUCCESS;
+   if (inputDetails==NULL){
+         result = URC_FAIL;
+   }
+
+   return result;
 }
 
 

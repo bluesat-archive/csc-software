@@ -11,13 +11,12 @@
 void TestBuildPacket(CuTest* tc)
 {
    rawPacket input;
+   CuAssertTrue(tc, test_buildPacket(NULL)==URC_SUCCESS);
    CuAssertTrue(tc, test_buildPacket(&input)==URC_SUCCESS);
+
 }
 
-void TestPasses(CuTest* tc)
-{
-   CuAssert(tc, "test should pass", 1 == 0 + 1);
-}
+
 
 /*-------------------------------------------------------------------------*
  * main
