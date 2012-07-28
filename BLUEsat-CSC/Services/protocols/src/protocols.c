@@ -40,10 +40,10 @@ typedef enum
 
  typedef struct
  {
-    rec_seq:7;    //receive sequence number [bit 5 (or bit 9 for modulo 128) is the LSB]
-    pf_bit:1;     //Poll/Final bit
-    send_seq:7;   //send sequence number (bit 1 is the LSB)
-    pad:0;
+    char rec_seq:7;    //receive sequence number [bit 5 (or bit 9 for modulo 128) is the LSB]
+    char pf_bit:1;     //Poll/Final bit
+    char send_seq:7;   //send sequence number (bit 1 is the LSB)
+    char pad:1;
  } ctrlField;
 
 
@@ -61,12 +61,21 @@ typedef enum
 
 
 void AX25fcsCalc( char input[], unsigned int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
+UnivRetCode buildPacket (rawPacket * inputDetails );
+
+#ifdef UNIT_TEST
+
+UnivRetCode test_buildPacket (rawPacket * inputDetails)
+{
+   return buildPacket ( inputDetails );
+}
+
+#endif
 
 
+#ifndef UNIT_TEST
 static portTASK_FUNCTION(vProtocolsTask, pvParameters);
-
 static TaskToken Proctocols_TaskToken;
-
 void vProtocols_Service_Init(unsigned portBASE_TYPE uxPriority){
 	vDebugPrint(Proctocols_TaskToken, "Protocols Task running \r\n", NO_INSERT, NO_INSERT, NO_INSERT);
 
@@ -103,9 +112,13 @@ static portTASK_FUNCTION(vProtocolsTask, pvParameters){
 		}
 }
 
+#endif
 
-
-
+UnivRetCode buildPacket (rawPacket * inputDetails )
+{
+   inputDetails = 0;
+   return URC_SUCCESS;
+}
 
 
 
@@ -122,12 +135,7 @@ void AX25fcsCalc( char input[], unsigned int len,unsigned char *fcsByte0, unsign
 	//short should be 16bits, change data type if it isn't
 	unsigned int inputbit;
 	unsigned int inputbyte;
-	char ch1,ch2,ch3;
 	unsigned short shiftRegister,shiftedOutBit,xorMask;
-
-	ch1 = len/100+'0';
-	ch2 = (len%100)/10+'0';
-	ch3 = len%10+'0';
 
 	for(inputbyte=0,inputbit=0,shiftRegister=0xFFFF; inputbyte < len;){
 		shiftedOutBit = shiftRegister & 0x0001;//shift the rightmost bit out
