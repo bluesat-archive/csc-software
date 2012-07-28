@@ -37,7 +37,7 @@ sub process_test
    {
       ($tot, $pass, $fail) = ($1,$2,$3);
    }
-   if ($test=~/OK \((\d+) tests\)/)
+   if ($test=~/OK \((\d+) tests?\)/)
    {
       ($tot, $pass, $fail) = ($1,$1,0);
    }
