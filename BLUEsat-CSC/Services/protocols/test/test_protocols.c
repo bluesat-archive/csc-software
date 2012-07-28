@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-#include "Protocols.h"
+#include "protocols.h"
 #include "CuTest.h"
 
 void TestBuildPacket(CuTest* tc)
@@ -20,7 +20,7 @@ void TestBuildPacket(CuTest* tc)
    CuAssertTrue(tc, test_buildPacket(&input)==URC_FAIL);
    input.addr=addr;
    input.ctrl=ctrl;
-   input.pid=pid;
+   input.pid=&pid;
    input.fcs=fcs;
    input.info=info;
    CuAssertTrue(tc, test_buildPacket(&input)==URC_FAIL);
