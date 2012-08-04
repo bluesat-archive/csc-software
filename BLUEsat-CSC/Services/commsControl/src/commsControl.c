@@ -58,7 +58,6 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		enResult = enGetRequest(Comms_TaskToken, &incoming_packet, portMAX_DELAY);
 		if (enResult != URC_SUCCESS) continue;
 
-
 		// grab semaphore
 		switching_takeSemaphore();
 
@@ -67,8 +66,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 
 		// call switching circuit
 		switching_OPMODE(DEVICE_MODE);
-
-		if (counter_should_not_be_final % 4 == 0)
+		if (1)
 		{
 			switching_TX_Device(AFSK_1);
 			switching_TX(TX_1);
@@ -96,7 +94,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 
 		// release semaphore
 		switching_giveSemaphore();
-		vDebugPrint(Comms_TaskToken,"The sentence is %11s\n\r",(long)((Message*)incoming_packet.Data)->data,NO_INSERT,NO_INSERT);
+		vDebugPrint(Comms_TaskToken,"The sentence is %11s\r\n",(long)((Message*)incoming_packet.Data)->data,NO_INSERT,NO_INSERT);
 
 		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		counter_should_not_be_final++;
@@ -114,5 +112,5 @@ int iSendData(TaskToken token, char *data, int size)
 	mp.Token = Comms_TaskToken;
 	mp.Data = (unsigned long)&m;
 
-	return enProcessRequest(&mp,  0);;
+	return enProcessRequest(&mp,  0);
 }

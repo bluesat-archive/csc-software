@@ -72,9 +72,9 @@ void Comms_Modem_Timer_Handler(void)
 {
 	if (((TX_BUFF_1[TX_BUFF_1_SP]&(0x1<<TX_BUFF_1_BC))>>TX_BUFF_1_BC)== 0) {
 		buffer = !buffer;
-		setGPIO(2,11,buffer);
+		setGPIO(3,16,buffer);
 	} else {
-		setGPIO(2,11,buffer);
+		setGPIO(3,16,buffer);
 	}
 	if (TX_BUFF_1_BC == 7){
 		TX_BUFF_1_BC = 0;
@@ -133,11 +133,14 @@ void Comms_Modem_Timer_Init(void)
 	T1TCR = T1TCR | (0x3);//turn on tc and pc, reset both
 	T1TCR = T1TCR & (~(0x2));//turn off reseting
 	//Set GIOP directions
-
-	setGPIOdir(2,11,1);
+	//set AFSK 1 TX port
+	setGPIOdir(3,16,1);
+	//set M0 amd M1 ports for AFSK2
 	setGPIOdir(2,6,1);
 	setGPIOdir(2,7,1);
-
+	//set M0 amd M1 ports for AFSK1
+	setGPIOdir(2,2,1);
+	setGPIOdir(2,3,1);
 	createModem_Semaphore();
 }
 
@@ -210,6 +213,7 @@ void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT 
 {
 	const signed portCHAR *pxNext;
 	unsigned portSHORT usLength = 0;
+	setModemTransmit(sel);
 	//signed portBASE_TYPE ret;
 	/* Send each character in the string, one at a time. */
 	pxNext = ( const signed portCHAR * ) pcString;

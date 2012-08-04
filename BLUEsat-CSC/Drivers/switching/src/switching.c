@@ -41,12 +41,12 @@ void switching_giveSemaphore(void)
 void Switching_Init(void){
 	int pinNo;
 	//set S0 to S7 to be GPIO
-	for (pinNo = 12; pinNo < 19; pinNo++){
-		set_Gpio_func(0, pinNo, 0);
+	for (pinNo = 8; pinNo < 16; pinNo++){
+		set_Gpio_func(1, pinNo, 0);
 	}
 	//set S0 to S7 to be output
-	for (pinNo = 12; pinNo < 19; pinNo++){
-		setGPIOdir(0, pinNo, OUTPUT);
+	for (pinNo = 8; pinNo < 16; pinNo++){
+		setGPIOdir(1, pinNo, OUTPUT);
 	}
 	//Initialise the semaphore
 	createSwitchingSemaphore();
@@ -54,43 +54,43 @@ void Switching_Init(void){
 }
 
 void switching_TX(unsigned char TX){
-	setGPIO(0, 19, TX);
+	setGPIO(1, 15, TX);
 }
 
 void switching_RX(unsigned char RX){
-	setGPIO(0, 18, RX);
+	setGPIO(1, 14, RX);
 }
 
 void switching_OPMODE(unsigned char mode){
-	setGPIO(0, 17, mode);
+	setGPIO(1, 13, mode);
 }
 
 void switching_TX_Device(unsigned char device){
 	switch (device){
 		case BEACON:
-			setGPIO(0, 16, 0);
-			setGPIO(0, 15, 0);
-			setGPIO(0, 14, 0);
+			setGPIO(1, 12, 0);
+			setGPIO(1, 11, 0);
+			setGPIO(1, 10, 0);
 		break;
 		case AFSK_1:
-			setGPIO(0, 16, 0);
-			setGPIO(0, 15, 0);
-			setGPIO(0, 14, 1);
+			setGPIO(1, 12, 1);
+			setGPIO(1, 11, 0);
+			setGPIO(1, 10, 0);
 		break;
 		case AFSK_2:
-			setGPIO(0, 16, 0);
-			setGPIO(0, 15, 1);
-			setGPIO(0, 14, 0);
+			setGPIO(1, 12, 0);
+			setGPIO(1, 11, 1);
+			setGPIO(1, 10, 0);
 		break;
 		case GMSK_1:
-			setGPIO(0, 16, 0);
-			setGPIO(0, 15, 1);
-			setGPIO(0, 14, 1);
+			setGPIO(1, 12, 1);
+			setGPIO(1, 11, 1);
+			setGPIO(1, 10, 0);
 		break;
 		case GMSK_2:
-			setGPIO(0, 16, 1);
-			setGPIO(0, 15, 0);
-			setGPIO(0, 14, 0);
+			setGPIO(1, 12, 0);
+			setGPIO(1, 11, 0);
+			setGPIO(1, 10, 1);
 		break;
 	}
 }
@@ -98,20 +98,20 @@ void switching_TX_Device(unsigned char device){
 void switching_RX_Device(unsigned char device){
 	switch (device){
 		case AFSK_1:
-			setGPIO(0, 13, 0);
-			setGPIO(0, 12, 0);
+			setGPIO(1, 9, 0);
+			setGPIO(1, 8, 0);
 		break;
 		case AFSK_2:
-			setGPIO(0, 13, 0);
-			setGPIO(0, 12, 1);
+			setGPIO(1, 9, 0);
+			setGPIO(1, 8, 1);
 		break;
 		case GMSK_1:
-			setGPIO(0, 13, 1);
-			setGPIO(0, 12, 0);
+			setGPIO(1, 9, 1);
+			setGPIO(1, 8, 0);
 		break;
 		case GMSK_2:
-			setGPIO(0, 13, 1);
-			setGPIO(0, 12, 1);
+			setGPIO(1, 9, 1);
+			setGPIO(1, 8, 1);
 		break;
 	}
 }
