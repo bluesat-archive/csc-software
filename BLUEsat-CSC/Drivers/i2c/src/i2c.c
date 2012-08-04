@@ -35,16 +35,6 @@
 /*-----------------------------------------------------------*/
 /*I2C Configurations*/
 
-/*#if CHIP == 2468
-	#define I2C_CYCLE_HIGH	90
-	#define I2C_CYCLE_LOW	90
-	//#define I2C_CYCLE_HIGH	0x00000080
-	//#define I2C_CYCLE_LOW	    0x00000080
-#else
-	//#define I2C_CYCLE_HIGH	74
-	//#define I2C_CYCLE_LOW		74
-#endif*/
-
 #define I2C_CYCLE_HIGH	90
 #define I2C_CYCLE_LOW	90
 
@@ -54,19 +44,10 @@
 /*Timing For Blocks*/
 #define I2C_NO_BLOCK 	(( portTickType ) 0)
 
-#if CHIP == 2468
-	#define I2C_MAX_BUS		1
-	#define I2C0_IRQ_SRC	9
-	#define I2C1_IRQ_SRC	19
-	#define I2C2_IRQ_SRC	30
-#else
-	#define I2C_MAX_BUS	1
-/* Constants to setup and access the VIC. */
-	#define I2C_VIC_CHANNEL			( ( unsigned portLONG ) 0x0009 )
-	#define I2C_VIC_CHANNEL_BIT		( ( unsigned portLONG ) 0x0200 )
-	#define I2C_VIC_ENABLE			( ( unsigned portLONG ) 0x0020 )
-	#define I2C_VIC_CLEAR_INTERRUPT	( ( unsigned portLONG ) 0 )
-#endif
+#define I2C_MAX_BUS		3
+#define I2C0_IRQ_SRC	9
+#define I2C1_IRQ_SRC	19
+#define I2C2_IRQ_SRC	30
 
 #define I2C_MAX_QUEUE_LENGTH 30 //Max is 40 as 40 telem dev on each bus
 #define I2C_YES		1
@@ -80,15 +61,10 @@
 
 #define SLAVE_WAITING (bus) ((Bus_S_Ctrl[bus].Status_TX==BUFF_SET)||(Bus_S_Ctrl[bus].Status_RX==BUFF_SET))
 
-#define I2C_EN_PORT			PINSEL0
-#define I2C_ENABLE			( ( unsigned portLONG ) 0x00000050)
-
 #define I2C_B01_PORT		PINSEL0
-#define I2C_B02_PORT			PINSEL1
+#define I2C_B02_PORT		PINSEL1
 #define I2C_B01_EN			( ( unsigned portLONG ) 0x00A0000F)
 #define I2C_B02_EN			( ( unsigned portLONG ) 0x01400000)
-
-#define I2C_IRQ_PORT		VICIRQStatus
 
 #define I2C_BUS0			( ( unsigned portLONG ) 0x00000200)
 #define I2C_BUS1			( ( unsigned portLONG ) 0x00080000)
@@ -222,22 +198,6 @@ void Comms_I2C_Init(void)
 			I2C_Bus[count]= xQueueCreate( I2C_MAX_QUEUE_LENGTH, ( unsigned portBASE_TYPE ) sizeof( Bus_Master_Ctrl) );
 			I2C_Bus_Free|=(BUS_MASK<<count);
 		}
-
-#if CHIP == 2468
-		I2C_B01_PORT	|= I2C_B01_EN;
-		I2C_B02_PORT	|= I2C_B02_EN;
-		VIC_Install_Irq( I2C0_INT, (void *)Comms_I2C_Wrapper,MID_PRIORITY );
-		VIC_Install_Irq( I2C1_INT, (void *)Comms_I2C_Wrapper,MID_PRIORITY );
-		VIC_Install_Irq( I2C2_INT, (void *)Comms_I2C_Wrapper,MID_PRIORITY );
-
-#else
-		I2C_EN_PORT		|= I2C_ENABLE;
-		/* Setup the VIC for the I2C. */
-		VICIntSelect &= ~( I2C_VIC_CHANNEL_BIT );		//Set IRQ
-		VICVectAddr3  = ( portLONG ) Comms_I2C_Wrapper;
-		VICVectCntl3  = I2C_VIC_CHANNEL | I2C_VIC_ENABLE;
-		VICIntEnable |= I2C_VIC_CHANNEL_BIT;
-#endif
 	}
 	taskEXIT_CRITICAL();
 }
@@ -258,7 +218,6 @@ void Comms_I2C_Init(void)
 static inline void Comms_I2C_Reg_Init(I2C_BUS_CHOICE bus)
 {
 	unsigned int * base;
-#if CHIP == 2468
 	switch (bus){
 		case BUS0:
 			base=(unsigned int *)I2C0_BASE_ADDR;
@@ -270,10 +229,7 @@ static inline void Comms_I2C_Reg_Init(I2C_BUS_CHOICE bus)
 			base=(unsigned int *)I2C2_BASE_ADDR;
 			break;
 	}
-#else
-	base = (unsigned int * ) I2C0_BASE_ADDR;
-#endif
-//Order of the registers is important for right offset.
+	//Order of the registers is important for right offset.
 	Bus_Regs[bus].Conset	=base++;
 	Bus_Regs[bus].Stat		=base++;
 	Bus_Regs[bus].Dat		=base++;

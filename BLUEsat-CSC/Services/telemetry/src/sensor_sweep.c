@@ -6,12 +6,14 @@
  *
  */
 
+#include "debug.h"
 #include "sensor_sweep.h"
 #include "UniversalReturnCode.h"
+#include "telemetry.h"
 
-Entity_sweep_params sweep[max_entities];
-Request_Rate current_sweep_rate;
-Entity current_entity = max_entities;
+static Entity_sweep_params sweep[max_entities];
+static Request_Rate current_sweep_rate;
+static Entity current_entity = max_entities;
 
 UnivRetCode Init_Sweep(void)
 {
@@ -45,20 +47,20 @@ UnivRetCode Alter_Sweep_Entity(Entity entity, Level resolution, Level rate)
 	return URC_SUCCESS;
 }
 
-void Req_Sweep_Entities (Request_Rate Rates)
+void Init_Sweep_Entities(Request_Rate Rates)
 {
 	current_sweep_rate = Rates;
 	current_entity = 0;
 }
 
-UnivRetCode Get_Next_Entity (Entity_group* Next_Entity, Level* Resolution)
+UnivRetCode Get_Next_Entity(Entity_group* Next_Entity, Level* Resolution)
 {
 	Entity i;
 	if (current_entity == max_entities)
 	{
 		return URC_FAIL;
 	}
-
+	/* Find the next entity by looping through. */
 	for (i = current_entity; i < max_entities; ++i)
 	{
 		switch (sweep[i].rate)
@@ -75,6 +77,7 @@ UnivRetCode Get_Next_Entity (Entity_group* Next_Entity, Level* Resolution)
 
 		*Next_Entity = Entity_Mappings[current_entity];
 		*Resolution = sweep[i].resolution;
+		++current_entity;
 		return URC_SUCCESS;
 	}
 

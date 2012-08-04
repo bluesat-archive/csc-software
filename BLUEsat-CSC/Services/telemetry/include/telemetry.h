@@ -20,11 +20,9 @@ typedef struct {
 	unsigned char bus;
 } sensor_lc;
 
+extern TaskToken telemTask_token;
+
 void telem_debug_print(void);
-
-void vTelemSampleSetSweep(int resolution, int rate, TaskToken token);
-
-void vTelemReadSweep(void *buffer, TaskToken token);
 
 UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
 

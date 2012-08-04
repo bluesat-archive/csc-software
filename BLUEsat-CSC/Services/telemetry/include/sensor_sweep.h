@@ -58,14 +58,14 @@ static const Entity_group Entity_Mappings []={{0,21},
                                        {42,21},
                                        {63,21},
                                        {84,21},
-                                       {105,21}};
+                                       {105,23}};
 
-static const Entity_sweep_params Entity_Default = {low,high};
+static const Entity_sweep_params Entity_Default = {high,high};
 static const Request_Rate Request_Rate_Default = {1,0,0};
 
 UnivRetCode Init_Sweep(void);
 UnivRetCode Alter_Sweep_Entity(Entity entity, Level resolution, Level rate);
-void Req_Sweep_Entities (Request_Rate Rates);
+void Init_Sweep_Entities (Request_Rate Rates);
 UnivRetCode Get_Next_Entity (Entity_group* Next_Entity, Level* Resolution);
 
 
