@@ -20,6 +20,27 @@ typedef struct {
 	unsigned char bus;
 } sensor_lc;
 
+typedef enum
+{
+	SETSWEEP,
+	READSWEEP
+} Telem_Ops;
+
+typedef struct
+{
+    /* Telem server operation. */
+	Telem_Ops operation;
+	/* Declare the size of the input buffer or the sweep buffer. */
+	unsigned int size;
+	union
+	{
+	    /* For storing the sweep settings. */
+		Entity_sweep_params *paramBuffer;
+		/* Pointer to the buffer where the results are. */
+		sensor_result *buffer;
+	};
+} Telem_Cmd;
+
 extern TaskToken telemTask_token;
 
 void telem_debug_print(void);

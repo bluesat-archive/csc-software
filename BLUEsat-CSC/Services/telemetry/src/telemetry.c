@@ -33,34 +33,12 @@
 #define PERIOD_MOD						(HIGH_PERIOD * LOW_PERIOD * MEDIUM_PERIOD)
 
 /* Telemetry sweep control definition. */
-#define DEF_SWEEP_TIME                  2000/portTICK_RATE_MS // 20 seconds
-
-typedef enum
-{
-	SETSWEEP,
-	READSWEEP
-} Telem_Ops;
-
-typedef struct
-{
-    /* Telem server operation. */
-	Telem_Ops operation;
-	/* Declare the size of the input buffer or the sweep buffer. */
-	unsigned int size;
-	union
-	{
-	    /* For storing the sweep settings. */
-		Entity_sweep_params *paramBuffer;
-		/* Pointer to the buffer where the results are. */
-		sensor_result *buffer;
-	};
-} Telem_Cmd;
+#define DEF_SWEEP_TIME                  2000/portTICK_RATE_MS /* 20 seconds. */
 
 TaskToken telemTask_token;
 
 static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
 static xSemaphoreHandle telem_MUTEX;
-const sensor_result *latest_data_buffer = (sensor_result*)latest_data;
 
 static portTASK_FUNCTION(vTelemTask, pvParameters);
 
@@ -73,7 +51,8 @@ static inline Request_Rate telem_trigger_count_check(unsigned int count)
 	return returnRate;
 }
 
-static inline UnivRetCode telem_setup_sensor_location(sensor_lc *location, unsigned int sensor_index)
+static inline UnivRetCode telem_setup_sensor_location(sensor_lc *location,
+        unsigned int sensor_index)
 {
 	if (location == NULL)
 	{
@@ -90,7 +69,7 @@ static inline UnivRetCode telem_setup_sensor_location(sensor_lc *location, unsig
 static inline unsigned int uiAddress_to_index (unsigned short address, unsigned char bus)
 {
 	unsigned int result = 0;
-	unsigned short mask = 0x7; // Mask out lower 3 bits
+	unsigned short mask = 0x7; /* Mask out lower 3 bits. */
 	result = (address & mask) + MAX127_BUS_LIMIT * bus;
 	return result;
 }
@@ -107,8 +86,29 @@ static unsigned int uiLoad_results(sensor_result *buffer, unsigned int size)
 			MAX127_TOTAL_RESULT_ELEMENTS;
 	unsigned int max_byte_cpy = max_elem_cpy * sizeof(sensor_result);
 	if (size <= 0) return result;
-	memcpy ((void*)buffer, (void*)latest_data_buffer, max_byte_cpy);
+	memcpy ((void*)buffer, (void*)latest_data, max_byte_cpy);
 	return max_elem_cpy;
+}
+
+void telem_debug_print(void)
+{
+    char readBuffer[2] = { 0xFF, 0xFF };
+    
+    /* Process to voltage. */
+    unsigned short result;
+	int i;
+	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
+	{
+	    if (latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT] != 0)
+	    {
+	        /* Copy the content into the temporary buffer. */
+	        memcpy(readBuffer, (char*)&latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT], 
+	                sizeof(short));
+	    }
+	    result = ((readBuffer[0] * 16 + readBuffer[1]/16) * 2.4414);
+	
+        vDebugPrint(telemTask_token, "SENSOR %d: voltage is %d\n\r", i, result, NO_INSERT);
+	}
 }
 
 /*
@@ -121,15 +121,12 @@ static UnivRetCode enRead_sensor(sensor_lc* location)
 	unsigned int length;
 	char data = 0;
 	unsigned int i;
-	char readBuffer[2];
 	portBASE_TYPE returnVal;
 
 	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
 	{
 		if (!(location->channel_mask & (1 << i))) continue;
 		// Start Conversation
-        vDebugPrint(telemTask_token, "i is %d, address is %d, location->bus is %d\n\r",
-                i, location->address, location->bus);
 		data = TELEM_I2C_CONFIG_BITS + (i * 16);
 		length = 1; // write 1 byte
 		returnVal = Comms_I2C_Master(MAX127_SLAVE_BASE_ADDRESS + location->address, I2C_WRITE,
@@ -139,17 +136,11 @@ static UnivRetCode enRead_sensor(sensor_lc* location)
 
         // Read Sensor Value
         length = 2; // read 2 bytes as sensor returns 12 bits
-        readBuffer[0] = 0xFF;
-        readBuffer[1] = 0xFF;
         returnVal = Comms_I2C_Master(MAX127_SLAVE_BASE_ADDRESS + location->address, I2C_READ,
                 (char*)&isValid,
-                (char*)readBuffer,
+                (char*)&latest_data[uiAddress_to_index(location->address,location->bus)][i],
                 (short*)&length, telem_MUTEX, location->bus);
         xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
-
-        /* Process to voltage. */
-        unsigned short result = ((readBuffer[0] * 16 + readBuffer[1]/16) * 2.4414);
-        latest_data[uiAddress_to_index(location->address,location->bus)][i] = result;
 	}
 
 	return URC_SUCCESS;
@@ -168,9 +159,6 @@ static UnivRetCode perform_current_sweep(Request_Rate currentRate)
     Init_Sweep_Entities(currentRate);
 	while (Get_Next_Entity(&currentEntityGroup, &currentResolution) == URC_SUCCESS)
 	{
-		vDebugPrint(telemTask_token, "Group base %d total_sensors %d\n\r",
-		        currentEntityGroup.sensor_base,
-		        currentEntityGroup.total_sensors, NO_INSERT);
 		// Found out the resolution level
 		for (i = currentEntityGroup.sensor_base; i < currentEntityGroup.sensor_base +
 			currentEntityGroup.total_sensors; i += currentResolution)
@@ -184,7 +172,6 @@ static UnivRetCode perform_current_sweep(Request_Rate currentRate)
 			result = enRead_sensor(&currentLocation);
 		}
 	}
-	telem_debug_print();
 	return sweepResult;
 }
 
@@ -209,17 +196,6 @@ static UnivRetCode perform_set_sweep(Telem_Cmd *telemCmd)
 	}
 
 	return URC_SUCCESS;
-}
-
-void telem_debug_print(void)
-{
-	int i;
-	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
-	{
-        vDebugPrint(telemTask_token, "SENSOR %d: result is %d\n\r", i,
-                latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT],
-                NO_INSERT);
-	}
 }
 
 /*
@@ -263,12 +239,10 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	for (;;)
 	{
 		enResult = enGetRequest(telemTask_token, &incoming_packet, DEF_SWEEP_TIME);
-		vDebugPrint(telemTask_token, "Request return value is %d\n\r", (unsigned portLONG) enResult,
-					NO_INSERT, NO_INSERT);
 		if (enResult != URC_SUCCESS)
 		{
-			vDebugPrint(telemTask_token, "No message | perform normal sweep...\n\r", 0,
-						NO_INSERT, NO_INSERT);
+			//vDebugPrint(telemTask_token, "No message | perform normal sweep...\n\r", 0,
+			//			NO_INSERT, NO_INSERT);
 			//Perform sweep and update buffer.
 			result = perform_current_sweep(currentRate);
 			continue;
