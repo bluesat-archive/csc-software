@@ -21,7 +21,8 @@
 
  #define NO_L3_PROTO        0xF0
 
-
+#define MSB_bit_mask 0x80
+#define PatternLimit 5
 
 typedef enum
  {
@@ -47,7 +48,7 @@ typedef enum
  } ctrlField;
 
 
- typedef struct {
+typedef struct {
     enum PROTOCOL_TO_USE_SENDING protocol;
     char * data;
     //size must be in bytes
@@ -62,6 +63,10 @@ typedef enum
 
 void AX25fcsCalc( char input[], unsigned int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
 UnivRetCode buildPacket (rawPacket * inputDetails );
+static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
+static buffer initBuffer(char * buff, unsigned int size);
+static UnivRetCode bitPop (buffer* buff, char * out, unsigned int size);
+static UnivRetCode bitPush (buffer* buff, char in);
 
 #ifdef UNIT_TEST
 
@@ -69,6 +74,27 @@ UnivRetCode test_buildPacket (rawPacket * inputDetails)
 {
    return buildPacket ( inputDetails );
 }
+
+UnivRetCode test_stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff)
+{
+   return stuffBuf (inputBuff, input_size, outputBuff);
+}
+
+buffer test_initBuffer(char * buff, unsigned int size)
+{
+   return initBuffer(buff, size);
+}
+
+UnivRetCode test_bitPop (buffer* buff, char * out, unsigned int size)
+{
+   return bitPop (buff, out, size);
+}
+
+UnivRetCode test_bitPush (buffer* buff, char in)
+{
+   return bitPush (buff, in);
+}
+
 
 #endif
 
@@ -126,7 +152,8 @@ UnivRetCode buildPacket (rawPacket * inputDetails )
        inputDetails->ctrl_size == 0 ||
        inputDetails->fcs_size  == 0 ||
        inputDetails->info_size == 0){return result;}
-
+  // NOT WORKING YET!!
+   stuffBuf (NULL, 0, NULL);
 
 
    result = URC_SUCCESS;
@@ -134,6 +161,86 @@ UnivRetCode buildPacket (rawPacket * inputDetails )
 }
 
 
+static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff)
+{
+   UnivRetCode result = URC_FAIL;
+   char temp;
+   buffer input;
+   if (inputBuff==NULL || outputBuff == NULL ||input_size==0)
+   {
+         return result;
+   }
+   input  = initBuffer(inputBuff, input_size);
+   while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
+      {
+         outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
+         if ( outputBuff->connectedOnes > PatternLimit)
+            {
+               outputBuff->connectedOnes = 1; // Take into account the 1 to be added after this if block
+               if (bitPush (outputBuff, 0)== URC_FAIL)return result;
+            }
+         if (bitPush (outputBuff, temp)== URC_FAIL)return result;
+      }
+   return URC_SUCCESS;
+}
+
+
+
+static buffer initBuffer(char * buff, unsigned int size)
+{
+   buffer temp;
+   temp.buff = buff;
+   temp.buff_size = size;
+   temp.byte_pos = 0;
+   temp.index = 0;
+   temp.connectedOnes=0;
+   return temp;
+}
+
+static UnivRetCode bitPop (buffer* buff, char * out, unsigned int size)
+{
+   UnivRetCode result = URC_FAIL;
+   char temp  = 0;
+   if (size == 0||out ==NULL ||buff==NULL)
+      {
+         return result;
+      }
+   if (buff->index>=buff->buff_size)
+      {
+         return result;
+      }
+   temp = buff->buff[buff->index];
+   *out = (temp& (MSB_bit_mask>>buff->byte_pos++))?1:0;
+
+   if (buff->byte_pos%8==0)
+      {
+         ++buff->index;
+         buff->byte_pos = 0;
+      }
+   return URC_SUCCESS;
+}
+
+static UnivRetCode bitPush (buffer* buff, char in)
+{
+   UnivRetCode result = URC_FAIL;
+   unsigned int  temp; // Use unsigned int due to left shifting later on
+   if (buff==NULL)
+      {
+         return result;
+      }
+   if (buff->index>=buff->buff_size)
+      {
+         return result;
+      }
+   temp = (in == 0)?0:MSB_bit_mask;
+   buff->buff[buff->index] = (buff->buff[buff->index]| (temp>>buff->byte_pos++));
+   if (buff->byte_pos%8==0)
+      {
+         ++buff->index;
+         buff->byte_pos = 0;
+      }
+   return URC_SUCCESS;
+}
 
 /*
  * This function calculates the FCS checksum based on a MATLAB implementation
