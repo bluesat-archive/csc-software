@@ -15,28 +15,6 @@
 #define TELEM_CLEAR_SCREEN "\e[2J\e[1;1H"
 #define SET_SWEEP_MESSAGE_ARG_NUM       3
 
-/* Duplicated telemetry command definition. This is only for demostration purpose. */
-typedef enum
-{
-    SETSWEEP,
-    READSWEEP
-} Telem_Ops;
-
-typedef struct
-{
-    /* Telem server operation. */
-    Telem_Ops operation;
-    /* Declare the size of the input buffer or the sweep buffer. */
-    unsigned int size;
-    union
-    {
-        /* For storing the sweep settings. */
-        Entity_sweep_params *paramBuffer;
-        /* Pointer to the buffer where the results are. */
-        sensor_result *buffer;
-    };
-} Telem_Cmd;
-
 static TaskToken Telem_TaskToken;
 static sensor_result current_data[TELEM_DEMO_MAX127_COUNT][TELEM_DEMO_MAX127_SENSOR_COUNT];
 static Entity_sweep_params current_setting[MAX_NUM_GROUPS];
@@ -51,7 +29,7 @@ vTelemPrintMenu(void)
 				NO_INSERT, NO_INSERT);
 	vDebugPrint(Telem_TaskToken, "--------------------------------------\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
-	vDebugPrint(Telem_TaskToken, "(2): Set Sweep (resolution, rate)\n\r", NO_INSERT,
+	vDebugPrint(Telem_TaskToken, "(2): Set Sweep (resolution[arg1], rate[arg2])\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
 	vDebugPrint(Telem_TaskToken, "(3): Read Sweep (no arg)\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
@@ -135,7 +113,7 @@ static portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 
 	while (1)
 	{
-		vTelemPrintMenu();
+	    //vTelemPrintMenu();
 		/* Bzero the input buffer. */
 		memset((char*)inputBuffer, 0, TELEM_INPUT_BUFFER_SIZE);
 
@@ -145,7 +123,8 @@ static portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 		/* Convert input. */
 		vTelemConvertCommand(inputBuffer, commandBuffer, TELEM_INPUT_BUFFER_SIZE - 1);
 
-		/* The input should all be numbers.
+		/*
+		 * The input should all be numbers.
 		 * 1st Number: Call number
 		 * 2nd Number: arg0
 		 * 3rd Number: arg1
@@ -173,7 +152,5 @@ static portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 				/* Should never get here. */
 				break;
 		}
-
-
 	}
 }
