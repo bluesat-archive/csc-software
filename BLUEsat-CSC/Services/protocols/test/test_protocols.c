@@ -37,7 +37,8 @@ void TestInitBuffer(CuTest* tc)
 {
    char test[] = "MoooooCow";
    unsigned int length = strlen (test);
-   buffer output = test_initBuffer(test,length);
+   buffer output;
+   CuAssertTrue(tc, test_initBuffer(&output,test,length) == URC_SUCCESS);
    buffer expected;
    expected.buff = test;
    expected.buff_size = length;
@@ -52,7 +53,8 @@ void TestBitPop(CuTest* tc)
    char test [] = {0x87,0x78};
    char exp [] = {1,0,0,0,0,1,1,1,0,1,1,1,1,0,0,0};
    unsigned int length = 2;
-   buffer in = test_initBuffer(test,length);
+   buffer in;
+   CuAssertTrue(tc, test_initBuffer(&in,test,length) == URC_SUCCESS);
    char out;
    unsigned int index = 0;
    for (index = 0; index< 20; ++index)
@@ -73,7 +75,8 @@ void TestBitPush(CuTest* tc)
    char test [2];
    unsigned int length = 2;
    memset (test, 0, 2);
-   buffer in = test_initBuffer(test,length);
+   buffer in;
+   CuAssertTrue(tc, test_initBuffer(&in, test,length)==URC_SUCCESS);
    unsigned int index = 0;
    for (index = 0; index< 16; ++index)
       {
@@ -89,7 +92,8 @@ void TestBitStuffer(CuTest* tc)
    char input []= {0xff,0xff};
    char expected [] ={0xFB,0xEF,0xA0,0,0};
    char output [5];
-   buffer testBuff = test_initBuffer(output, 5);
+   buffer testBuff;
+   CuAssertTrue(tc, test_initBuffer(&testBuff, output, 5)==URC_SUCCESS);
    memset (output, 0, 5);
    CuAssertTrue(tc, test_stuffBuf(input, 2, &testBuff)==URC_SUCCESS);
    CuAssertTrue(tc, memcmp(expected,output, 5)==0);

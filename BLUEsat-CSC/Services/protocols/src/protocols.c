@@ -64,7 +64,7 @@ typedef struct {
 void AX25fcsCalc( char input[], unsigned int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
 UnivRetCode buildPacket (rawPacket * inputDetails );
 static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
-static buffer initBuffer(char * buff, unsigned int size);
+static UnivRetCode initBuffer(buffer * input, char * buff, unsigned int size);
 static UnivRetCode bitPop (buffer* buff, char * out, unsigned int size);
 static UnivRetCode bitPush (buffer* buff, char in);
 
@@ -80,9 +80,9 @@ UnivRetCode test_stuffBuf (char * inputBuff, unsigned int input_size, buffer * o
    return stuffBuf (inputBuff, input_size, outputBuff);
 }
 
-buffer test_initBuffer(char * buff, unsigned int size)
+UnivRetCode test_initBuffer(buffer * input, char * buff, unsigned int size)
 {
-   return initBuffer(buff, size);
+   return initBuffer(input, buff, size);
 }
 
 UnivRetCode test_bitPop (buffer* buff, char * out, unsigned int size)
@@ -143,6 +143,10 @@ static portTASK_FUNCTION(vProtocolsTask, pvParameters){
 UnivRetCode buildPacket (rawPacket * inputDetails )
 {
    UnivRetCode result = URC_FAIL;
+   char flag = FLAG;
+   char output[MAX_PAYLOAD];
+   buffer outBuff;
+   if (initBuffer(&outBuff, output,MAX_PAYLOAD) == URC_FAIL)return result;
    if (inputDetails==NULL) {return result;}
    if (inputDetails->addr == NULL ||
        inputDetails->ctrl == NULL ||
@@ -152,10 +156,13 @@ UnivRetCode buildPacket (rawPacket * inputDetails )
        inputDetails->ctrl_size == 0 ||
        inputDetails->fcs_size  == 0 ||
        inputDetails->info_size == 0){return result;}
-  // NOT WORKING YET!!
-   stuffBuf (NULL, 0, NULL);
-
-
+   stuffBuf (&flag, 1, &outBuff);
+   stuffBuf (inputDetails->addr, inputDetails->addr_size, &outBuff);
+   stuffBuf (inputDetails->ctrl, inputDetails->ctrl_size, &outBuff);
+   stuffBuf (inputDetails->pid, inputDetails->pid_size, &outBuff);
+   stuffBuf (inputDetails->info, inputDetails->info_size, &outBuff);
+   stuffBuf (inputDetails->fcs, inputDetails->fcs_size, &outBuff);
+   stuffBuf (&flag, 1, &outBuff);
    result = URC_SUCCESS;
    return result;
 }
@@ -170,7 +177,7 @@ static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer *
    {
          return result;
    }
-   input  = initBuffer(inputBuff, input_size);
+   if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
    while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
          outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
@@ -184,17 +191,15 @@ static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer *
    return URC_SUCCESS;
 }
 
-
-
-static buffer initBuffer(char * buff, unsigned int size)
+static UnivRetCode initBuffer(buffer * input, char * buff, unsigned int size)
 {
-   buffer temp;
-   temp.buff = buff;
-   temp.buff_size = size;
-   temp.byte_pos = 0;
-   temp.index = 0;
-   temp.connectedOnes=0;
-   return temp;
+   if (input == NULL || buff == NULL ||size == 0) return URC_FAIL;
+   input->buff = buff;
+   input->buff_size = size;
+   input->byte_pos = 0;
+   input->index = 0;
+   input->connectedOnes=0;
+   return URC_SUCCESS;
 }
 
 static UnivRetCode bitPop (buffer* buff, char * out, unsigned int size)
@@ -241,6 +246,7 @@ static UnivRetCode bitPush (buffer* buff, char in)
       }
    return URC_SUCCESS;
 }
+
 
 /*
  * This function calculates the FCS checksum based on a MATLAB implementation

@@ -36,7 +36,7 @@ void vProtocols_Service_Init(unsigned portBASE_TYPE uxPriority);
 #ifdef UNIT_TEST
 UnivRetCode test_buildPacket (rawPacket * inputDetails);
 UnivRetCode test_stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
-buffer test_initBuffer(char * buff, unsigned int size);
+UnivRetCode test_initBuffer(buffer * input, char * buff, unsigned int size);
 UnivRetCode test_bitPop (buffer* buff, char * out, unsigned int size);
 UnivRetCode test_bitPush (buffer* buff, char in);
 #endif
