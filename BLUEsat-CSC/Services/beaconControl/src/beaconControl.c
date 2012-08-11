@@ -16,7 +16,7 @@
 #include "switching.h"
 #include "debug.h"
 
-#define TRANSMISSION_TIME	1000
+#define TRANSMISSION_TIME	2000
 #define BEACON_SLEEP_TIME	5000	// sleep for 1 minutes (for testing 5 seconds)
 
 //task token for accessing services

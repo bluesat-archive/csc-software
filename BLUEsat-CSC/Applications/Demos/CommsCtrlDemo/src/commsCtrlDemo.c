@@ -32,7 +32,9 @@ void vCommsDemo_Init(unsigned portBASE_TYPE uxPriority)
 static portTASK_FUNCTION(vDemoTask, pvParameters)
 {
 	(void) pvParameters;
-	char data[128] = "Test data 1";
-	iSendData(DEMO_TaskToken,data,11);
-	while(1);
+	char data[256] = "Test data 1 (long)((Message*)incoming_packet.Data)->data (long)((Message*)incoming_packet.Data)->data";
+	while(1){
+		iSendData(DEMO_TaskToken,data,256);
+		vSleep(2000);
+	}
 }

@@ -23,7 +23,7 @@
 #define MODEM_INTERRUPTS			( ( unsigned portCHAR ) 0x05 )
 #define CLEAR_VIC_INTERRUPT		( ( unsigned portLONG ) 0 )
 
-#define MAX_INFO_SIZE						300
+#define MAX_INFO_SIZE						256
 #define BUFFER_SIZE						(20+MAX_INFO_SIZE)
 
 #define MODEM_1 1

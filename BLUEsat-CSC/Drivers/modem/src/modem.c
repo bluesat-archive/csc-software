@@ -42,26 +42,29 @@ static int createModem_Semaphore(void)
 {
 	vSemaphoreCreateBinary( modem_1_MUTEX );
 	if(!modem_1_MUTEX) return pdFAIL;
+	xSemaphoreTake( modem_1_MUTEX, 1 );
 	vSemaphoreCreateBinary( modem_2_MUTEX );
 	if(!modem_2_MUTEX) return pdFAIL;
+	xSemaphoreTake( modem_2_MUTEX, 1 );
 	return pdTRUE;
 }
 
 void modem_takeSemaphore(unsigned char modem)
 {
 	if (modem == MODEM_1){
-		xSemaphoreTake( modem_1_MUTEX, MODEM_NO_BLOCK );
+		xSemaphoreTake( modem_1_MUTEX, 2000 );
 	} else {
-		xSemaphoreTake( modem_2_MUTEX, MODEM_NO_BLOCK );
+		xSemaphoreTake( modem_2_MUTEX, 2000 );
 	}
 }
 
 void modem_giveSemaphore(unsigned char modem)
 {
+	signed portBASE_TYPE i;
 	if (modem == MODEM_1){
-		xSemaphoreGive(modem_1_MUTEX);
+		xSemaphoreGiveFromISR(modem_1_MUTEX,&i);
 	} else {
-		xSemaphoreGive(modem_2_MUTEX);
+		xSemaphoreGiveFromISR(modem_2_MUTEX,&i);
 	}
 }
 
@@ -81,8 +84,8 @@ void Comms_Modem_Timer_Handler(void)
 		TX_BUFF_1_SP = (TX_BUFF_1_SP+1)%BUFFER_SIZE;
 		Modem_1_FREE = 1;
 		if (TX_BUFF_1_SP == TX_BUFF_1_EP){
+			modem_giveSemaphore(MODEM_1);
 			disable_VIC_irq(MODEM_INTERRUPTS);
-
 		}
 	} else {
 		TX_BUFF_1_BC++;
@@ -118,7 +121,7 @@ void Comms_Modem_Timer_Init(void)
 	T1MCR = 3;
 	// enable interrupt
 	install_irq(MODEM_INTERRUPTS, Comms_Modem_Timer_Wrapper,HIGHEST_PRIORITY );
-	enable_VIC_irq(MODEM_INTERRUPTS);
+	//enable_VIC_irq(MODEM_INTERRUPTS);
 
 
 	// set the timer 1 to timer mode
@@ -227,6 +230,7 @@ void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT 
 		}
 	}
 	enable_VIC_irq(MODEM_INTERRUPTS);
+
 }
 
 /*-----------------------------------------------------------*/

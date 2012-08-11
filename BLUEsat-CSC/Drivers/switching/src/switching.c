@@ -24,13 +24,12 @@ static int createSwitchingSemaphore(void)
 {
 	vSemaphoreCreateBinary( switching_MUTEX );
 	if(!switching_MUTEX) return pdFAIL;
-
 	return pdTRUE;
 }
 
 void switching_takeSemaphore(void)
 {
-	xSemaphoreTake( switching_MUTEX, SWITCHING_NO_BLOCK );
+	xSemaphoreTake( switching_MUTEX, 10000 );
 }
 
 void switching_giveSemaphore(void)

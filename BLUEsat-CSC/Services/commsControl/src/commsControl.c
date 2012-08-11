@@ -41,7 +41,7 @@ void vComms_Init(unsigned portBASE_TYPE uxPriority)
 								SERV_STACK_SIZE,
 								vCommsTask);
 
-	vActivateQueue(Comms_TaskToken, COMMS_Q_SIZE);
+	vActivateQueue(Comms_TaskToken, 4);
 
 }
 
@@ -57,10 +57,11 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		// grab message from queue
 		enResult = enGetRequest(Comms_TaskToken, &incoming_packet, portMAX_DELAY);
 		if (enResult != URC_SUCCESS) continue;
-
+		//(long)((Message*)incoming_packet.Data)->data
+		vDebugPrint(Comms_TaskToken,"G\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
 		// grab semaphore
 		switching_takeSemaphore();
-
+		vDebugPrint(Comms_TaskToken,"S\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
 		// grab sysinfo
 		// determine what to do based on current status
 
@@ -71,7 +72,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			switching_TX_Device(AFSK_1);
 			switching_TX(TX_1);
 
-			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
+			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, ((Message*)incoming_packet.Data)->size, MODEM_1 );
 			modem_takeSemaphore(MODEM_1);
 		} else if (counter_should_not_be_final % 4 == 1)
 		{
@@ -94,7 +95,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 
 		// release semaphore
 		switching_giveSemaphore();
-		vDebugPrint(Comms_TaskToken,"The sentence is %11s\r\n",(long)((Message*)incoming_packet.Data)->data,NO_INSERT,NO_INSERT);
+		vDebugPrint(Comms_TaskToken,"T\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
 
 		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 		counter_should_not_be_final++;
