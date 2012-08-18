@@ -35,12 +35,14 @@
 /* Telemetry sweep control definition. */
 #define DEF_SWEEP_TIME                  2000/portTICK_RATE_MS /* 20 seconds. */
 
-TaskToken telemTask_token;
+TaskToken telemTaskToken;
 
 static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
 static xSemaphoreHandle telem_MUTEX;
 
 static portTASK_FUNCTION(vTelemTask, pvParameters);
+
+/*-----------------------------Telemetry internal implementation----------------------------*/
 
 static inline Request_Rate telem_trigger_count_check(unsigned int count)
 {
@@ -88,27 +90,6 @@ static unsigned int uiLoad_results(sensor_result *buffer, unsigned int size)
 	if (size <= 0) return result;
 	memcpy ((void*)buffer, (void*)latest_data, max_byte_cpy);
 	return max_elem_cpy;
-}
-
-void telem_debug_print(void)
-{
-    char readBuffer[2] = { 0xFF, 0xFF };
-    
-    /* Process to voltage. */
-    unsigned short result;
-	int i;
-	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
-	{
-	    if (latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT] != 0)
-	    {
-	        /* Copy the content into the temporary buffer. */
-	        memcpy(readBuffer, (char*)&latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT], 
-	                sizeof(short));
-	    }
-	    result = ((readBuffer[0] * 16 + readBuffer[1]/16) * 2.4414);
-	
-        vDebugPrint(telemTask_token, "SENSOR %d: voltage is %d\n\r", i, result, NO_INSERT);
-	}
 }
 
 /*
@@ -159,7 +140,7 @@ static UnivRetCode perform_current_sweep(Request_Rate currentRate)
     Init_Sweep_Entities(currentRate);
 	while (Get_Next_Entity(&currentEntityGroup, &currentResolution) == URC_SUCCESS)
 	{
-		// Found out the resolution level
+		/* Found out the resolution level. */
 		for (i = currentEntityGroup.sensor_base; i < currentEntityGroup.sensor_base +
 			currentEntityGroup.total_sensors; i += currentResolution)
 		{
@@ -199,25 +180,6 @@ static UnivRetCode perform_set_sweep(Telem_Cmd *telemCmd)
 }
 
 /*
- * Telemetry service initialisation.
- */
-UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
-{
-	telemTask_token = ActivateTask(TASK_TELEM,
-								"Telem",
-								SEV_TASK_TYPE,
-								uxPriority,
-								SERV_STACK_SIZE,
-								vTelemTask);
-
-	vActivateQueue(telemTask_token, TELEM_QUEUE_SIZE);
-
-	memset((sensor_result*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
-
-	return URC_SUCCESS;
-}
-
-/*
  * Telemetry service main function.
  */
 static portTASK_FUNCTION(vTelemTask, pvParameters)
@@ -236,36 +198,37 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	/* Initialise sweep. */
 	Init_Sweep();
 
+	/* Initialise child telemetry message control task. */
+	/* TODO: FIXME: */
+
 	for (;;)
 	{
-		enResult = enGetRequest(telemTask_token, &incoming_packet, DEF_SWEEP_TIME);
+		enResult = enGetRequest(telemTaskToken, &incoming_packet, DEF_SWEEP_TIME);
 		if (enResult != URC_SUCCESS)
 		{
-			//vDebugPrint(telemTask_token, "No message | perform normal sweep...\n\r", 0,
-			//			NO_INSERT, NO_INSERT);
-			//Perform sweep and update buffer.
+			/* Perform sweep and update buffer. */
 			result = perform_current_sweep(currentRate);
 			continue;
 		}
 
-        vDebugPrint(telemTask_token, "New message | process message...\n\r", 0,
+        vDebugPrint(telemTaskToken, "New message | process message...\n\r", 0,
                     NO_INSERT, NO_INSERT);
-		//Process command
-		pComamndHandle = (Telem_Cmd *)incoming_packet.Data;
+		/* Process command. */
+		pComamndHandle = (Telem_Cmd*)incoming_packet.Data;
 		switch (pComamndHandle->operation)
 		{
 			case SETSWEEP:
-	            vDebugPrint(telemTask_token, "Message | Set sweep...\n\r", 0,
+	            vDebugPrint(telemTaskToken, "Message | Set sweep...\n\r", 0,
 	                        NO_INSERT, NO_INSERT);
 				result = perform_set_sweep(pComamndHandle);
 				if (result != URC_SUCCESS) break;
-				//Perform sweep and update buffer.
+				/* Perform sweep and update buffer. */
 				result = perform_current_sweep(currentRate);
 				break;
 			case READSWEEP:
-                vDebugPrint(telemTask_token, "Message | Read sweep...\n\r", 0,
+                vDebugPrint(telemTaskToken, "Message | Read sweep...\n\r", 0,
                             NO_INSERT, NO_INSERT);
-				// load sweep
+				/* Load sweep. */
 				uiLoad_results(pComamndHandle->buffer, pComamndHandle->size);
 				break;
 			default:
@@ -273,8 +236,49 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 		}
 
 		triggerCount = (triggerCount + 1) % PERIOD_MOD;
-		//complete request by passing the status to the sender
+		/* Complete request by passing the status to the sender. */
 		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
 	}
+}
+
+/*-----------------------------Telemetry public interfaces-------------------------------*/
+void telem_debug_print(void)
+{
+    char readBuffer[2] = { 0xFF, 0xFF };
+
+    /* Process to voltage. */
+    unsigned short result;
+    int i;
+    for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
+    {
+        if (latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT] != 0)
+        {
+            /* Copy the content into the temporary buffer. */
+            memcpy(readBuffer, (char*)&latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT],
+                    sizeof(short));
+        }
+        result = ((readBuffer[0] * 16 + readBuffer[1]/16) * 2.4414);
+
+        vDebugPrint(telemTaskToken, "SENSOR %d: voltage is %d\n\r", i, result, NO_INSERT);
+    }
+}
+
+/*
+ * Telemetry service initialisation.
+ */
+UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
+{
+    telemTaskToken = ActivateTask(TASK_TELEM,
+                                "Telem",
+                                SERV_TASK_TYPE,
+                                uxPriority,
+                                SERV_STACK_SIZE,
+                                vTelemTask);
+
+    vActivateQueue(telemTaskToken, TELEM_QUEUE_SIZE);
+
+    memset((sensor_result*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
+
+    return URC_SUCCESS;
 }
 
