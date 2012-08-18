@@ -41,10 +41,7 @@ static inline void
 vTelemConvertCommand(char *inputBuf, unsigned int *outputBuf, int size)
 {
 	int i;
-	for (i = 0; i < size; ++i)
-	{
-		outputBuf[i] = inputBuf[i] - '0';
-	}
+	for (i = 0; i < size; ++i) outputBuf[i] = inputBuf[i] - '0';
 }
 
 static UnivRetCode
@@ -52,12 +49,11 @@ enTelemServiceMessageSend(TaskToken taskToken)
 {
     MessagePacket outgoing_packet;
 
-    //create packet with printing request information
+    /* Save information into the outgoing packet. */
     outgoing_packet.Src         = enGetTaskID(taskToken);
     outgoing_packet.Dest        = TASK_TELEM;
     outgoing_packet.Token       = taskToken;
     outgoing_packet.Data        = (unsigned portLONG)&cmd;
-    //store message in a struct and tag along with the request packet
 
     return enProcessRequest(&outgoing_packet, portMAX_DELAY);
 }
@@ -113,13 +109,14 @@ static portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 
 	while (1)
 	{
-	    //vTelemPrintMenu();
+	    vTelemPrintMenu();
 		/* Bzero the input buffer. */
 		memset((char*)inputBuffer, 0, TELEM_INPUT_BUFFER_SIZE);
 
 		usReadLen = usDebugRead(inputBuffer, TELEM_INPUT_BUFFER_SIZE);
 		if (usReadLen > TELEM_INPUT_BUFFER_SIZE) continue;
-
+        vDebugPrint(Telem_TaskToken, "argc is %d\n\r", (unsigned portLONG)usReadLen, NO_INSERT,
+                NO_INSERT);
 		/* Convert input. */
 		vTelemConvertCommand(inputBuffer, commandBuffer, TELEM_INPUT_BUFFER_SIZE - 1);
 
