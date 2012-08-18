@@ -8,7 +8,6 @@
 #ifndef TELEMETRY_H_
 #define TELEMETRY_H_
 
-
 #include "UniversalReturnCode.h"
 #include "sensor_sweep.h"
 
@@ -40,8 +39,6 @@ typedef struct
 		sensor_result *buffer;
 	};
 } Telem_Cmd;
-
-extern TaskToken telemTask_token;
 
 void telem_debug_print(void);
 
