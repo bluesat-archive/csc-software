@@ -270,7 +270,7 @@ UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 {
     telemTaskToken = ActivateTask(TASK_TELEM,
                                 "Telem",
-                                SERV_TASK_TYPE,
+                                SEV_TASK_TYPE,
                                 uxPriority,
                                 SERV_STACK_SIZE,
                                 vTelemTask);
