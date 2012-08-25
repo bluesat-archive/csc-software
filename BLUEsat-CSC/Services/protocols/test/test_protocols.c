@@ -158,6 +158,42 @@ void TestBuildLocation (CuTest* tc)
 
 void TestAddrBuilder (CuTest* tc)
 {
+   char buffer[100];
+   unsigned int left = 100;
+   DeliveryInfo addrs;
+   LocSubField expected;
+   LocSubField * output = (LocSubField *)buffer;
+   memcpy (&addrs.dest.callSign,"a12b",4);
+   addrs.dest.callSignSize = 4;
+   addrs.dest.ssid = 0;
+   memcpy (&addrs.src.callSign,"1ab2",4);
+   addrs.src.callSignSize = 4;
+   addrs.src.ssid = 1;
+   addrs.totalRepeats = 0;
+   addrs.type = Response;
+   CuAssertTrue(tc,  URC_SUCCESS==test_addrBuilder (buffer, &left, &addrs));
+   memset (&expected.callSign,0x40,6);
+   memcpy (&expected.callSign,"a12b",4);
+   expected.res_1 = 1;
+   expected.res_2 = 1;
+   expected.rept = 0;
+   expected.ssid = 0;
+   expected.cORh = 0;
+   CuAssertTrue(tc,  memcmp((void *)&output[0], (void *)&expected, sizeof (LocSubField))==0);
+   memset (&expected.callSign,0x40,6);
+   memcpy (&expected.callSign,"1ab2",4);
+   expected.res_1 = 1;
+   expected.res_2 = 1;
+   expected.rept = 0;
+   expected.ssid = 1;
+   expected.cORh = 1;
+   CuAssertTrue(tc,  output[1].cORh == expected.cORh);
+   CuAssertTrue(tc,  output[1].rept == expected.rept);
+   CuAssertTrue(tc,  output[1].res_1 == expected.res_1);
+   CuAssertTrue(tc, output[1].res_2 == expected.res_2);
+   CuAssertTrue(tc,  output[1].ssid == expected.ssid);
+   CuAssertTrue(tc,  memcmp((void *)output[1].callSign, (void *)expected.callSign, 6)==0);
+   CuAssertTrue(tc,  memcmp((void *)&output[1], (void *)&expected, sizeof (LocSubField))==0);
 
 }
 /*-------------------------------------------------------------------------*

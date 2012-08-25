@@ -71,7 +71,7 @@ static UnivRetCode bitPush    (buffer* buff, char in);
 static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * sizeLeft, Location * loc,
                                   MessageType msgType, LocationType locType,
                                   Bool visitedRepeater, Bool isLastRepeater);
-static UnivRetCode addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
+static UnivRetCode addrBuilder (char * output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
 
 #ifdef UNIT_TEST
 
@@ -107,7 +107,7 @@ UnivRetCode test_buildLocation (LocSubField ** destBuffer, unsigned int * sizeLe
    return buildLocation (destBuffer, sizeLeft, loc, msgType, locType, visitedRepeater, isLastRepeater);
 }
 
-UnivRetCode test_addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo)
+UnivRetCode test_addrBuilder (char * output, unsigned int * sizeLeft, DeliveryInfo * addrInfo)
 {
    return addrBuilder (output, sizeLeft, addrInfo);
 }
@@ -306,16 +306,18 @@ static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * size
 
 
 // this code modifies the buffer directly and in the event of a code failure the buffer should be discarded
-static UnivRetCode addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo)
+static UnivRetCode addrBuilder (char * output, unsigned int * sizeLeft, DeliveryInfo * addrInfo)
 {
    UnivRetCode result = URC_FAIL;
    ReptLoc *temp;
+   char * temp_output;
    Bool last;
    unsigned int index;
    if (output == NULL || sizeLeft == NULL || addrInfo == NULL) return result;
 
-   buildLocation ((LocSubField **)output, sizeLeft, &addrInfo->dest, addrInfo->type, Destination, false, false);
-   buildLocation ((LocSubField **)output, sizeLeft, &addrInfo->src,  addrInfo->type, Source,      false, false);
+   temp_output = output;
+   buildLocation ((LocSubField **)&temp_output, sizeLeft, &addrInfo->dest, addrInfo->type, Destination, false, false);
+   buildLocation ((LocSubField **)&temp_output, sizeLeft, &addrInfo->src,  addrInfo->type, Source,      false, false);
 
    // Populate Repeater Fields
    if (addrInfo->repeats!=NULL)
@@ -324,16 +326,11 @@ static UnivRetCode addrBuilder (char ** output, unsigned int * sizeLeft, Deliver
       for (index = 0; index< addrInfo->totalRepeats;++index)
       {
          last = (index==( addrInfo->totalRepeats-1))?true:false;
-         buildLocation ((LocSubField **)output, sizeLeft, &temp[index].loc , addrInfo->type, Repeater, temp[index].visited, last);
+         buildLocation ((LocSubField **)&temp_output, sizeLeft, &temp[index].loc , addrInfo->type, Repeater, temp[index].visited, last);
       }
    }
-   return result;
+   return URC_SUCCESS;
 }
-
-
-
-
-
 
 
 /*

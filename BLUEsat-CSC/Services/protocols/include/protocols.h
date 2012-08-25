@@ -99,7 +99,7 @@ UnivRetCode test_bitPush (buffer* buff, char in);
 UnivRetCode test_buildLocation (LocSubField ** destBuffer, unsigned int * sizeLeft, Location * loc,
                                   MessageType msgType, LocationType locType,
                                   Bool visitedRepeater, Bool isLastRepeater);
-UnivRetCode test_addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
+UnivRetCode test_addrBuilder (char * output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
 
 
 #endif
