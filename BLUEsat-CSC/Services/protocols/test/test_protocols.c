@@ -105,7 +105,61 @@ void TestBitStuffer(CuTest* tc)
    CuAssertTrue(tc, memcmp(expected,output, 5)==0);
 }
 
+void TestBuildLocation (CuTest* tc)
+{
+   char buffer[20];
+   char * loc = buffer;
+   unsigned int remaining = 20;
+   Location inputLoc;
+   MessageType inputMsgType;
+   LocationType inputLocType;
+   Bool inputVisited;
+   Bool inputLast;
+   LocSubField expected;
+   LocSubField * output;
+   memset (buffer, 'a', 20);
+   buffer[20]='\0';
+   memcpy (&inputLoc,"abcd",4);
+   inputLoc.callSignSize = 4;
+   inputLoc.ssid = 2;
+   inputMsgType = Command;
+   inputLocType = Source;
+   inputVisited = false;
+   inputLast = false;
+   test_buildLocation ((LocSubField **)&loc, &remaining, &inputLoc,inputMsgType, inputLocType, inputVisited, inputLast);
+   memset (&expected.callSign,0x40,6);
+   memcpy (&expected.callSign,"abcd",4);
+   expected.res_1 = 1;
+   expected.res_2 = 1;
+   expected.rept = 0;
+   expected.ssid = 2;
+   expected.cORh = 0;
+   CuAssertTrue(tc, 0== memcmp ((void*)buffer, (void*)&expected, CALLSIGN_SIZE));
+   output =(LocSubField *) buffer;
+   CuAssertTrue(tc,  expected.res_1==output->res_1);
+   CuAssertTrue(tc,  expected.res_2==output->res_2);
+   CuAssertTrue(tc,  expected.rept== output->rept);
+   CuAssertTrue(tc,  expected.ssid==output->ssid);
+   CuAssertTrue(tc,  expected.cORh== output->cORh);
 
+   //Test inserting multiple fields into the buffer
+   inputMsgType = Response;
+   test_buildLocation ((LocSubField **)&loc, &remaining, &inputLoc,inputMsgType, inputLocType, inputVisited, inputLast);
+   expected.cORh = 1;
+   CuAssertTrue(tc,  expected.res_1==output[1].res_1);
+   CuAssertTrue(tc,  expected.res_2==output[1].res_2);
+   CuAssertTrue(tc,  expected.rept== output[1].rept);
+   CuAssertTrue(tc,  expected.ssid==output[1].ssid);
+   CuAssertTrue(tc,  expected.cORh== output[1].cORh);
+
+   // Test fail due to insufficient destination buffer space
+   CuAssertTrue(tc,  URC_FAIL==test_buildLocation ((LocSubField **)&loc, &remaining, &inputLoc,inputMsgType, inputLocType, inputVisited, inputLast));
+}
+
+void TestAddrBuilder (CuTest* tc)
+{
+
+}
 /*-------------------------------------------------------------------------*
  * main
  *-------------------------------------------------------------------------*/
@@ -118,5 +172,7 @@ CuSuite* CuGetSuite(void)
    SUITE_ADD_TEST(suite, TestBitPop);
    SUITE_ADD_TEST(suite, TestBitPush);
    SUITE_ADD_TEST(suite, TestBitStuffer);
+   SUITE_ADD_TEST(suite, TestBuildLocation);
+   SUITE_ADD_TEST(suite, TestAddrBuilder);
 	return suite;
 }

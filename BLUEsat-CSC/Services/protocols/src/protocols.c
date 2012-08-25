@@ -1,6 +1,7 @@
 #include "service.h"
 #include "debug.h"
 #include "protocols.h"
+#include "lib_string.h"
 
  #define PROCTOCOLS_Q_SIZE  5
  #define SIZE_FLAG          1   //Byte
@@ -61,12 +62,16 @@ typedef struct {
  */
 
 
-void AX25fcsCalc( char input[], unsigned int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
-UnivRetCode buildPacket (rawPacket * inputDetails );
-static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
-static UnivRetCode initBuffer(buffer * input, char * buff, unsigned int size);
-static UnivRetCode bitPop (buffer* buff, char * out, unsigned int size);
-static UnivRetCode bitPush (buffer* buff, char in);
+void AX25fcsCalc              ( char input[], unsigned int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
+UnivRetCode buildPacket       (rawPacket * inputDetails );
+static UnivRetCode stuffBuf   (char * inputBuff, unsigned int input_size, buffer * outputBuff);
+static UnivRetCode initBuffer (buffer * input, char * buff, unsigned int size);
+static UnivRetCode bitPop     (buffer* buff, char * out, unsigned int size);
+static UnivRetCode bitPush    (buffer* buff, char in);
+static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * sizeLeft, Location * loc,
+                                  MessageType msgType, LocationType locType,
+                                  Bool visitedRepeater, Bool isLastRepeater);
+static UnivRetCode addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
 
 #ifdef UNIT_TEST
 
@@ -95,6 +100,17 @@ UnivRetCode test_bitPush (buffer* buff, char in)
    return bitPush (buff, in);
 }
 
+UnivRetCode test_buildLocation (LocSubField ** destBuffer, unsigned int * sizeLeft, Location * loc,
+                                  MessageType msgType, LocationType locType,
+                                  Bool visitedRepeater, Bool isLastRepeater)
+{
+   return buildLocation (destBuffer, sizeLeft, loc, msgType, locType, visitedRepeater, isLastRepeater);
+}
+
+UnivRetCode test_addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo)
+{
+   return addrBuilder (output, sizeLeft, addrInfo);
+}
 
 #endif
 
@@ -168,6 +184,10 @@ UnivRetCode buildPacket (rawPacket * inputDetails )
 }
 
 
+/*
+ * Bit Stuffing Functions
+ * ---------------------
+ * */
 static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff)
 {
    UnivRetCode result = URC_FAIL;
@@ -246,6 +266,74 @@ static UnivRetCode bitPush (buffer* buff, char in)
       }
    return URC_SUCCESS;
 }
+
+/*
+ * Address Field Functions
+ * -----------------------
+ * NOTE:AX25 v2.2 in use
+ * */
+
+static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * sizeLeft, Location * loc,
+                                  MessageType msgType, LocationType locType,
+                                  Bool visitedRepeater, Bool isLastRepeater)
+{
+   LocSubField * dest;
+   UnivRetCode result = URC_FAIL;
+   if (destBuffer==NULL || sizeLeft == NULL || loc == NULL) return result;
+   if (*sizeLeft< sizeof (LocSubField))return result;
+   dest =  * destBuffer;
+
+   // Populate Callsign
+   memset (&dest->callSign,BLANK_SPACE,CALLSIGN_SIZE);
+   memcpy (dest->callSign,loc->callSign, loc->callSignSize);
+
+   // Populate SSID Field
+   dest->cORh =((msgType == Command      && locType == Destination) ||
+                (msgType == Response     && locType == Source)      ||
+                (visitedRepeater == true && locType == Repeater))?1: 0;
+   dest->rept = (isLastRepeater == true)?1:0;
+   dest->ssid = loc->ssid;
+   dest->res_1 = 1;
+   dest->res_2 = 1;
+   // Reposition buffer pointers
+   *destBuffer += 1;
+   *sizeLeft   -= sizeof (LocSubField);
+
+   result = URC_SUCCESS;
+   return result;
+}
+
+
+
+// this code modifies the buffer directly and in the event of a code failure the buffer should be discarded
+static UnivRetCode addrBuilder (char ** output, unsigned int * sizeLeft, DeliveryInfo * addrInfo)
+{
+   UnivRetCode result = URC_FAIL;
+   ReptLoc *temp;
+   Bool last;
+   unsigned int index;
+   if (output == NULL || sizeLeft == NULL || addrInfo == NULL) return result;
+
+   buildLocation ((LocSubField **)output, sizeLeft, &addrInfo->dest, addrInfo->type, Destination, false, false);
+   buildLocation ((LocSubField **)output, sizeLeft, &addrInfo->src,  addrInfo->type, Source,      false, false);
+
+   // Populate Repeater Fields
+   if (addrInfo->repeats!=NULL)
+   {
+      temp = addrInfo->repeats;
+      for (index = 0; index< addrInfo->totalRepeats;++index)
+      {
+         last = (index==( addrInfo->totalRepeats-1))?true:false;
+         buildLocation ((LocSubField **)output, sizeLeft, &temp[index].loc , addrInfo->type, Repeater, temp[index].visited, last);
+      }
+   }
+   return result;
+}
+
+
+
+
+
 
 
 /*
