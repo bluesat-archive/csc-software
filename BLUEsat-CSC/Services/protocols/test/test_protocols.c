@@ -196,6 +196,53 @@ void TestAddrBuilder (CuTest* tc)
    CuAssertTrue(tc,  memcmp((void *)&output[1], (void *)&expected, sizeof (LocSubField))==0);
 
 }
+
+void TestCtrlBuilder (CuTest* tc)
+{
+   char buffer[10];
+   unsigned int remaining = 10;
+   ControlInfo input;
+   ControlFrame expected;
+   ControlFrame * actual = (ControlFrame *) buffer;
+   // Test I Frame
+   input.sendSeqNum  = 3;
+   input.recSeqNum   = 2;
+   input.poll        = 1;
+   input.type        = IFrame;
+   CuAssertTrue(tc,  URC_SUCCESS == test_ctrlBuilder (buffer, remaining, &input));
+   expected.poll        = 1;
+   expected.recSeqNum   = 2;
+   expected.sendSeqNum  = 3;
+   expected.sFrame      = 0;
+   CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
+
+   // Test S Frame
+   input.type           = SFrame;
+   input.sFrOpt         = RecNotReady;
+   expected.sendSeqNum  = RecNotReady;
+   expected.sFrame      = 1;
+   CuAssertTrue(tc, URC_SUCCESS == test_ctrlBuilder (buffer, remaining, &input));
+   CuAssertTrue(tc, expected.poll       == actual->poll);
+   CuAssertTrue(tc, expected.recSeqNum  == actual->recSeqNum);
+   CuAssertTrue(tc, expected.sFrame     == actual->sFrame);
+   CuAssertTrue(tc, expected.sendSeqNum == actual->sendSeqNum);
+   CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
+
+   // Test U Frame
+   input.type           = UFrame;
+   input.sFrOpt         = NoSFrameOpts;
+   input.uFrOpt         = FrameReject;
+   expected.recSeqNum   = 0x04;
+   expected.sendSeqNum  = 0x03;
+   CuAssertTrue(tc, URC_SUCCESS == test_ctrlBuilder (buffer, remaining, &input));
+   CuAssertTrue(tc, expected.poll       == actual->poll);
+   CuAssertTrue(tc, expected.recSeqNum  == actual->recSeqNum);
+   CuAssertTrue(tc, expected.sendSeqNum == actual->sendSeqNum);
+   CuAssertTrue(tc, expected.sFrame     == actual->sFrame);
+   CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
+}
+
+
 /*-------------------------------------------------------------------------*
  * main
  *-------------------------------------------------------------------------*/
@@ -210,5 +257,6 @@ CuSuite* CuGetSuite(void)
    SUITE_ADD_TEST(suite, TestBitStuffer);
    SUITE_ADD_TEST(suite, TestBuildLocation);
    SUITE_ADD_TEST(suite, TestAddrBuilder);
+   SUITE_ADD_TEST(suite, TestCtrlBuilder);
 	return suite;
 }

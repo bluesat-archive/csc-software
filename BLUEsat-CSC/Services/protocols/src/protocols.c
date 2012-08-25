@@ -72,6 +72,7 @@ static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * size
                                   MessageType msgType, LocationType locType,
                                   Bool visitedRepeater, Bool isLastRepeater);
 static UnivRetCode addrBuilder (char * output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
+static UnivRetCode ctrlBuilder (char * output, unsigned int remaining, ControlInfo* input);
 
 #ifdef UNIT_TEST
 
@@ -111,6 +112,12 @@ UnivRetCode test_addrBuilder (char * output, unsigned int * sizeLeft, DeliveryIn
 {
    return addrBuilder (output, sizeLeft, addrInfo);
 }
+
+UnivRetCode test_ctrlBuilder (char * output, unsigned int remaining, ControlInfo* input)
+{
+   return ctrlBuilder (output, remaining, input);
+}
+
 
 #endif
 
@@ -332,6 +339,112 @@ static UnivRetCode addrBuilder (char * output, unsigned int * sizeLeft, Delivery
    return URC_SUCCESS;
 }
 
+/*
+ * Control Field Functions
+ *
+ * */
+
+static char UFrF1Decode (UFrameCtlOpts input)
+{
+   char output;
+   switch (input)
+   {
+      case NoUFrameOpts:
+      case UnnumInfoFrame:
+      case DiscModeSysBusyDisconnected:
+                                          output = 0x00;
+                                          break;
+      case SetAsyncBalModeReq:            output = 0x01;
+                                          break;
+      case DiscReq:                       output = 0x02;
+                                          break;
+      case UnnumAck:
+      case SetAsyncBalModeExtendedReq:    output = 0x03;
+                                          break;
+      case FrameReject:                   output = 0x04;
+                                          break;
+      case ExchangeID:                    output = 0x05;
+                                          break;
+      case Test:                          output = 0x07;
+                                          break;
+   }
+   return output;
+}
+
+
+static char UFrF2Decode (UFrameCtlOpts input)
+{
+   char output;
+      switch (input)
+      {
+         case NoUFrameOpts:
+         case UnnumAck:
+         case DiscReq:
+         case UnnumInfoFrame:
+         case Test:                          output = 0x01;
+                                             break;
+         case FrameReject:                   output = 0x03;
+                                             break;
+         case DiscModeSysBusyDisconnected:
+         case SetAsyncBalModeReq:
+         case SetAsyncBalModeExtendedReq:
+         case ExchangeID:                    output = 0x07;
+                                             break;
+      }
+      return output;
+}
+
+// Does not update the output pointer and count
+static UnivRetCode ctrlBuilder (char * output, unsigned int remaining, ControlInfo* input)
+{
+   UnivRetCode result = URC_FAIL;
+   ControlFrame * tempOut = (ControlFrame *)output;
+   if (output == NULL|| input == NULL) return result;
+   if (remaining == 0) return result; // for modulo 8 encoding
+   switch (input->type)
+   {
+      case IFrame:   tempOut->recSeqNum  = input->recSeqNum;
+                     tempOut->sendSeqNum = input->sendSeqNum;
+                     tempOut->poll       = input->poll;
+                     tempOut->sFrame     = 0;
+                     break;
+      case SFrame:   if (input->sFrOpt == NoSFrameOpts) return result;
+                     tempOut->recSeqNum  = input->recSeqNum;
+                     tempOut->sendSeqNum = input->sFrOpt;
+                     tempOut->poll       = input->poll;
+                     tempOut->sFrame     = 1;
+                     break;
+      case UFrame:   if (input->uFrOpt == NoUFrameOpts) return result;
+                     tempOut->recSeqNum  = UFrF1Decode(input->uFrOpt);
+                     tempOut->sendSeqNum = UFrF2Decode(input->uFrOpt);
+                     tempOut->poll       = input->poll;
+                     tempOut->sFrame     = 1;
+                     break;
+      default:
+                     return result;
+   }
+   return URC_SUCCESS;
+}
+
+
+/*
+ * Protocol Identifier Field Functions
+ *
+ * */
+
+
+
+
+
+
+
+
+
+
+/*
+ * FCS Field Function
+ * ------------------
+ * */
 
 /*
  * This function calculates the FCS checksum based on a MATLAB implementation

@@ -10,7 +10,7 @@ enum PROTOCOL_TO_USE_SENDING{
 #define CALLSIGN_SIZE 6
 #define BLANK_SPACE 0x40
 
-typedef struct
+typedef struct //rawPacket
 {
    char * addr;
    unsigned int addr_size;
@@ -25,51 +25,48 @@ typedef struct
 } rawPacket;
 
 //NOTE: At present we can only push a buffer or pop but not both
-typedef struct
+typedef struct //buffer
  {
     char * buff;
     unsigned int index;
     unsigned int byte_pos;
     unsigned int buff_size;
-    unsigned int connectedOnes;
+    unsigned int connectedOnes; // Counter to track the number of consecutive 1s when this hits the threshold a 0 is inserted
  }buffer;
 
-
-
- typedef enum
+typedef enum //Bool
  {
     false,
     true,
  }Bool;
 
- typedef enum
+typedef enum //MessageType
  {
     Command,
     Response,
  }MessageType;
 
- typedef enum
+typedef enum //LocationType
  {
     Source,
     Destination,
     Repeater,
  }LocationType;
 
-
-typedef struct
+typedef struct //Location
 {
    char callSign[CALLSIGN_SIZE];
    unsigned int callSignSize;
    unsigned int ssid;
 }Location;
 
-typedef struct
+typedef struct //ReptLoc
 {
    Location loc;
    Bool visited;
 }ReptLoc;
 
-typedef struct
+typedef struct //DeliveryInfo
 {
    Location src;
    Location dest;
@@ -78,7 +75,7 @@ typedef struct
    unsigned int totalRepeats;
 }DeliveryInfo;
 
-typedef struct
+typedef struct //LocSubField
 {
    char callSign[CALLSIGN_SIZE];
    char cORh :1; //Command / Response / Has been Bit
@@ -87,6 +84,65 @@ typedef struct
    char ssid :4;
    char rept :1;
 }LocSubField;
+
+
+/*
+ * Control Field Structures
+ * */
+typedef enum //SFrameSendSeqNumOpts
+{
+   RecReady        = 0,
+   RecNotReady     = 2,
+   Reject          = 4,
+   SelectiveReject = 6,
+   NoSFrameOpts,
+}SFrameSendSeqNumOpts;
+
+typedef enum //UFrameCtlOpts
+{
+   SetAsyncBalModeReq,
+   SetAsyncBalModeExtendedReq, //Modulo 128
+   DiscReq,
+   FrameReject,
+   UnnumInfoFrame,
+   DiscModeSysBusyDisconnected,
+   ExchangeID,
+   UnnumAck,
+   Test,
+   NoUFrameOpts,
+}UFrameCtlOpts;
+
+typedef enum //CtrlFieldTypes
+{
+   IFrame,
+   SFrame,
+   UFrame,
+}CtrlFieldTypes;
+
+typedef struct //ControlInfo
+{
+   CtrlFieldTypes type;
+   char recSeqNum;
+   char sendSeqNum;
+   char poll;
+   SFrameSendSeqNumOpts sFrOpt;
+   UFrameCtlOpts uFrOpt;
+}ControlInfo;
+/*
+Type    |765 | 4 |321 |0|
+-------------------------
+I Frame |N(R)| P |N(S)|0|
+S Frame |N(R)|P/F|SS0 |1|
+U Frame |MMM |P/F|MM1 |1|
+*/
+typedef struct {//ControlFrame
+   char recSeqNum:3;
+   char poll:1;
+   char sendSeqNum:3;
+   char sFrame:1;
+}ControlFrame;
+
+
 
 void vProtocols_Service_Init(unsigned portBASE_TYPE uxPriority);
 
@@ -100,7 +156,7 @@ UnivRetCode test_buildLocation (LocSubField ** destBuffer, unsigned int * sizeLe
                                   MessageType msgType, LocationType locType,
                                   Bool visitedRepeater, Bool isLastRepeater);
 UnivRetCode test_addrBuilder (char * output, unsigned int * sizeLeft, DeliveryInfo * addrInfo);
-
+UnivRetCode test_ctrlBuilder (char * output, unsigned int remaining, ControlInfo* input);
 
 #endif
 
