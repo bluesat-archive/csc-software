@@ -77,7 +77,7 @@ unsigned int initServices(void)
 #endif//
 
 #ifdef TELEMETRY_H_
-	//vTelem_Init(SERV_TASK_PRIORITY);
+	//vTelemInit(SERV_TASK_PRIORITY);
 #endif
 
 #ifdef PROTOCOLS_H_
@@ -133,7 +133,7 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef TELEMETRYDEMO_H_
-	//vTelemetryDemo_Init(APP_TASK_PRIORITY);
+	//vTelemetryDemoInit(APP_TASK_PRIORITY);
 #endif
 
 #ifdef DTMFDEMO_H_

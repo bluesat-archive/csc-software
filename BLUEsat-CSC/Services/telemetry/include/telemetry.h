@@ -11,37 +11,37 @@
 #include "UniversalReturnCode.h"
 #include "sensor_sweep.h"
 
-typedef short sensor_result;
-
 typedef struct {
 	unsigned short address;
-	unsigned char channel_mask;
+	unsigned char channelMask;
 	unsigned char bus;
-} sensor_lc;
+} SensorLocation;
 
 typedef enum
 {
 	SETSWEEP,
 	READSWEEP
-} Telem_Ops;
+} TelemOperation;
 
 typedef struct
 {
     /* Telem server operation. */
-	Telem_Ops operation;
+	TelemOperation operation;
 	/* Declare the size of the input buffer or the sweep buffer. */
 	unsigned int size;
 	union
 	{
 	    /* For storing the sweep settings. */
-		Entity_sweep_params *paramBuffer;
+		TelemEntityConfig *paramBuffer;
 		/* Pointer to the buffer where the results are. */
-		sensor_result *buffer;
+		unsigned short *buffer;
 	};
-} Telem_Cmd;
+} TelemCommand;
 
-void telem_debug_print(void);
+UnivRetCode enTelemServiceMessageSend(TaskToken taskToken, unsigned portLONG data);
 
-UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority);
+void vTelemDebugPrint(void);
+
+UnivRetCode vTelemInit(unsigned portBASE_TYPE uxPriority);
 
 #endif /* TELEMETRY_H_ */

@@ -8,7 +8,7 @@
 #include "service.h"
 #include "telemetry_message.h"
 
-#define TELEM_MESSAGE_QUEUE_SIZE                16
+#define TELEM_MESSAGE_QUEUE_SIZE 16
 
 TaskToken telemMessageTaskToken;
 
@@ -29,7 +29,7 @@ static portTASK_FUNCTION(vTelemMessageTask, pvParameters)
 
 /*--------------------------Telemetry message public interfaces--------------------------*/
 
-UnivRetCode vTelem_message_Init(unsigned portBASE_TYPE uxPriority)
+UnivRetCode vTelemMessageInit(unsigned portBASE_TYPE uxPriority)
 {
     telemMessageTaskToken = ActivateTask(TASK_TELEM,
                                 "Telem",

@@ -33,42 +33,37 @@
 #define PERIOD_MOD						(HIGH_PERIOD * LOW_PERIOD * MEDIUM_PERIOD)
 
 /* Telemetry sweep control definition. */
-#define DEF_SWEEP_TIME                  2000/portTICK_RATE_MS /* 20 seconds. */
+#define DEF_SWEEP_TIME                  2000 / portTICK_RATE_MS /* 20 seconds. */
 
 TaskToken telemTaskToken;
-
-static sensor_result latest_data[MAX127_COUNT][MAX127_SENSOR_COUNT];
-static xSemaphoreHandle telem_MUTEX;
+static unsigned short telemLatestData[MAX127_COUNT][MAX127_SENSOR_COUNT];
+static xSemaphoreHandle telemMutex;
 
 static portTASK_FUNCTION(vTelemTask, pvParameters);
-
 /*-----------------------------Telemetry internal implementation----------------------------*/
 
-static inline Request_Rate telem_trigger_count_check(unsigned int count)
+static inline TelemRequestRate enTelemTriggerCountCheck(unsigned int count)
 {
-	Request_Rate returnRate;
+	TelemRequestRate returnRate;
 	returnRate.high = 1;
 	returnRate.medium = !(count % medium);
 	returnRate.low = !(count % low);
 	return returnRate;
 }
 
-static inline UnivRetCode telem_setup_sensor_location(sensor_lc *location,
-        unsigned int sensor_index)
+static inline UnivRetCode enTelemSetupSensorLocation(SensorLocation *location,
+        unsigned int sensorIndex)
 {
-	if (location == NULL)
-	{
-		return URC_FAIL;
-	}
+	if (location == NULL) return URC_FAIL;
 
-	location->address = (sensor_index / MAX127_SENSOR_COUNT) % MAX127_BUS_LIMIT;
-	location->channel_mask = 1 << (sensor_index % MAX127_SENSOR_COUNT);
-	location->bus = sensor_index / (MAX127_SENSOR_COUNT * MAX127_BUS_LIMIT);
+	location->address = (sensorIndex / MAX127_SENSOR_COUNT) % MAX127_BUS_LIMIT;
+	location->channelMask = 1 << (sensorIndex % MAX127_SENSOR_COUNT);
+	location->bus = sensorIndex / (MAX127_SENSOR_COUNT * MAX127_BUS_LIMIT);
 
 	return URC_SUCCESS;
 }
 
-static inline unsigned int uiAddress_to_index (unsigned short address, unsigned char bus)
+static inline unsigned int uiAddressToIndex(unsigned short address, unsigned char bus)
 {
 	unsigned int result = 0;
 	unsigned short mask = 0x7; /* Mask out lower 3 bits. */
@@ -81,22 +76,22 @@ static inline unsigned int uiAddress_to_index (unsigned short address, unsigned 
  * simple buffer copy function to populate the given data with as much data as possible
  * size of the buffer is in element entries
  * */
-static unsigned int uiLoad_results(sensor_result *buffer, unsigned int size)
+static unsigned int uiLoadResults(unsigned short *buffer, unsigned int size)
 {
 	unsigned int result = 0;
-	unsigned int max_elem_cpy = (size < MAX127_TOTAL_RESULT_ELEMENTS) ? size :
+	unsigned int maxElementToCpy = (size < MAX127_TOTAL_RESULT_ELEMENTS) ? size :
 			MAX127_TOTAL_RESULT_ELEMENTS;
-	unsigned int max_byte_cpy = max_elem_cpy * sizeof(sensor_result);
+	unsigned int maxByteToCpy = maxElementToCpy * sizeof(unsigned short);
 	if (size <= 0) return result;
-	memcpy ((void*)buffer, (void*)latest_data, max_byte_cpy);
-	return max_elem_cpy;
+	memcpy ((void*)buffer, (void*)telemLatestData, maxByteToCpy);
+	return maxElementToCpy;
 }
 
 /*
  * assumes that the address has the leading bits of the sensor already prepended
  * read a single max 127 and place the results in the buffer
  * */
-static UnivRetCode enRead_sensor(sensor_lc* location)
+static UnivRetCode enReadSensor(SensorLocation* location)
 {
 	int isValid = 1;
 	unsigned int length;
@@ -106,57 +101,57 @@ static UnivRetCode enRead_sensor(sensor_lc* location)
 
 	for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
 	{
-		if (!(location->channel_mask & (1 << i))) continue;
-		// Start Conversation
+		if (!(location->channelMask & (1 << i))) continue;
+		/* Start Conversation. */
 		data = TELEM_I2C_CONFIG_BITS + (i * 16);
-		length = 1; // write 1 byte
+		/* Write 1 byte. */
+		length = 1;
 		returnVal = Comms_I2C_Master(MAX127_SLAVE_BASE_ADDRESS + location->address, I2C_WRITE,
-		        (char*)&isValid, (char*)&data,
-				(short*)&length, telem_MUTEX, location->bus);
-		xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
+		        (char*)&isValid, (char*)&data, (short*)&length, telemMutex, location->bus);
+		xSemaphoreTake(telemMutex, TELEM_SEMAPHORE_BLOCK_TIME);
 
-        // Read Sensor Value
-        length = 2; // read 2 bytes as sensor returns 12 bits
+        /* Read Sensor Value. Read 2 bytes as sensor returns 12 bits. */
+        length = 2;
         returnVal = Comms_I2C_Master(MAX127_SLAVE_BASE_ADDRESS + location->address, I2C_READ,
                 (char*)&isValid,
-                (char*)&latest_data[uiAddress_to_index(location->address,location->bus)][i],
-                (short*)&length, telem_MUTEX, location->bus);
-        xSemaphoreTake(telem_MUTEX, TELEM_SEMAPHORE_BLOCK_TIME);
+                (char*)&telemLatestData[uiAddressToIndex(location->address,location->bus)][i],
+                (short*)&length, telemMutex, location->bus);
+        xSemaphoreTake(telemMutex, TELEM_SEMAPHORE_BLOCK_TIME);
 	}
 
 	return URC_SUCCESS;
 }
 
 /* If the return is URC_FAIL, at least one sensor failed. */
-static UnivRetCode perform_current_sweep(Request_Rate currentRate)
+static UnivRetCode enPerformCurrentSweep(TelemRequestRate currentRate)
 {
-	Entity_group currentEntityGroup;
-	Level currentResolution;
-	sensor_lc currentLocation;
+	TelemEntityGroup currentEntityGroup;
+	TelemLevel currentResolution;
+	SensorLocation currentLocation;
 	unsigned short i;
 	UnivRetCode result;
 	UnivRetCode sweepResult = URC_SUCCESS;
 
-    Init_Sweep_Entities(currentRate);
-	while (Get_Next_Entity(&currentEntityGroup, &currentResolution) == URC_SUCCESS)
+    vTelemAlterSweepEntity(currentRate);
+	while (enTelemGetNextEntity(&currentEntityGroup, &currentResolution) == URC_SUCCESS)
 	{
 		/* Found out the resolution level. */
-		for (i = currentEntityGroup.sensor_base; i < currentEntityGroup.sensor_base +
-			currentEntityGroup.total_sensors; i += currentResolution)
+		for (i = currentEntityGroup.sensorBase; i < currentEntityGroup.sensorBase +
+			currentEntityGroup.totalSensors; i += currentResolution)
 		{
-			result = telem_setup_sensor_location(&currentLocation, i);
+			result = enTelemSetupSensorLocation(&currentLocation, i);
 			if (result != URC_SUCCESS)
 			{
 				sweepResult = URC_FAIL;
 				continue;
 			}
-			result = enRead_sensor(&currentLocation);
+			result = enReadSensor(&currentLocation);
 		}
 	}
 	return sweepResult;
 }
 
-static UnivRetCode perform_set_sweep(Telem_Cmd *telemCmd)
+static UnivRetCode enPerformSetSweep(TelemCommand *telemCmd)
 {
 	int i;
 	int result;
@@ -168,7 +163,7 @@ static UnivRetCode perform_set_sweep(Telem_Cmd *telemCmd)
 
 	for (i = 0; i < MAX_NUM_GROUPS; ++i)
 	{
-		result = Alter_Sweep_Entity(i, telemCmd->paramBuffer[i].resolution,
+		result = enTelemAlterSweepEntity(i, telemCmd->paramBuffer[i].resolution,
 				telemCmd->paramBuffer[i].rate);
 		if (result != URC_SUCCESS)
 		{
@@ -179,70 +174,82 @@ static UnivRetCode perform_set_sweep(Telem_Cmd *telemCmd)
 	return URC_SUCCESS;
 }
 
-/*
- * Telemetry service main function.
- */
+/* Telemetry service main function. */
 static portTASK_FUNCTION(vTelemTask, pvParameters)
 {
 	(void) pvParameters;
 	UnivRetCode enResult;
-	MessagePacket incoming_packet;
-	Telem_Cmd *pComamndHandle;
+	MessagePacket incomingPacket;
+	TelemCommand *pComamndHandle;
 	UnivRetCode result;
 	unsigned int triggerCount = 0;
-	Request_Rate currentRate = telem_trigger_count_check(triggerCount);
+	TelemRequestRate currentRate = enTelemTriggerCountCheck(triggerCount);
 
 	/* Initialise telemetry semaphore. */
-	vSemaphoreCreateBinary( telem_MUTEX );
+	vSemaphoreCreateBinary(telemMutex);
 
 	/* Initialise sweep. */
-	Init_Sweep();
+	enTelemInitSweep();
 
 	/* Initialise child telemetry message control task. */
 	/* TODO: FIXME: */
 
 	for (;;)
 	{
-		enResult = enGetRequest(telemTaskToken, &incoming_packet, DEF_SWEEP_TIME);
+		enResult = enGetRequest(telemTaskToken, &incomingPacket, DEF_SWEEP_TIME);
 		if (enResult != URC_SUCCESS)
 		{
 			/* Perform sweep and update buffer. */
-			result = perform_current_sweep(currentRate);
+			result = enPerformCurrentSweep(currentRate);
 			continue;
 		}
 
         vDebugPrint(telemTaskToken, "New message | process message...\n\r", 0,
                     NO_INSERT, NO_INSERT);
 		/* Process command. */
-		pComamndHandle = (Telem_Cmd*)incoming_packet.Data;
+		pComamndHandle = (TelemCommand*)incomingPacket.Data;
 		switch (pComamndHandle->operation)
 		{
 			case SETSWEEP:
 	            vDebugPrint(telemTaskToken, "Message | Set sweep...\n\r", 0,
 	                        NO_INSERT, NO_INSERT);
-				result = perform_set_sweep(pComamndHandle);
+				result = enPerformSetSweep(pComamndHandle);
 				if (result != URC_SUCCESS) break;
 				/* Perform sweep and update buffer. */
-				result = perform_current_sweep(currentRate);
+				result = enPerformCurrentSweep(currentRate);
 				break;
 			case READSWEEP:
                 vDebugPrint(telemTaskToken, "Message | Read sweep...\n\r", 0,
                             NO_INSERT, NO_INSERT);
 				/* Load sweep. */
-				uiLoad_results(pComamndHandle->buffer, pComamndHandle->size);
+				uiLoadResults(pComamndHandle->buffer, pComamndHandle->size);
 				break;
 			default:
-				vCompleteRequest(incoming_packet.Token, URC_FAIL);
+				vCompleteRequest(incomingPacket.Token, URC_FAIL);
 		}
 
 		triggerCount = (triggerCount + 1) % PERIOD_MOD;
 		/* Complete request by passing the status to the sender. */
-		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
+		vCompleteRequest(incomingPacket.Token, URC_SUCCESS);
 	}
 }
 
 /*-----------------------------Telemetry public interfaces-------------------------------*/
-void telem_debug_print(void)
+UnivRetCode enTelemServiceMessageSend(TaskToken taskToken, unsigned portLONG data)
+{
+    MessagePacket outgoingPacket;
+
+    /* Save information into the outgoing packet. */
+    outgoingPacket.Src         = enGetTaskID(taskToken);
+    outgoingPacket.Dest        = TASK_TELEM;
+    outgoingPacket.Token       = taskToken;
+    outgoingPacket.Data        = data;
+
+    return enProcessRequest(&outgoingPacket, portMAX_DELAY);
+}
+
+
+void vTelemDebugPrint(void)
 {
     char readBuffer[2] = { 0xFF, 0xFF };
 
@@ -251,11 +258,12 @@ void telem_debug_print(void)
     int i;
     for (i = 0; i < MAX127_SENSOR_COUNT; ++i)
     {
-        if (latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT] != 0)
+        if (telemLatestData[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT] != 0)
         {
             /* Copy the content into the temporary buffer. */
-            memcpy(readBuffer, (char*)&latest_data[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT],
-                    sizeof(short));
+            memcpy(readBuffer,
+                   (char*)&telemLatestData[i / MAX127_BUS_LIMIT][i % MAX127_SENSOR_COUNT],
+                   sizeof(short));
         }
         result = ((readBuffer[0] * 16 + readBuffer[1]/16) * 2.4414);
 
@@ -263,10 +271,7 @@ void telem_debug_print(void)
     }
 }
 
-/*
- * Telemetry service initialisation.
- */
-UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
+UnivRetCode vTelemInit(unsigned portBASE_TYPE uxPriority)
 {
     telemTaskToken = ActivateTask(TASK_TELEM,
                                 "Telem",
@@ -277,7 +282,7 @@ UnivRetCode vTelem_Init(unsigned portBASE_TYPE uxPriority)
 
     vActivateQueue(telemTaskToken, TELEM_QUEUE_SIZE);
 
-    memset((sensor_result*)latest_data, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
+    memset((unsigned short*)telemLatestData, 0, MAX127_SENSOR_COUNT * MAX127_COUNT);
 
     return URC_SUCCESS;
 }

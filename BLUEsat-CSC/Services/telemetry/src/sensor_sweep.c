@@ -11,11 +11,11 @@
 #include "UniversalReturnCode.h"
 #include "telemetry.h"
 
-static Entity_sweep_params sweep[max_entities];
-static Request_Rate current_sweep_rate;
-static Entity current_entity = max_entities;
+static TelemEntityConfig sweep[maxEntities];
+static TelemRequestRate current_sweep_rate;
+static Entity current_entity = maxEntities;
 
-UnivRetCode Init_Sweep(void)
+UnivRetCode enTelemInitSweep(void)
 {
 	int i;
 	// Retrieve sweep from memory
@@ -25,18 +25,18 @@ UnivRetCode Init_Sweep(void)
 	// If sweep not found create default sweep
 
 	// Create default sweep
-	for (i = 0; i < max_entities; ++i)
+	for (i = 0; i < maxEntities; ++i)
 	{
-		sweep[i] = Entity_Default;
+		sweep[i] = entityDefault;
 	}
 
-	current_sweep_rate = Request_Rate_Default;
+	current_sweep_rate = requestRateDefault;
 	return URC_SUCCESS;
 }
 
-UnivRetCode Alter_Sweep_Entity(Entity entity, Level resolution, Level rate)
+UnivRetCode enTelemAlterSweepEntity(Entity entity, TelemLevel resolution, TelemLevel rate)
 {
-	if (entity == max_entities)
+	if (entity == maxEntities)
 	{
 		return URC_FAIL;
 	}
@@ -47,21 +47,21 @@ UnivRetCode Alter_Sweep_Entity(Entity entity, Level resolution, Level rate)
 	return URC_SUCCESS;
 }
 
-void Init_Sweep_Entities(Request_Rate Rates)
+void vTelemAlterSweepEntity(TelemRequestRate rates)
 {
-	current_sweep_rate = Rates;
+	current_sweep_rate = rates;
 	current_entity = 0;
 }
 
-UnivRetCode Get_Next_Entity(Entity_group* Next_Entity, Level* Resolution)
+UnivRetCode enTelemGetNextEntity(TelemEntityGroup* nextEntity, TelemLevel* resolution)
 {
 	Entity i;
-	if (current_entity == max_entities)
+	if (current_entity == maxEntities)
 	{
 		return URC_FAIL;
 	}
 	/* Find the next entity by looping through. */
-	for (i = current_entity; i < max_entities; ++i)
+	for (i = current_entity; i < maxEntities; ++i)
 	{
 		switch (sweep[i].rate)
 		{
@@ -75,8 +75,8 @@ UnivRetCode Get_Next_Entity(Entity_group* Next_Entity, Level* Resolution)
 				continue;
 		}
 
-		*Next_Entity = Entity_Mappings[current_entity];
-		*Resolution = sweep[i].resolution;
+		*nextEntity = entityMappings[current_entity];
+		*resolution = sweep[i].resolution;
 		++current_entity;
 		return URC_SUCCESS;
 	}

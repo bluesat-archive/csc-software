@@ -1,9 +1,6 @@
 /*
  * sensor_sweep.h
  *
- *  Created on: 24/06/2012
- *      Author: colint
- *
  */
 
 #ifndef TELEMSWEEP_H_
@@ -19,54 +16,53 @@ typedef enum
    high,
    medium,
    low
-} Level;
+} TelemLevel;
 
 typedef struct
 {
-   unsigned short sensor_base;
-   unsigned short total_sensors;
-} Entity_group;
+   unsigned short sensorBase;
+   unsigned short totalSensors;
+} TelemEntityGroup;
 
 typedef struct
 {
-   Level resolution;
-   Level rate;
-} Entity_sweep_params;
+   TelemLevel resolution;
+   TelemLevel rate;
+} TelemEntityConfig;
 
 
 typedef struct
 {
-   short high:1;
-   short medium:1;
-   short low:1;
-} Request_Rate;
+   short high : 1;
+   short medium : 1;
+   short low : 1;
+} TelemRequestRate;
 
 typedef enum
 {
-   critical_systems = 0,
+   criticalSystems = 0,
    battery,
    power,
    radios,
    payload,
    solar,
-   max_entities
+   maxEntities
 } Entity;
 
 /*Sensor Groupings */
-static const Entity_group Entity_Mappings []={{0,21},
-                                       {21,21},
-                                       {42,21},
-                                       {63,21},
-                                       {84,21},
-                                       {105,23}};
+static const TelemEntityGroup entityMappings []=  {{0, 21},
+                                                    {21, 21},
+                                                    {42, 21},
+                                                    {63, 21},
+                                                    {84, 21},
+                                                    {105, 23}};
 
-static const Entity_sweep_params Entity_Default = {high,high};
-static const Request_Rate Request_Rate_Default = {1,0,0};
+static const TelemEntityConfig entityDefault = {high, high};
+static const TelemRequestRate requestRateDefault = {1, 0, 0};
 
-UnivRetCode Init_Sweep(void);
-UnivRetCode Alter_Sweep_Entity(Entity entity, Level resolution, Level rate);
-void Init_Sweep_Entities (Request_Rate Rates);
-UnivRetCode Get_Next_Entity (Entity_group* Next_Entity, Level* Resolution);
+UnivRetCode enTelemInitSweep(void);
+UnivRetCode enTelemAlterSweepEntity(Entity entity, TelemLevel resolution, TelemLevel rate);
+void vTelemAlterSweepEntity (TelemRequestRate rates);
+UnivRetCode enTelemGetNextEntity (TelemEntityGroup *nextEntity, TelemLevel *resolution);
 
-
-#endif
+#endif /* TELEMSWEEP_H_ */

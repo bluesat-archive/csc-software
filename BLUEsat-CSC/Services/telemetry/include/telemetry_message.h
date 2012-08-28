@@ -3,6 +3,6 @@
 
 #include "UniversalReturnCode.h"
 
-UnivRetCode vTelem_message_Init(unsigned portBASE_TYPE uxPriority);
+UnivRetCode vTelemMessageInit(unsigned portBASE_TYPE uxPriority);
 
 #endif
