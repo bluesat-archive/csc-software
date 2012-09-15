@@ -173,14 +173,27 @@ void Comms_I2C_Init(void)
 		I2C_Bus_Free=0;
 
 		// Step 1: Power
-		PCONP = (PCONP & (~(0x1 << 7))) | (0x1 << 7); // power for I2C0
+		PCONP |= (0x1 << 7); // power for I2C0
+		PCONP |= (0x1 << 19); // power for I2C0
+		PCONP |= (0x1 << 26); // power for I2C0
 
 		// Step 2: Clock
 		PCLKSEL0 = (PCLKSEL0 & (~(0x3 <<14))) | (0x1 << 14); // set up the peripheral clock for I2C0
+		PCLKSEL1 = (PCLKSEL0 & (~(0x3 <<6))) | (0x1 << 6); // set up the peripheral clock for I2C0
+		PCLKSEL1 = (PCLKSEL0 & (~(0x3 <<20))) | (0x1 << 20); // set up the peripheral clock for I2C0
+
 
 		// Step 3: initialise PINSEL registers
-		I2C_B01_PORT	|= I2C_B01_EN; // fine - this is to initialise the GPIO port for SDA1 and SCL1
-		I2C_B02_PORT	|= I2C_B02_EN; // set up SDA0 and SCL0
+		//I2C_B01_PORT	|= I2C_B01_EN; // fine - this is to initialise the GPIO port for SDA1 and SCL1
+		//I2C_B02_PORT	|= I2C_B02_EN; // set up SDA0 and SCL0
+		PINSEL1 &= ~(0xf<<22);
+		PINSEL1 |= ((1<<22)|(1<<24));
+
+		PINSEL0 &= ~(0xf<<0);
+		PINSEL0 |= ((3<<0)|(3<<2));
+
+		PINSEL0 &= ~(0xf<<20);
+		PINSEL0 |= ((2<<20)|(2<<22));
 
 		// Step 4: interrupt
 		install_irq( I2C0_IRQ_SRC, Comms_I2C_Wrapper,HIGHEST_PRIORITY );
