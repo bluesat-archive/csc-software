@@ -89,11 +89,12 @@ typedef struct //DeliveryInfo
 typedef struct //LocSubField
 {
    char callSign[CALLSIGN_SIZE];
-   char cORh :1; //Command / Response / Has been Bit
-   char res_1:1; // Reserved bit default 1 - network may use
-   char res_2:1;
-   char ssid :4;
    char rept :1;
+   char ssid :4;
+   char res_2:1;
+   char res_1:1; // Reserved bit default 1 - network may use
+   char cORh :1; //Command / Response / Has been Bit
+
 }LocSubField;
 
 
@@ -147,10 +148,10 @@ S Frame |N(R)|P/F|SS0 |1|
 U Frame |MMM |P/F|MM1 |1|
 */
 typedef struct {//ControlFrame
-   char recSeqNum:3;
-   char poll:1;
-   char sendSeqNum:3;
    char sFrame:1;
+   char sendSeqNum:3;
+   char poll:1;
+   char recSeqNum:3;
 }ControlFrame;
 
 typedef enum //ax25States
@@ -191,7 +192,7 @@ typedef struct //stateBlock
 }stateBlock;
 
 
-typedef enum
+typedef enum //protoReturn
 {
    stateError,
    destBuffError,
@@ -203,9 +204,9 @@ typedef enum
 
 
 
+protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * outputSize );
 
 
-void vProtocols_Service_Init(unsigned portBASE_TYPE uxPriority);
 
 #ifdef UNIT_TEST
 
