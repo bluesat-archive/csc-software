@@ -80,10 +80,6 @@ unsigned int initServices(void)
 	//vTelemInit(SERV_TASK_PRIORITY);
 #endif
 
-#ifdef PROTOCOLS_H_
-	vProtocols_Service_Init(SERV_TASK_PRIORITY);
-#endif
-
 #ifdef COMMS_DTMF_H_
 	Comms_DTMF_Init();
 #endif
