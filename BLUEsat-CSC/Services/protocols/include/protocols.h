@@ -218,7 +218,7 @@ UnivRetCode test_buildLocation (LocSubField ** destBuffer, unsigned int * sizeLe
                                   MessageType msgType, LocationType locType,
                                   Bool visitedRepeater, Bool isLastRepeater);
 UnivRetCode test_addrBuilder (char * output, unsigned int * outputSize, DeliveryInfo * addrInfo);
-UnivRetCode test_ctrlBuilder (char * output,  ControlInfo* input);
+UnivRetCode test_ctrlBuilder (ControlFrame * output,  ControlInfo* input);
 UnivRetCode test_buildPacket (rawPacket * inputDetails, char * outFinal, unsigned int * outFinalSize );
 UnivRetCode test_InfoBuilder (stateBlock * presentState, rawPacket* output);
 UnivRetCode test_unconnectedEngine (stateBlock* presentState,  rawPacket* output);

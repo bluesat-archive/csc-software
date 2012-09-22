@@ -206,33 +206,32 @@ void TestAddrBuilder (CuTest* tc)
 
 void TestCtrlBuilder (CuTest* tc)
 {
-   char buffer[10];
    ControlInfo input;
    ControlFrame expected;
-   ControlFrame * actual = (ControlFrame *) buffer;
+   ControlFrame actual;
    // Test I Frame
    input.sendSeqNum  = 3;
    input.recSeqNum   = 2;
    input.poll        = 1;
    input.type        = IFrame;
-   CuAssertTrue(tc,  URC_SUCCESS == test_ctrlBuilder (buffer, &input));
+   CuAssertTrue(tc,  URC_SUCCESS == test_ctrlBuilder (&actual, &input));
    expected.poll        = 1;
    expected.recSeqNum   = 2;
    expected.sendSeqNum  = 3;
    expected.sFrame      = 0;
-   CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
+   CuAssertTrue(tc, 0 == memcmp((void *)&actual, (void*)&expected,1));
 
    // Test S Frame
    input.type           = SFrame;
    input.sFrOpt         = RecNotReady;
    expected.sendSeqNum  = RecNotReady;
    expected.sFrame      = 1;
-   CuAssertTrue(tc, URC_SUCCESS == test_ctrlBuilder (buffer, &input));
-   CuAssertTrue(tc, expected.poll       == actual->poll);
-   CuAssertTrue(tc, expected.recSeqNum  == actual->recSeqNum);
-   CuAssertTrue(tc, expected.sFrame     == actual->sFrame);
-   CuAssertTrue(tc, expected.sendSeqNum == actual->sendSeqNum);
-   CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
+   CuAssertTrue(tc, URC_SUCCESS == test_ctrlBuilder (&actual, &input));
+   CuAssertTrue(tc, expected.poll       == actual.poll);
+   CuAssertTrue(tc, expected.recSeqNum  == actual.recSeqNum);
+   CuAssertTrue(tc, expected.sFrame     == actual.sFrame);
+   CuAssertTrue(tc, expected.sendSeqNum == actual.sendSeqNum);
+   CuAssertTrue(tc, 0 == memcmp((void *)&actual, (void*)&expected,1));
 
    // Test U Frame
    input.type           = UFrame;
@@ -240,12 +239,12 @@ void TestCtrlBuilder (CuTest* tc)
    input.uFrOpt         = FrameReject;
    expected.recSeqNum   = 0x04;
    expected.sendSeqNum  = 0x03;
-   CuAssertTrue(tc, URC_SUCCESS == test_ctrlBuilder (buffer, &input));
-   CuAssertTrue(tc, expected.poll       == actual->poll);
-   CuAssertTrue(tc, expected.recSeqNum  == actual->recSeqNum);
-   CuAssertTrue(tc, expected.sendSeqNum == actual->sendSeqNum);
-   CuAssertTrue(tc, expected.sFrame     == actual->sFrame);
-   CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
+   CuAssertTrue(tc, URC_SUCCESS == test_ctrlBuilder (&actual, &input));
+   CuAssertTrue(tc, expected.poll       == actual.poll);
+   CuAssertTrue(tc, expected.recSeqNum  == actual.recSeqNum);
+   CuAssertTrue(tc, expected.sendSeqNum == actual.sendSeqNum);
+   CuAssertTrue(tc, expected.sFrame     == actual.sFrame);
+   CuAssertTrue(tc, 0 == memcmp((void *)&actual, (void*)&expected,1));
 }
 
 void TestInfoBuilder(CuTest* tc)
@@ -255,6 +254,8 @@ void TestInfoBuilder(CuTest* tc)
    char largeBuff[300];
    char smallBuff[100];
    unsigned int maxInfo = SIZE_ACT_INFO;
+   memset (&presentState,0,sizeof(stateBlock));
+   memset (&outPacket,0,sizeof(rawPacket));
    CuAssertTrue(tc, test_InfoBuilder(NULL, NULL)               ==URC_FAIL);
    CuAssertTrue(tc, test_InfoBuilder(&presentState, NULL)      ==URC_FAIL);
    CuAssertTrue(tc, test_InfoBuilder(NULL, &outPacket)         ==URC_FAIL);

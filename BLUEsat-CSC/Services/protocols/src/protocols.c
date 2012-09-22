@@ -20,7 +20,7 @@ static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * size
                                   MessageType msgType, LocationType locType,
                                   Bool visitedRepeater, Bool isLastRepeater);
 static UnivRetCode addrBuilder (char * output, unsigned int * outputSize, DeliveryInfo * addrInfo);
-static UnivRetCode ctrlBuilder (char * output, ControlInfo* input);
+static UnivRetCode ctrlBuilder (ControlFrame * output, ControlInfo* input);
 static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* output);
 static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output);
 static UnivRetCode pushBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
@@ -59,7 +59,7 @@ UnivRetCode test_addrBuilder (char * output, unsigned int * outputSize, Delivery
    return addrBuilder (output, outputSize, addrInfo);
 }
 
-UnivRetCode test_ctrlBuilder (char * output,  ControlInfo* input)
+UnivRetCode test_ctrlBuilder (ControlFrame * output,  ControlInfo* input)
 {
    return ctrlBuilder (output, input);
 }
@@ -147,7 +147,7 @@ static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* outp
    ctrlIn.type = UFrame;
    ctrlIn.poll = 0;
    ctrlIn.uFrOpt = UnnumInfoFrame;
-   return ctrlBuilder ((char *)&output->ctrl, &ctrlIn);
+   return ctrlBuilder ((ControlFrame *)&output->ctrl, &ctrlIn);
 }
 
 // Updates the state block with the next position to read the src from and the output block with the position to start reading from the the size
@@ -175,8 +175,6 @@ static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output)
    return URC_SUCCESS;
 }
 
-
-
 static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsigned int * outFinalSize )
 {
    UnivRetCode result = URC_FAIL;
@@ -203,8 +201,8 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
       if (stuffBuf ((char *) inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
    }
    if (stuffBuf (inputDetails->info, inputDetails->info_size, &outBuff) == URC_FAIL ) return result;
-   if (stuffBuf (&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
-   if (stuffBuf (&fcs1, 1 , &outBuff) == URC_FAIL ) return result;
+   if (stuffBuf ((char *)&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
+   if (stuffBuf ((char *)&fcs1, 1 , &outBuff) == URC_FAIL ) return result;
    if (pushBuf  (&flag, 1,  &outBuff) == URC_FAIL ) return result;
 
    // The index the the present location in the buffer not the total size.
@@ -212,9 +210,6 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
    *outFinalSize = outBuff.index + 1;
    return URC_SUCCESS;
 }
-
-
-
 
 /*
  * Address Field Functions
@@ -344,30 +339,29 @@ static char UFrF2Decode (UFrameCtlOpts input)
 
 // Does not update the output pointer and count
 //assume modulo 8 operation mode
-static UnivRetCode ctrlBuilder (char * output, ControlInfo* input)
+static UnivRetCode ctrlBuilder (ControlFrame * output, ControlInfo* input)
 {
    UnivRetCode result = URC_FAIL;
-   ControlFrame * tempOut = (ControlFrame *)output;
    if (output == NULL|| input == NULL) return result;
 
    switch (input->type)
    {
-      case IFrame:   tempOut->recSeqNum  = input->recSeqNum;
-                     tempOut->sendSeqNum = input->sendSeqNum;
-                     tempOut->poll       = input->poll;
-                     tempOut->sFrame     = 0;
+      case IFrame:   output->recSeqNum  = input->recSeqNum;
+                     output->sendSeqNum = input->sendSeqNum;
+                     output->poll       = input->poll;
+                     output->sFrame     = 0;
                      break;
       case SFrame:   if (input->sFrOpt == NoSFrameOpts) return result;
-                     tempOut->recSeqNum  = input->recSeqNum;
-                     tempOut->sendSeqNum = input->sFrOpt;
-                     tempOut->poll       = input->poll;
-                     tempOut->sFrame     = 1;
+                     output->recSeqNum  = input->recSeqNum;
+                     output->sendSeqNum = input->sFrOpt;
+                     output->poll       = input->poll;
+                     output->sFrame     = 1;
                      break;
       case UFrame:   if (input->uFrOpt == NoUFrameOpts) return result;
-                     tempOut->recSeqNum  = UFrF1Decode(input->uFrOpt);
-                     tempOut->sendSeqNum = UFrF2Decode(input->uFrOpt);
-                     tempOut->poll       = input->poll;
-                     tempOut->sFrame     = 1;
+                     output->recSeqNum  = UFrF1Decode(input->uFrOpt);
+                     output->sendSeqNum = UFrF2Decode(input->uFrOpt);
+                     output->poll       = input->poll;
+                     output->sFrame     = 1;
                      break;
       default:
                      return result;
@@ -390,7 +384,7 @@ static UnivRetCode ctrlBuilder (char * output, ControlInfo* input)
  *		Boulder, Colorado
  *
  */
-static unsigned short fcsEngine(unsigned short shiftReg, char * buffer, unsigned int length)
+static unsigned short fcsEngine(unsigned short shiftReg, char * buff, unsigned int length)
 {
    unsigned int inputbit;
    unsigned int inputbyte;
@@ -402,7 +396,7 @@ static unsigned short fcsEngine(unsigned short shiftReg, char * buffer, unsigned
       shiftReg = shiftReg>>1;//shift one bit to the right
 
       //translate SR=xor(SR, XORMask) and XORMask = ...
-      xorMask=( (((buffer[inputbyte] & (0x1<<inputbit))>>inputbit) ^ shiftedOutBit))?AX25_CRC_POLYNOMIAL_FLIPED:0;
+      xorMask=( (((buff[inputbyte] & (0x1<<inputbit))>>inputbit) ^ shiftedOutBit))?AX25_CRC_POLYNOMIAL_FLIPED:0;
       shiftReg = shiftReg ^ xorMask;
 
       inputbit++;
