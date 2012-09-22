@@ -23,6 +23,7 @@ static UnivRetCode addrBuilder (char * output, unsigned int * outputSize, Delive
 static UnivRetCode ctrlBuilder (char * output, ControlInfo* input);
 static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* output);
 static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output);
+static UnivRetCode pushBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
 
 #ifdef UNIT_TEST
 
@@ -107,9 +108,9 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
    // Process State
    switch (tempState.mode)
    {
-      unconnected:   if (unconnectedEngine (&tempState,  &packet) == URC_FAIL) return stateError;
+      case unconnected:   if (unconnectedEngine (&tempState,  &packet) == URC_FAIL) return stateError;
                      break;
-      connected:                             //TODO: Create connected state
+      case connected:                             //TODO: Create connected state
       default:
                      return stateError;      //TODO: Possible unknown mode error
    }
@@ -144,7 +145,7 @@ static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* outp
    output->pid = &presentState->pid;
    output->addr_size = 1; // PID is 1 byte.
    ctrlIn.type = UFrame;
-   ctrlIn.poll = 1;
+   ctrlIn.poll = 0;
    ctrlIn.uFrOpt = UnnumInfoFrame;
    return ctrlBuilder ((char *)&output->ctrl, &ctrlIn);
 }
@@ -194,14 +195,17 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
    if (AX25fcsCalc( inputDetails, &fcs0, &fcs1) == URC_FAIL ) return result;
 
    // Stuff data into output packet
-   if (stuffBuf (&flag, 1, &outBuff) == URC_FAIL ) return result;
+   if (pushBuf  (&flag, 1, &outBuff) == URC_FAIL ) return result;
    if (stuffBuf (inputDetails->addr, inputDetails->addr_size, &outBuff) == URC_FAIL ) return result;
    if (stuffBuf ((char *) &inputDetails->ctrl, 1, &outBuff) == URC_FAIL ) return result;
-   if (stuffBuf ((char *) &inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
+   if (inputDetails->pid!=NULL)
+   {
+      if (stuffBuf ((char *) inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
+   }
    if (stuffBuf (inputDetails->info, inputDetails->info_size, &outBuff) == URC_FAIL ) return result;
    if (stuffBuf (&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
    if (stuffBuf (&fcs1, 1 , &outBuff) == URC_FAIL ) return result;
-   if (stuffBuf (&flag, 1,  &outBuff) == URC_FAIL ) return result;
+   if (pushBuf  (&flag, 1,  &outBuff) == URC_FAIL ) return result;
 
    // The index the the present location in the buffer not the total size.
    // The result returns the total size in the buffer
@@ -224,13 +228,17 @@ static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * size
 {
    LocSubField * dest;
    UnivRetCode result = URC_FAIL;
+   unsigned int index;
    if (destBuffer==NULL || sizeLeft == NULL || loc == NULL) return result;
    if (*sizeLeft< sizeof (LocSubField))return result;
    dest =  * destBuffer;
 
    // Populate Callsign
-   memset (&dest->callSign,BLANK_SPACE,CALLSIGN_SIZE);
-   memcpy (dest->callSign,loc->callSign, loc->callSignSize);
+   memset (&dest->callSign,BLANK_SPACE<<1,CALLSIGN_SIZE);
+   for (index=0;index<loc->callSignSize; ++index)
+      {
+         dest->callSign[index] = loc->callSign[index]<<1;
+      }
 
    // Populate SSID Field
    dest->cORh =((msgType == Command      && locType == Destination) ||
@@ -263,7 +271,7 @@ static UnivRetCode addrBuilder (char * output, unsigned int * outputSize, Delive
    tempSize = *outputSize;
    temp_output = output;
    if (buildLocation ((LocSubField **)&temp_output, &tempSize, &addrInfo->dest, addrInfo->type, Destination, false, false) == URC_FAIL) return result;
-   if (buildLocation ((LocSubField **)&temp_output, &tempSize, &addrInfo->src,  addrInfo->type, Source,      false, false) == URC_FAIL) return result;
+   if (buildLocation ((LocSubField **)&temp_output, &tempSize, &addrInfo->src,  addrInfo->type, Source,      false, (addrInfo->repeats==NULL)) == URC_FAIL) return result;
 
    // Populate Repeater Fields
    if (addrInfo->repeats!=NULL)
@@ -314,6 +322,7 @@ static char UFrF1Decode (UFrameCtlOpts input)
 static char UFrF2Decode (UFrameCtlOpts input)
 {
    char output;
+      // Field 2 are for bits 1-3 where bit 1 is always 1
       switch (input)
       {
          case NoUFrameOpts:
@@ -340,6 +349,7 @@ static UnivRetCode ctrlBuilder (char * output, ControlInfo* input)
    UnivRetCode result = URC_FAIL;
    ControlFrame * tempOut = (ControlFrame *)output;
    if (output == NULL|| input == NULL) return result;
+
    switch (input->type)
    {
       case IFrame:   tempOut->recSeqNum  = input->recSeqNum;
@@ -458,6 +468,24 @@ static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer *
                outputBuff->connectedOnes = 1; // Take into account the 1 to be added after this if block
                if (bitPush (outputBuff, 0)== URC_FAIL)return result;
             }
+         if (bitPush (outputBuff, temp)== URC_FAIL)return result;
+      }
+   return URC_SUCCESS;
+}
+
+static UnivRetCode pushBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff)
+{
+   UnivRetCode result = URC_FAIL;
+   char temp;
+   buffer input;
+   if (inputBuff==NULL || outputBuff == NULL ||input_size==0)
+   {
+         return result;
+   }
+   if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
+   while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
+      {
+         outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
          if (bitPush (outputBuff, temp)== URC_FAIL)return result;
       }
    return URC_SUCCESS;
