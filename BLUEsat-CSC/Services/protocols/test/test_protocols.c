@@ -8,7 +8,26 @@
 #include "protocols.h"
 #include "CuTest.h"
 
+#define MAX_PACKETS_SIZE_IN_BYTES 10
+#define MAX_INFO_FIELD_BYTES 10
+#define AX25_BUFF_ELEMENTS 5//how many elements can the AX25 queue hold
+#define AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE 0xF0
+
+#define N_FLAGS_BETWEEN_PACKETS 10
+#define BLUESAT_SAT_SSID 0x2
+#define BLUESAT_GS_SSID 0x7
+#define AX25_NOT_LAST_CALLSIGN 0x0
+#define AX25_IS_LAST_CALLSIGN 0x1
+
+
+typedef struct _AX25BufferItem{
+   char array[MAX_PACKETS_SIZE_IN_BYTES];
+   int arraylength;
+}AX25BufferItem;
+
 void AX25fcsCalc( char input[], int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
+unsigned int sendArray(char *array,int len, char * output, unsigned int output_size);
+unsigned int AX25Old(AX25BufferItem buffer, char * output, unsigned int output_size);
 
 void TestInitBuffer(CuTest* tc)
 {
@@ -94,6 +113,7 @@ void TestBuildLocation (CuTest* tc)
    Bool inputLast;
    LocSubField expected;
    LocSubField * output;
+
    memset (buffer, 'a', 20);
    buffer[20]='\0';
    memcpy (&inputLoc,"abcd",4);
@@ -104,8 +124,12 @@ void TestBuildLocation (CuTest* tc)
    inputVisited = false;
    inputLast = false;
    test_buildLocation ((LocSubField **)&loc, &remaining, &inputLoc,inputMsgType, inputLocType, inputVisited, inputLast);
-   memset (&expected.callSign,0x40,6);
-   memcpy (&expected.callSign,"abcd",4);
+   // Call sing letters are all shifted over by 1 bit
+   memset (&expected.callSign,BLANK_SPACE<<1,6);
+   expected.callSign[0] = 'a'<<1;
+   expected.callSign[1] = 'b'<<1;
+   expected.callSign[2] = 'c'<<1;
+   expected.callSign[3] = 'd'<<1;
    expected.res_1 = 1;
    expected.res_2 = 1;
    expected.rept = 0;
@@ -149,16 +173,22 @@ void TestAddrBuilder (CuTest* tc)
    addrs.totalRepeats = 0;
    addrs.type = Response;
    CuAssertTrue(tc,  URC_SUCCESS==test_addrBuilder (buffer, &left, &addrs));
-   memset (&expected.callSign,0x40,6);
-   memcpy (&expected.callSign,"a12b",4);
+   memset (expected.callSign,BLANK_SPACE<<1,6);
+   expected.callSign[0] = 'a'<<1;
+   expected.callSign[1] = '1'<<1;
+   expected.callSign[2] = '2'<<1;
+   expected.callSign[3] = 'b'<<1;
    expected.res_1 = 1;
    expected.res_2 = 1;
    expected.rept = 0;
    expected.ssid = 0;
    expected.cORh = 0;
    CuAssertTrue(tc,  memcmp((void *)&output[0], (void *)&expected, sizeof (LocSubField))==0);
-   memset (&expected.callSign,0x40,6);
-   memcpy (&expected.callSign,"1ab2",4);
+   memset (expected.callSign,BLANK_SPACE<<1,6);
+   expected.callSign[0] = '1'<<1;
+   expected.callSign[1] = 'a'<<1;
+   expected.callSign[2] = 'b'<<1;
+   expected.callSign[3] = '2'<<1;
    expected.res_1 = 1;
    expected.res_2 = 1;
    expected.rept = 0;
@@ -218,27 +248,6 @@ void TestCtrlBuilder (CuTest* tc)
    CuAssertTrue(tc, 0 == memcmp((void *)buffer, (void*)&expected,1));
 }
 
-void TestBuildPacket(CuTest* tc)
-{
- /*  rawPacket input;
-   char info [10];
-   char fcs [2];
-   char addr [28];
-   char ctrl [2];
-   char pid;
-   CuAssertTrue(tc, test_buildPacket(NULL)==URC_FAIL);
-   CuAssertTrue(tc, test_buildPacket(&input)==URC_FAIL);
-   input.addr=addr;
-   input.ctrl=ctrl;
-   input.pid=&pid;
-   input.info=info;
-   CuAssertTrue(tc, test_buildPacket(&input)==URC_FAIL);
-   input.addr_size=28;
-   input.info_size=10;
-   CuAssertTrue(tc, test_buildPacket(&input)==URC_SUCCESS);
-*/
-}
-
 void TestInfoBuilder(CuTest* tc)
 {
    stateBlock presentState;
@@ -280,6 +289,53 @@ void TestInfoBuilder(CuTest* tc)
    CuAssertTrue(tc, presentState.completed == true);
 }
 
+void TestAX25Entry (CuTest* tc)
+{
+   stateBlock present;
+   AX25BufferItem input;
+   char actual [300];
+   char expected [300];
+   unsigned int actual_size = 300;
+   unsigned int expected_size = 300;
+   unsigned int index = 0;
+   protoReturn result;
+   memset (actual, 0, 300);
+   memcpy (input.array,"abcedfghij",10);
+   input.arraylength = 10;
+
+   //Build state block
+   present.src = input.array;
+   present.srcSize = 10;
+   memcpy (present.route.dest.callSign,"BLUEGS",6);
+   memcpy (present.route.src.callSign, "BLUSAT",6);
+   present.route.dest.callSignSize = 6;
+   present.route.src.callSignSize = 6;
+   present.route.dest.ssid = BLUESAT_GS_SSID;
+   present.route.src.ssid = BLUESAT_SAT_SSID;
+   present.route.repeats  = NULL;
+   present.route.totalRepeats = 0;
+   present.route.type = Response;
+   present.presState = stateless;
+   present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
+   present.packetCnt = 0;
+   present.nxtIndex = 0;
+   present.mode = unconnected;
+   present.completed = false;
+
+   expected_size = AX25Old(input, expected, 300);
+   result = ax25Entry (&present, actual, &actual_size );
+   CuAssertTrue(tc, result == generationSuccess);
+   printf ("\n-%d-\n",result);
+   for (index = 0 ; index< 25; ++index)
+      {
+         printf ("0x%2x - 0x%2x\n",expected[index],actual[index]);
+      }
+
+   CuAssertTrue(tc, true == true);
+}
+
+
+
 /*
  * create a buffer with data.
  * from the buffer create the raw packet
@@ -308,6 +364,154 @@ void TestAX25FcsCalc(CuTest* tc)
  test_AX25fcsCalc( &packet, &actchar0, &actchar1);
  CuAssertTrue(tc, actchar0==expchar0);
  CuAssertTrue(tc, actchar1==expchar1);
+}
+
+unsigned int AX25Old(AX25BufferItem buffer, char * output, unsigned int output_size){
+   int i=0, j;
+   unsigned char fcsByte0,fcsByte1;
+   char BufferArray[40+MAX_INFO_FIELD_BYTES];
+
+   i=0;
+   BufferArray[i++]=('B'<<1);
+   BufferArray[i++]=('L'<<1);
+   BufferArray[i++]=('U'<<1);
+   BufferArray[i++]=('E'<<1);
+   BufferArray[i++]=('G'<<1);
+   BufferArray[i++]=('S'<<1);
+
+   //SSID byte, the seventh byte
+   BufferArray[i++]=(0x60+ (BLUESAT_GS_SSID<<1 )+ AX25_NOT_LAST_CALLSIGN);//0x60= 01100000 is specified by AX25
+
+   //Callsign of the Source
+   BufferArray[i++]=('B'<<1);
+   BufferArray[i++]=('L'<<1);
+   BufferArray[i++]=('U'<<1);
+   BufferArray[i++]=('S'<<1);
+   BufferArray[i++]=('A'<<1);
+   BufferArray[i++]=('T'<<1);
+
+   //SSID byte, the seventh byte
+   // Its format is 0x11XXXX0 for anything but the last callsign
+   // and          0x11XXXX1 for the last callsign
+   //where XXXX is the SSID
+   BufferArray[i++]=(0x60 + (BLUESAT_SAT_SSID << 1) +AX25_IS_LAST_CALLSIGN);//0x60= 01100000 is specified by AX25
+
+   //There is no digipeter
+   //Control Field
+   BufferArray[i++]=(AX25_CONTROL_UI_INFORMATION);
+
+   //PID Field
+   BufferArray[i++]=(AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE);
+
+   //Info Field
+
+   // copy the array message into buffer array
+   //we don't have packet splitting yet
+
+   for(j=0;j< buffer.arraylength;j++){
+      BufferArray[i++] = buffer.array[j];
+   }
+
+   //FCS Field
+   //note that bit stuffing happens after FCS is inserted
+   AX25fcsCalc(BufferArray,(i),&fcsByte0, &fcsByte1);
+   BufferArray[i++]=(fcsByte0);
+   BufferArray[i++]=(fcsByte1);
+
+
+   //Flag: included in sendArray
+   return sendArray(BufferArray,(i), output,output_size);//note that i is indeed the length, not i+1, since the last i++ increased it by one
+}
+
+unsigned int sendArray(char *array,int len, char * output, unsigned int output_size)
+ {
+   int stuff=0;
+   int ibyte=0,jbyte=0,ibit=0,jbit=0;
+   int flagbit=0;
+   unsigned int index;
+   //ibyte keey track of which byte of the input we are at
+   //jbyte for which byte of the output
+   //same for the bits
+
+  // int j;
+
+   //notes that we don't actually reverse the bytes, but just do it when figuring out when is bit stuffing needed
+   //worst case scenario: it's all ones, so we get an extra bit every 5 bits, one to cover rounding, four for extra flags due to the last incomplete byte
+   //char bufferArray[len+len/5+2+N_FLAGS_BETWEEN_PACKETS+N_FLAGS_BETWEEN_PACKETS];
+   char bufferArray[MAX_INFO_FIELD_BYTES+MAX_INFO_FIELD_BYTES/5+2+N_FLAGS_BETWEEN_PACKETS];
+
+   bufferArray[0]=0x0;//initialised the first byte to zero
+
+   //all counters are initialised to 0
+
+   /*
+    * Construct the frame, except the flags at the begining and the end
+    */
+
+   while(ibyte < (len)){
+      if (array[ibyte] & (0x1<<ibit) ) stuff++;
+      else stuff=0;
+      //write the current bit to the target array
+      bufferArray[jbyte] |= (((array[ibyte]& (0x1<<ibit)) >>ibit) <<jbit);
+      jbit++;
+      if (stuff==5){
+         //stuff a zero
+         if(jbit==8){
+            jbit = 1;  //deliberately skipping a bit to stuff a zero
+            jbyte++;
+            bufferArray[jbyte]=0x0;//initialise bytes to zero
+         }
+         else jbit++;
+         // we don't have to actually write a zero bit since bytes are initialised to zero
+         // just have to skip a bit
+         stuff=0;
+      }
+      ibit++;
+      if(ibit==8){
+         ibit=0;
+         ibyte++;
+      }
+      if(jbit==8){
+         jbit=0;
+         jbyte++;
+         bufferArray[jbyte]=0x0;//initialise bytes to zero
+      }
+   }
+   /*
+    *
+    * Put some flags after the FCS Field, ending the frame
+    *
+    */
+   while (ibyte<(len+N_FLAGS_BETWEEN_PACKETS)){
+      bufferArray[jbyte] |= (((FLAG & (0x1<< flagbit))>>flagbit )<<jbit);
+      jbit++;
+      flagbit++;
+      if(flagbit ==8) flagbit = 0;
+
+      if(jbit==8){
+
+         jbit=0;
+         jbyte++;
+         ibyte++;
+         bufferArray[jbyte]=0x0;//initialise bytes to zero
+      }
+   }
+
+
+   /*
+    *NRZI is done by the modem at the moment, we should probably move it over when we have time
+    */
+   index = 0;
+   output[index++] = FLAG;
+
+   //send the buffer array bytes by bytes
+
+   for(ibyte=0;(ibyte<=jbyte);ibyte++){
+      //ignore the last byte if it's empty
+      if (ibyte==jbyte && bufferArray[ibyte]==0) break;
+      output[index++] = bufferArray[ibyte];
+   }
+   return index;
 }
 
 //Original AX25 FCS Calculation function
@@ -365,7 +569,6 @@ void AX25fcsCalc( char input[], int len,unsigned char *fcsByte0, unsigned char *
 CuSuite* CuGetSuite(void)
 {
 	CuSuite* suite = CuSuiteNew();
-   SUITE_ADD_TEST(suite, TestBuildPacket);
    SUITE_ADD_TEST(suite, TestInitBuffer);
    SUITE_ADD_TEST(suite, TestBitPop);
    SUITE_ADD_TEST(suite, TestBitPush);
@@ -375,5 +578,8 @@ CuSuite* CuGetSuite(void)
    SUITE_ADD_TEST(suite, TestCtrlBuilder);
    SUITE_ADD_TEST(suite, TestInfoBuilder);
    SUITE_ADD_TEST(suite, TestAX25FcsCalc);
+  // SUITE_ADD_TEST(suite, TestAX25Entry);
+
+
 	return suite;
 }
