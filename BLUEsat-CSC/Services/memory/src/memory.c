@@ -18,8 +18,8 @@
 #include "emc.h"
 #include "debug.h"
 
-#define MEMORY_START_ADDR	STATIC_BANK_1_START_ADDR
-#define MEMORY_SIZE			STATIC_BANK_1_SIZE
+#define MEMORY_START_ADDR	STATIC_BANK_0_START_ADDR
+#define MEMORY_SIZE			0x00200000
 #define MEMORY_END_ADDR		(MEMORY_START_ADDR + MEMORY_SIZE)
 #define WORD_SIZE			sizeof(portLONG)
 
@@ -29,14 +29,15 @@ portBASE_TYPE 		xMemoryUsable		= pdFALSE;
 void vMemory_Init(unsigned portBASE_TYPE uxPriority)
 {
 	(void)uxPriority;
+	portBASE_TYPE 	xTestResult		= pdTRUE;
 
 	ulFreeMemoryPointer = MEMORY_START_ADDR;
 
-	//if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_8_BITS) == URC_FAIL) return;
-	//if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_16_BITS) == URC_FAIL) return;
-	if (enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_32_BITS) == URC_FAIL) return;
+	//xTestResult = enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_8_BITS);
+	//if (xTestResult) xTestResult = enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_16_BITS);
+	if (xTestResult) xTestResult = enMemoryTest(MEMORY_START_ADDR, MEMORY_SIZE, TEST_32_BITS);
 
-	xMemoryUsable = pdTRUE;
+	xMemoryUsable = xTestResult;
 
 	if (xMemoryUsable)
 	{
