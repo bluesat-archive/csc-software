@@ -23,19 +23,19 @@ unsigned int initDrivers(void)
 
 #ifdef EMC_H_
 	//External Memory Controller driver
-	//vEMC_Init();
+	vEMC_Init();
 #endif//
 
 #ifdef I2C_H_
-	Comms_I2C_Init();
+	//Comms_I2C_Init();
 #endif//*/
 
 #ifdef SWITCHING_H_
-	Switching_Init();
+	//Switching_Init();
 #endif//
 
 #ifdef MODEM_H_
-	Comms_Modem_Timer_Init();
+	//Comms_Modem_Timer_Init();
 #endif//
 
 #ifdef IAP_H_
@@ -54,7 +54,7 @@ unsigned int initServices(void)
 
 #ifdef MEMORY_H_
 	//memory task
-	//vMemory_Init(SERV_TASK_PRIORITY);
+	vMemory_Init(SERV_TASK_PRIORITY);
 #endif//
 
 #ifdef COMMAND_H_
@@ -62,7 +62,7 @@ unsigned int initServices(void)
 	vCommand_Init(SERV_TASK_PRIORITY + 1);
 #endif
 
-/*#ifdef STORAGE_H_
+#ifdef STORAGE_H_
 	//memory task
 	vStorage_Init(SERV_TASK_PRIORITY);
 #endif//*/
@@ -81,11 +81,11 @@ unsigned int initServices(void)
 #endif
 
 #ifdef COMMS_DTMF_H_
-	Comms_DTMF_Init();
+	//Comms_DTMF_Init();
 #endif
 
 #ifdef COMMS_H_
-	vComms_Init(SERV_TASK_PRIORITY);
+	//vComms_Init(SERV_TASK_PRIORITY);
 #endif
 	return 0;
 }
@@ -108,12 +108,12 @@ unsigned int initApplications(void)
 
 #ifdef MEMORY_DEMO_H_
 	//Demonstration additional volatile memory and stack memory usage
-	//vMemoryDemo_Init(APP_TASK_PRIORITY);
+	vMemoryDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef STORAGE_DEMO_H_
 	//Demonstration CSC storage
-	//vStorageDemo_Init(APP_TASK_PRIORITY);
+	vStorageDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef GPIODEMO_H_
@@ -125,7 +125,7 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef MODEMDEMO_H_
-	vModemDemo_Init(APP_TASK_PRIORITY);
+	//vModemDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef TELEMETRYDEMO_H_
@@ -133,11 +133,11 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef DTMFDEMO_H_
-	vDTMFDemo_Init(APP_TASK_PRIORITY);
+//	vDTMFDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef COMMSDEMO_H_
-	vCommsDemo_Init(APP_TASK_PRIORITY);
+//	vCommsDemo_Init(APP_TASK_PRIORITY);
 #endif
 	return 0;
 }
