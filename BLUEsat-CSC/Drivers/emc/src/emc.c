@@ -81,8 +81,13 @@ void vEMC_Init(void)
 		PINSEL8  =  0x55555554;
 		//PINMODE8 =  0xAAAAAAAA;
 
+		//New CSC board -Sam Jiang
 		//A[16..21], !OE, !WE, !CS0, !CS1, BLS0-BLS1, mode = 10
-		PINSEL9  =  0x50550555;
+		//PINSEL9  |=  0x50550555;
+
+		//-New CSC board -Jedrychowski
+		//A[16..20], !OE, !WE, !CS0, !CS1, BLS0-BLS1, mode = 10
+		PINSEL9  |=  0x50550155;
 		//PINMODE9 =  0xA0AAA2AA;
 
 		// enable EMC power
