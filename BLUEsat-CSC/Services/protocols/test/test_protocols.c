@@ -3,7 +3,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
-
+#include <stdio.h>
 
 #include "protocols.h"
 #include "CuTest.h"
@@ -45,9 +45,9 @@ void TestInitBuffer(CuTest* tc)
 }
 
 void TestBitPop(CuTest* tc)
-{
+{//Check that the buffer is read from bit 0-7 for each byte
    char test [] = {0x87,0x78};
-   char exp [] = {1,0,0,0,0,1,1,1,0,1,1,1,1,0,0,0};
+   char exp [] = {1,1,1,0,0,0,0,1,0,0,0,1,1,1,1,0};
    unsigned int length = 2;
    buffer in;
    CuAssertTrue(tc, test_initBuffer(&in,test,length) == URC_SUCCESS);
@@ -65,9 +65,9 @@ void TestBitPop(CuTest* tc)
 }
 
 void TestBitPush(CuTest* tc)
-{
+{//Check that the buffer is pushed in from 0-7 for each byte
    char exp [] = {0x87,0x78};
-   char input [] = {1,0,0,0,0,1,1,1,0,1,1,1,1,0,0,0};
+   char input [] = {1,1,1,0,0,0,0,1,0,0,0,1,1,1,1,0};
    char test [2];
    unsigned int length = 2;
    memset (test, 0, 2);
@@ -86,7 +86,7 @@ void TestBitPush(CuTest* tc)
 void TestBitStuffer(CuTest* tc)
 {
    char input []= {0xff,0xff};
-   char expected [] ={0xFB,0xEF,0xA0,0,0};
+   char expected [] ={0xDF,0xF7,0x05,0,0};
    char output [5];
    buffer testBuff;
    CuAssertTrue(tc, test_initBuffer(&testBuff, output, 5)==URC_SUCCESS);
@@ -96,8 +96,8 @@ void TestBitStuffer(CuTest* tc)
 
    //Test multiple appends
    CuAssertTrue(tc, test_stuffBuf(input, 1 , &testBuff)==URC_SUCCESS);
-   expected[2] = 0xBE;
-   expected[3] = 0xF0;
+   expected[2] = 0x7D;
+   expected[3] = 0x0F;
    CuAssertTrue(tc, memcmp(expected,output, 5)==0);
 }
 
@@ -303,7 +303,6 @@ void TestAX25Entry (CuTest* tc)
    memset (actual, 0, 300);
    memcpy (input.array,"abcedfghij",10);
    input.arraylength = 10;
-
    //Build state block
    present.src = input.array;
    present.srcSize = 10;
@@ -323,9 +322,11 @@ void TestAX25Entry (CuTest* tc)
    present.mode = unconnected;
    present.completed = false;
 
+
    expected_size = AX25Old(input, expected, 300);
    result = ax25Entry (&present, actual, &actual_size );
    CuAssertTrue(tc, result == generationSuccess);
+
    printf ("\n-%d-\n",result);
    for (index = 0 ; index< 25; ++index)
       {
@@ -335,7 +336,16 @@ void TestAX25Entry (CuTest* tc)
    CuAssertTrue(tc, true == true);
 }
 
-
+void printbuffer (char * buff, unsigned int length)
+{
+   unsigned int index;
+   printf("\n");
+   for (index = 0 ; index< 25; ++index)
+        {
+           printf (" 0x%2x\n",buff[index]);
+        }
+   printf("------------------------\n");
+}
 
 /*
  * create a buffer with data.
@@ -395,7 +405,7 @@ unsigned int AX25Old(AX25BufferItem buffer, char * output, unsigned int output_s
    // Its format is 0x11XXXX0 for anything but the last callsign
    // and          0x11XXXX1 for the last callsign
    //where XXXX is the SSID
-   BufferArray[i++]=(0x60 + (BLUESAT_SAT_SSID << 1) +AX25_IS_LAST_CALLSIGN);//0x60= 01100000 is specified by AX25
+   BufferArray[i++]=(0xe0 + (BLUESAT_SAT_SSID << 1) +AX25_IS_LAST_CALLSIGN);//0x60= 01100000 is specified by AX25
 
    //There is no digipeter
    //Control Field
@@ -418,7 +428,6 @@ unsigned int AX25Old(AX25BufferItem buffer, char * output, unsigned int output_s
    AX25fcsCalc(BufferArray,(i),&fcsByte0, &fcsByte1);
    BufferArray[i++]=(fcsByte0);
    BufferArray[i++]=(fcsByte1);
-
 
    //Flag: included in sendArray
    return sendArray(BufferArray,(i), output,output_size);//note that i is indeed the length, not i+1, since the last i++ increased it by one
@@ -455,7 +464,7 @@ unsigned int sendArray(char *array,int len, char * output, unsigned int output_s
       //write the current bit to the target array
       bufferArray[jbyte] |= (((array[ibyte]& (0x1<<ibit)) >>ibit) <<jbit);
       jbit++;
-      if (stuff==5){
+      if (stuff>=5){
          //stuff a zero
          if(jbit==8){
             jbit = 1;  //deliberately skipping a bit to stuff a zero
@@ -478,6 +487,7 @@ unsigned int sendArray(char *array,int len, char * output, unsigned int output_s
          bufferArray[jbyte]=0x0;//initialise bytes to zero
       }
    }
+
    /*
     *
     * Put some flags after the FCS Field, ending the frame
@@ -579,7 +589,7 @@ CuSuite* CuGetSuite(void)
    SUITE_ADD_TEST(suite, TestCtrlBuilder);
    SUITE_ADD_TEST(suite, TestInfoBuilder);
    SUITE_ADD_TEST(suite, TestAX25FcsCalc);
-  // SUITE_ADD_TEST(suite, TestAX25Entry);
+   SUITE_ADD_TEST(suite, TestAX25Entry);
 
 
 	return suite;

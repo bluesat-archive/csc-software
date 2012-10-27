@@ -191,14 +191,13 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
 
    // Calculate FCS
    if (AX25fcsCalc( inputDetails, &fcs0, &fcs1) == URC_FAIL ) return result;
-
    // Stuff data into output packet
    if (pushBuf  (&flag, 1, &outBuff) == URC_FAIL ) return result;
    if (stuffBuf (inputDetails->addr, inputDetails->addr_size, &outBuff) == URC_FAIL ) return result;
    if (stuffBuf ((char *) &inputDetails->ctrl, 1, &outBuff) == URC_FAIL ) return result;
    if (inputDetails->pid!=NULL)
    {
-      if (stuffBuf ((char *) inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
+      if (stuffBuf ((char *)inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
    }
    if (stuffBuf (inputDetails->info, inputDetails->info_size, &outBuff) == URC_FAIL ) return result;
    if (stuffBuf ((char *)&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
@@ -457,12 +456,12 @@ static UnivRetCode stuffBuf (char * inputBuff, unsigned int input_size, buffer *
    while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
          outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
-         if ( outputBuff->connectedOnes > PatternLimit)
+         if (bitPush (outputBuff, temp)== URC_FAIL)return result;
+         if ( outputBuff->connectedOnes >= PatternLimit)
             {
-               outputBuff->connectedOnes = 1; // Take into account the 1 to be added after this if block
+               outputBuff->connectedOnes = 0;
                if (bitPush (outputBuff, 0)== URC_FAIL)return result;
             }
-         if (bitPush (outputBuff, temp)== URC_FAIL)return result;
       }
    return URC_SUCCESS;
 }
@@ -479,13 +478,13 @@ static UnivRetCode pushBuf (char * inputBuff, unsigned int input_size, buffer * 
    if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
    while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
-         outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
          if (bitPush (outputBuff, temp)== URC_FAIL)return result;
       }
    return URC_SUCCESS;
 }
 
-static UnivRetCode initBuffer(buffer * input, char * buff, unsigned int size)
+static UnivRetCode initBuffer(buffer *
+      input, char * buff, unsigned int size)
 {
    if (input == NULL || buff == NULL ||size == 0) return URC_FAIL;
    input->buff = buff;
@@ -509,12 +508,13 @@ static UnivRetCode bitPop (buffer* buff, char * out, unsigned int size)
          return result;
       }
    temp = buff->buff[buff->index];
-   *out = (temp& (MSB_bit_mask>>buff->byte_pos++))?1:0;
 
+   *out = (temp& (LSB_bit_mask<<buff->byte_pos++))?1:0;
    if (buff->byte_pos%8==0)
       {
          ++buff->index;
          buff->byte_pos = 0;
+
       }
    return URC_SUCCESS;
 }
@@ -531,8 +531,8 @@ static UnivRetCode bitPush (buffer* buff, char in)
       {
          return result;
       }
-   temp = (in == 0)?0:MSB_bit_mask;
-   buff->buff[buff->index] = (buff->buff[buff->index]| (temp>>buff->byte_pos++));
+   temp = (in == 0)?0:LSB_bit_mask;
+   buff->buff[buff->index] = (buff->buff[buff->index]| (temp<<buff->byte_pos++));
    if (buff->byte_pos%8==0)
       {
          ++buff->index;

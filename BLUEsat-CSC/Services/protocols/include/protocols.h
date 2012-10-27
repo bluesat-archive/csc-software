@@ -29,6 +29,7 @@ enum PROTOCOL_TO_USE_SENDING{
 
 #define NO_L3_PROTO        0xF0
 
+#define LSB_bit_mask       0x01
 #define MSB_bit_mask       0x80
 #define PatternLimit       5
 

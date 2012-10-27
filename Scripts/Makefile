@@ -141,7 +141,7 @@ $(ALL_OBJ): %.o : %.c
 # Start of Unit Testing
 #-------------------------------------------
 $(ALL_TESTS) : %.o : %.c
-	$(C) $(TEST_CORE) $< $(subst /test/,/src/,$(subst test_,,$<)) $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
+	$(C) -g $(TEST_CORE) $< $(subst /test/,/src/,$(subst test_,,$<)) $(TESTCFLAGS) $(TESTWARNINGS) $(TESTOUT)		
 	
 unitTests: tests runAllTests
 
