@@ -301,6 +301,7 @@ void TestAX25Entry (CuTest* tc)
    unsigned int expected_size = 300;
    protoReturn result;
    memset (actual, 0, 300);
+   memset (expected, 0, 300);
    memcpy (input.array,"abcedfghij",10);
    input.arraylength = 10;
    //Build state block
@@ -325,8 +326,9 @@ void TestAX25Entry (CuTest* tc)
 
    expected_size = AX25Old(input, expected, 300);
    result = ax25Entry (&present, actual, &actual_size );
-   printbuffer (expected, expected_size, actual, actual_size);
+   //printbuffer (expected, expected_size, actual, actual_size);
    CuAssertTrue(tc, result == generationSuccess);
+   CuAssertTrue(tc, expected_size == actual_size);
 }
 
 void printbuffer (char * expBuff, const unsigned int expLength, char * actBuff, const unsigned int actLength)
@@ -334,8 +336,8 @@ void printbuffer (char * expBuff, const unsigned int expLength, char * actBuff, 
    unsigned int limit = (expLength>actLength)?actLength:expLength;
    unsigned int index = 0;
    if (expBuff==NULL || actBuff==NULL) return;
-   printf("\n");
-   for (index = 0 ; index< expLength; ++index)
+   printf("\nSizes: %d-%d\n",actLength,expLength);
+   for (index = 0 ; index< limit; ++index)
         {
          printf ("0x%2x - 0x%2x\n",expBuff[index],actBuff[index]);
         }
@@ -434,7 +436,7 @@ unsigned int sendArray(char *array,int len, char * output, unsigned int output_s
    int ibyte=0,jbyte=0,ibit=0,jbit=0;
    int flagbit=0;
    unsigned int index;
-   //ibyte keey track of which byte of the input we are at
+   //ibyte key track of which byte of the input we are at
    //jbyte for which byte of the output
    //same for the bits
 
@@ -488,11 +490,10 @@ unsigned int sendArray(char *array,int len, char * output, unsigned int output_s
     * Put some flags after the FCS Field, ending the frame
     *
     */
-   while (ibyte<(len+N_FLAGS_BETWEEN_PACKETS)){
+   while (flagbit <8){
       bufferArray[jbyte] |= (((FLAG & (0x1<< flagbit))>>flagbit )<<jbit);
       jbit++;
       flagbit++;
-      if(flagbit ==8) flagbit = 0;
 
       if(jbit==8){
 
