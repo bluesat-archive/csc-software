@@ -28,6 +28,7 @@ typedef struct _AX25BufferItem{
 void AX25fcsCalc( char input[], int len,unsigned char *fcsByte0, unsigned char * fcsByte1);
 unsigned int sendArray(char *array,int len, char * output, unsigned int output_size);
 unsigned int AX25Old(AX25BufferItem buffer, char * output, unsigned int output_size);
+void printbuffer (char * expBuff, const unsigned int expLength, char * actBuff, const unsigned int actLength);
 
 void TestInitBuffer(CuTest* tc)
 {
@@ -298,7 +299,6 @@ void TestAX25Entry (CuTest* tc)
    char expected [300];
    unsigned int actual_size = 300;
    unsigned int expected_size = 300;
-   unsigned int index = 0;
    protoReturn result;
    memset (actual, 0, 300);
    memcpy (input.array,"abcedfghij",10);
@@ -325,24 +325,19 @@ void TestAX25Entry (CuTest* tc)
 
    expected_size = AX25Old(input, expected, 300);
    result = ax25Entry (&present, actual, &actual_size );
+   printbuffer (expected, expected_size, actual, actual_size);
    CuAssertTrue(tc, result == generationSuccess);
-
-   printf ("\n-%d-\n",result);
-   for (index = 0 ; index< 25; ++index)
-      {
-         printf ("0x%2x - 0x%2x\n",expected[index],actual[index]);
-      }
-
-   CuAssertTrue(tc, true == true);
 }
 
-void printbuffer (char * buff, unsigned int length)
+void printbuffer (char * expBuff, const unsigned int expLength, char * actBuff, const unsigned int actLength)
 {
-   unsigned int index;
+   unsigned int limit = (expLength>actLength)?actLength:expLength;
+   unsigned int index = 0;
+   if (expBuff==NULL || actBuff==NULL) return;
    printf("\n");
-   for (index = 0 ; index< 25; ++index)
+   for (index = 0 ; index< expLength; ++index)
         {
-           printf (" 0x%2x\n",buff[index]);
+         printf ("0x%2x - 0x%2x\n",expBuff[index],actBuff[index]);
         }
    printf("------------------------\n");
 }
@@ -362,7 +357,7 @@ void TestAX25FcsCalc(CuTest* tc)
  unsigned char actchar0, actchar1, expchar0, expchar1;
  for (index = 0; index< 200;++index)
  {
-       buff[index]=(index%2)?0xffff:0;
+       buff[index]='a'+index%30;
  }
  packet.addr = buff;
  packet.addr_size = 50;

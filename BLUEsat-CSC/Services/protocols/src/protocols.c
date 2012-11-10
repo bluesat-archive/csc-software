@@ -136,7 +136,6 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
  *
  * */
 
-
 static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* output)
 {
    UnivRetCode result = URC_FAIL;
@@ -150,31 +149,11 @@ static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* outp
    return ctrlBuilder ((ControlFrame *)&output->ctrl, &ctrlIn);
 }
 
-// Updates the state block with the next position to read the src from and the output block with the position to start reading from the the size
-// The info should always have stuff in it.
-static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output)
-{
-   UnivRetCode result = URC_FAIL;
-   unsigned int remaining;
-   if (presentState == NULL || output == NULL) return result;
-   if (presentState->src == NULL || presentState->nxtIndex >= presentState->srcSize ) return result;
-   output->info = &presentState->src [presentState->nxtIndex];
-   remaining  = presentState->srcSize - presentState->nxtIndex;
-   if (remaining > SIZE_ACT_INFO) //There is a need to split the data over multiple packets
-   {
-      output->info_size       = SIZE_ACT_INFO;
-      presentState->nxtIndex += SIZE_ACT_INFO;
-      presentState->completed = false;
-   }
-   else
-   {
-      output->info_size       = remaining;
-      presentState->nxtIndex  = presentState->srcSize;
-      presentState->completed = true;
-   }
-   return URC_SUCCESS;
-}
 
+/*
+ * Packet Builder Functions
+ * ------------------------
+ * */
 static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsigned int * outFinalSize )
 {
    UnivRetCode result = URC_FAIL;
@@ -283,7 +262,7 @@ static UnivRetCode addrBuilder (char * output, unsigned int * outputSize, Delive
 
 /*
  * Control Field Functions
- *
+ * -----------------------
  * */
 
 static char UFrF1Decode (UFrameCtlOpts input)
@@ -364,6 +343,36 @@ static UnivRetCode ctrlBuilder (ControlFrame * output, ControlInfo* input)
                      break;
       default:
                      return result;
+   }
+   return URC_SUCCESS;
+}
+
+/*
+ * Info Field Builder
+ * ------------------
+ * */
+
+// Updates the state block with the next position to read the src from and the output block with the position to start reading from the the size
+// The info should always have stuff in it.
+static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output)
+{
+   UnivRetCode result = URC_FAIL;
+   unsigned int remaining;
+   if (presentState == NULL || output == NULL) return result;
+   if (presentState->src == NULL || presentState->nxtIndex >= presentState->srcSize ) return result;
+   output->info = &presentState->src [presentState->nxtIndex];
+   remaining  = presentState->srcSize - presentState->nxtIndex;
+   if (remaining > SIZE_ACT_INFO) //There is a need to split the data over multiple packets
+   {
+      output->info_size       = SIZE_ACT_INFO;
+      presentState->nxtIndex += SIZE_ACT_INFO;
+      presentState->completed = false;
+   }
+   else
+   {
+      output->info_size       = remaining;
+      presentState->nxtIndex  = presentState->srcSize;
+      presentState->completed = true;
    }
    return URC_SUCCESS;
 }
