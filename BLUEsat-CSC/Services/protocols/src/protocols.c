@@ -142,7 +142,7 @@ static UnivRetCode unconnectedEngine (stateBlock* presentState,  rawPacket* outp
    ControlInfo ctrlIn;
    if (presentState == NULL || output == NULL) return result;
    output->pid = &presentState->pid;
-   output->addr_size = 1; // PID is 1 byte.
+   output->pid_size = 1; // PID is 1 byte.
    ctrlIn.type = UFrame;
    ctrlIn.poll = 0;
    ctrlIn.uFrOpt = UnnumInfoFrame;
@@ -419,10 +419,15 @@ static unsigned short fcsEngine(unsigned short shiftReg, char * buff, unsigned i
 static UnivRetCode AX25fcsCalc( rawPacket* input,unsigned char *fcsByte0, unsigned char * fcsByte1){
    //short should be 16bits, change data type if it isn't
    unsigned short shiftRegister = 0xFFFF; // Initial value for shift register
-
+   char tempbuff[500];
    if (fcsByte0==NULL||fcsByte1==NULL||input==NULL) return URC_FAIL;
    if (input->addr==NULL) return URC_FAIL;
    if (input->info==NULL) return URC_FAIL;
+memcpy (tempbuff,input->addr,input->addr_size );
+memcpy (&(tempbuff[input->addr_size]),&input->ctrl,1);
+memcpy (&(tempbuff[input->addr_size+1]),input->pid,input->pid_size);
+memcpy (&(tempbuff[input->addr_size+1+input->pid_size]),input->info,input->info_size);
+
 
    shiftRegister = fcsEngine(shiftRegister, input->addr,input->addr_size);
    shiftRegister = fcsEngine(shiftRegister, (char*) &input->ctrl,1);
