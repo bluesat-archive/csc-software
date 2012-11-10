@@ -29,6 +29,7 @@ void AX25fcsCalc( char input[], int len,unsigned char *fcsByte0, unsigned char *
 unsigned int sendArray(char *array,int len, char * output, unsigned int output_size);
 unsigned int AX25Old(AX25BufferItem buffer, char * output, unsigned int output_size);
 void printbuffer (char * expBuff, const unsigned int expLength, char * actBuff, const unsigned int actLength);
+void dumptoFile(char * buff, const unsigned int size);
 
 void TestInitBuffer(CuTest* tc)
 {
@@ -327,8 +328,16 @@ void TestAX25Entry (CuTest* tc)
    expected_size = AX25Old(input, expected, 300);
    result = ax25Entry (&present, actual, &actual_size );
    //printbuffer (expected, expected_size, actual, actual_size);
+   //dumptoFile(actual, actual_size);
    CuAssertTrue(tc, result == generationSuccess);
    CuAssertTrue(tc, expected_size == actual_size);
+}
+
+void dumptoFile(char * buff, const unsigned int size)
+{
+   FILE *fp=fopen("c:\\test.txt", "w");
+   fwrite(buff, sizeof(char), size, fp);
+   fclose(fp);
 }
 
 void printbuffer (char * expBuff, const unsigned int expLength, char * actBuff, const unsigned int actLength)
