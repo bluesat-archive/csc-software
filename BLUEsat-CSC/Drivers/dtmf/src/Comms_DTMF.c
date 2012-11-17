@@ -25,7 +25,7 @@
 #include "queue.h"
 #include "task.h"
 #include "irq.h"
-
+#include "gpio.h"
 
 
 /* DTMF  Settings*/
@@ -33,16 +33,10 @@
 #define DTMF_RISING_EDGE         ( ( unsigned portLONG ) 0x08 )
 #define DTMF_CLEAR_INT           ( ( unsigned portLONG ) 0x08 )
 
-#define DTMF_INT_1					 ((unsigned portLONG) 0x1<<4)
-#define DTMF_INT_2					 ((unsigned portLONG) 0x1<<5)
+#define DTMF_INT_1					 ((unsigned portLONG) 0x1<<5)
+#define DTMF_INT_2					 ((unsigned portLONG) 0x1)
 
-#define DTMF_INT_PINS_SIN		((unsigned portLONG) 0x3<<4)
-#define DTMF_INT_PINS_DOU		((unsigned portLONG) 0xF<<8)
-
-#define DTMF_DATA_PINS_SIN		((unsigned portLONG) 0xFF000000)
-#define DTMF_DATA_PINS_DOU		((unsigned portLONG) 0xFFFF0000)
-
-
+#define DTMF_INT_PINS_SIN        ((1<<5)&(1))
 #define DTMF_BUFF_LENGTH         ( ( unsigned portLONG ) 20 )//50 Tone long buffer
 #define DTMF_BUFF_Empty          ( ( unsigned portLONG ) 0 )
 
@@ -100,24 +94,33 @@ void Comms_DTMF_Init(void)
 	//Set polarity to rising edge sensitive
 	EXTPOLAR  |= DTMF_RISING_EDGE ;
 
-	SCS |= 0x1;
-	//set Connecter1 pin 10,15(P2[4,5]) to be GPIO
-	PINSEL4 &=~(DTMF_INT_PINS_DOU);
-	//set Connecter1 pin 6-9;11-14(P1[24-27;28-31]) to be GPIO
-	PINSEL3 &=~ (DTMF_DATA_PINS_DOU);
+	//set pin 10,15(P2[5,0]) to be GPIO
+	set_Gpio_func(2,5,0);
+	set_Gpio_func(2,0,0);
+	//set (P2[1-4;6-9]) to be GPIO
+	set_Gpio_func(2,6,0);
+	set_Gpio_func(2,7,0);
+	set_Gpio_func(2,8,0);
+	set_Gpio_func(2,9,0);
 
-	//set PINMODE for the interrupt pins to pulling down since we are using rising edge interrupt?
-	PINMODE4 |= DTMF_INT_PINS_DOU;
+	set_Gpio_func(2,1,0);
+	set_Gpio_func(2,2,0);
+	set_Gpio_func(2,3,0);
+	set_Gpio_func(2,4,0);
 
 	//set all to be input pins
-	FIO2DIR &= ~DTMF_INT_PINS_SIN;
+	setGPIOdir(2,5,INPUT);
+	setGPIOdir(2,0,INPUT);
 
-	FIO1DIR &= ~DTMF_DATA_PINS_SIN;
+	setGPIOdir(2,6,INPUT);
+	setGPIOdir(2,7,INPUT);
+	setGPIOdir(2,8,INPUT);
+	setGPIOdir(2,9,INPUT);
 
-	//make sure the used pins are not masked
-	FIO2MASK &= ~DTMF_INT_PINS_SIN;
-	FIO1MASK &= ~DTMF_DATA_PINS_SIN;
-
+	setGPIOdir(2,1,INPUT);
+	setGPIOdir(2,2,INPUT);
+	setGPIOdir(2,3,INPUT);
+	setGPIOdir(2,4,INPUT);
 	//enable rising edge interrupt
 	IO2IntEnR |= (DTMF_INT_PINS_SIN);
 	IO2IntEnF &=~ DTMF_INT_PINS_SIN;
@@ -174,7 +177,7 @@ void Comms_DTMF_Handler (void)
       if (FIO2PIN&(DTMF_INT_1))
       {//Check if the First decoder is ready
          tone.decoder = DTMF_DECODER1;
-         tone.tone = (FIO1PIN&(0xF<<DTMF_1_OFFSET))>>DTMF_1_OFFSET;
+         tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
          newData = 1;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
          bPriDecodeFailed = false;
@@ -184,7 +187,7 @@ void Comms_DTMF_Handler (void)
       if (FIO2PIN&(DTMF_INT_2))
       {//Check if the second decoder is ready
          tone.decoder = DTMF_DECODER2;
-         tone.tone = (FIO1PIN&(0xF<<DTMF_2_OFFSET))>>DTMF_2_OFFSET;
+         tone.tone = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
      	//Comms_UART_Write_Str("b",1 );
 
@@ -192,7 +195,7 @@ void Comms_DTMF_Handler (void)
       if ((FIO2PIN&(DTMF_INT_1)) && bPriDecodeFailed)
       {// If the first decoder was not ready try it again
          tone.decoder = DTMF_DECODER1;
-         tone.tone = (FIO1PIN&(0xF<<DTMF_1_OFFSET))>>DTMF_1_OFFSET;
+         tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
      	//Comms_UART_Write_Str("c",1 );
 

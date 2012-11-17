@@ -18,36 +18,26 @@
 void setGPIO(unsigned char portNo, unsigned char pinNo, unsigned char newValue){
 	if(newValue){
 		if (portNo == 0){
-			FIO0MASK &= ~(0x1<<pinNo);
 			FIO0SET = (0x1<<pinNo);
 		} else if (portNo == 1){
-			FIO1MASK &= ~(0x1<<pinNo);
 			FIO1SET = (0x1<<pinNo);
 		} else if (portNo == 2){
-			FIO2MASK &= ~(0x1<<pinNo);
 			FIO2SET = (0x1<<pinNo);
 		} else if (portNo == 3){
-			FIO3MASK &= ~(0x1<<pinNo);
 			FIO3SET = (0x1<<pinNo);
 		} else {
-			FIO4MASK &= ~(0x1<<pinNo);
 			FIO4SET = (0x1<<pinNo);
 		}
 	} else {
 		if (portNo == 0){
-			FIO0MASK &= ~(0x1<<pinNo);
 			FIO0CLR = (0x1<<pinNo);
 		} else if (portNo == 1){
-			FIO1MASK &= ~(0x1<<pinNo);
 			FIO1CLR = (0x1<<pinNo);
 		} else if (portNo == 2){
-			FIO2MASK &= ~(0x1<<pinNo);
 			FIO2CLR = (0x1<<pinNo);
 		} else if (portNo == 3){
-			FIO3MASK &= ~(0x1<<pinNo);
 			FIO3CLR = (0x1<<pinNo);
 		} else {
-			FIO4MASK &= ~(0x1<<pinNo);
 			FIO4CLR = (0x1<<pinNo);
 		}
 	}
@@ -55,19 +45,14 @@ void setGPIO(unsigned char portNo, unsigned char pinNo, unsigned char newValue){
 //get GPIO input value
 int getGPIO(unsigned char portNo, unsigned char pinNo){
 	if (portNo == 0){
-		FIO0MASK &= ~(0x1<<pinNo);
 		return FIO0PIN&(0x1<<pinNo);
 	} else if (portNo == 1){
-		FIO1MASK &= ~(0x1<<pinNo);
 		return FIO1PIN&(0x1<<pinNo);
 	} else if (portNo == 2){
-		FIO2MASK &= ~(0x1<<pinNo);
 		return FIO2PIN&(0x1<<pinNo);
 	} else if (portNo == 3){
-		FIO3MASK &= ~(0x1<<pinNo);
 		return FIO3PIN&(0x1<<pinNo);
 	} else {
-		FIO4MASK &= ~(0x1<<pinNo);
 		return FIO4PIN&(0x1<<pinNo);
 	}
 }
@@ -105,36 +90,46 @@ void set_Gpio_func(unsigned char portNo, unsigned char pinNo, unsigned char func
 	switch (portNo) {
 		case 0:
 			if (pinNo<16){
+				PINSEL0&=~(3<<shiftposition);
 				PINSEL0|=(func<<shiftposition);
 			} else {
+				PINSEL1&=~(3<<shiftposition);
 				PINSEL1|=(func<<shiftposition);
 			}
 		break;
 		case 1:
 			if (pinNo<16){
+				PINSEL2&=~(3<<shiftposition);
 				PINSEL2|=(func<<shiftposition);
 			} else {
+				PINSEL3&=~(3<<shiftposition);
 				PINSEL3|=(func<<shiftposition);
 			}
 		break;
 		case 2:
 			if (pinNo<16){
+				PINSEL4&=~(3<<shiftposition);
 				PINSEL4|=(func<<shiftposition);
 			} else {
+				PINSEL5&=~(3<<shiftposition);
 				PINSEL5|=(func<<shiftposition);
 			}
 		break;
 		case 3:
 			if (pinNo<16){
+				PINSEL6&=~(3<<shiftposition);
 				PINSEL6|=(func<<shiftposition);
 			} else {
+				PINSEL7&=~(3<<shiftposition);
 				PINSEL7|=(func<<shiftposition);
 			}
 		break;
 		case 4:
 			if (pinNo<16){
+				PINSEL8&=~(3<<shiftposition);
 				PINSEL8|=(func<<shiftposition);
 			} else {
+				PINSEL9&=~(3<<shiftposition);
 				PINSEL9|=(func<<shiftposition);
 			}
 		break;

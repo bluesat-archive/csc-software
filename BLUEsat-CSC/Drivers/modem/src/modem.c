@@ -75,9 +75,9 @@ void Comms_Modem_Timer_Handler(void)
 {
 	if (((TX_BUFF_1[TX_BUFF_1_SP]&(0x1<<TX_BUFF_1_BC))>>TX_BUFF_1_BC)== 0) {
 		buffer = !buffer;
-		setGPIO(3,16,buffer);
+		setGPIO(4,22,buffer);
 	} else {
-		setGPIO(3,16,buffer);
+		setGPIO(4,22,buffer);
 	}
 	if (TX_BUFF_1_BC == 7){
 		TX_BUFF_1_BC = 0;
@@ -137,13 +137,14 @@ void Comms_Modem_Timer_Init(void)
 	T1TCR = T1TCR & (~(0x2));//turn off reseting
 	//Set GIOP directions
 	//set AFSK 1 TX port
-	setGPIOdir(3,16,1);
+	setGPIOdir(4,22,1);
+	setGPIOdir(0,15,1);
 	//set M0 amd M1 ports for AFSK2
-	setGPIOdir(2,6,1);
-	setGPIOdir(2,7,1);
+	setGPIOdir(0,18,1);
+	setGPIOdir(0,19,1);
 	//set M0 amd M1 ports for AFSK1
-	setGPIOdir(2,2,1);
-	setGPIOdir(2,3,1);
+	setGPIOdir(0,21,1);
+	setGPIOdir(0,22,1);
 	createModem_Semaphore();
 }
 
@@ -252,11 +253,11 @@ void setModemTransmit(portSHORT sel)
 	//Mode select pins for the AFSKK Modems
 	//Setting M = 01 sets AFSK to transmit
 	if (sel == 1){ //modem 1
-		FIO2SET0 = (0x01 << (2));
-		FIO2CLR0 = (0x01 << (3));
+		setGPIO(0, 21, 1);
+		setGPIO(0, 22, 0);
 	} else {
-		FIO2SET0 = (0x01 << (6));
-		FIO2CLR0 = (0x01 << (7));
+		setGPIO(0, 18, 1);
+		setGPIO(0, 19, 0);
 	}
 }
 
@@ -265,10 +266,10 @@ void setModemReceive(portSHORT sel)
 	//Mode select pins for the AFSKK Modems
 	//Setting M = 10 sets AFSK to receive
 	if (sel == 1){ //modem 1
-		FIO2SET0 = (0x01 << (3));
-		FIO2CLR0 = (0x01 << (2));
+		setGPIO(0, 21, 0);
+		setGPIO(0, 22, 1);
 	} else {
-		FIO2SET0 = (0x01 << (7));
-		FIO2CLR0 = (0x01 << (6));
+		setGPIO(0, 18, 0);
+		setGPIO(0, 19, 1);
 	}
 }

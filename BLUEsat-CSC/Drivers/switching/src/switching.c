@@ -38,58 +38,68 @@ void switching_giveSemaphore(void)
 }
 
 void Switching_Init(void){
-	int pinNo;
 	//set S0 to S7 to be GPIO
-	for (pinNo = 8; pinNo < 16; pinNo++){
-		set_Gpio_func(1, pinNo, 0);
-	}
+	set_Gpio_func(2, 11, 0);
+	set_Gpio_func(2, 12, 0);
+	set_Gpio_func(2, 13, 0);
+	set_Gpio_func(2, 15, 0);
+	set_Gpio_func(2, 17, 0);
+	set_Gpio_func(1, 26, 0);
+	set_Gpio_func(2, 21, 0);
+	set_Gpio_func(1, 25, 0);
+
 	//set S0 to S7 to be output
-	for (pinNo = 8; pinNo < 16; pinNo++){
-		setGPIOdir(1, pinNo, OUTPUT);
-	}
+	setGPIOdir(2, 11, OUTPUT);
+	setGPIOdir(2, 12, OUTPUT);
+	setGPIOdir(2, 13, OUTPUT);
+	setGPIOdir(2, 15, OUTPUT);
+	setGPIOdir(2, 17, OUTPUT);
+	setGPIOdir(1, 26, OUTPUT);
+	setGPIOdir(2, 21, OUTPUT);
+	setGPIOdir(1, 25, OUTPUT);
 	//Initialise the semaphore
 	createSwitchingSemaphore();
 
 }
 
 void switching_TX(unsigned char TX){
-	setGPIO(1, 15, TX);
+	setGPIO(2, 17, TX);
 }
 
 void switching_RX(unsigned char RX){
-	setGPIO(1, 14, RX);
+	setGPIO(2, 13, RX);
 }
 
 void switching_OPMODE(unsigned char mode){
-	setGPIO(1, 13, mode);
+	setGPIO(2, 11, mode);
 }
 
 void switching_TX_Device(unsigned char device){
 	switch (device){
 		case BEACON:
-			setGPIO(1, 12, 0);
-			setGPIO(1, 11, 0);
-			setGPIO(1, 10, 0);
+			setGPIO(1, 25, 0);
+			setGPIO(2, 21, 0);
+			setGPIO(1, 26, 0);
 		break;
 		case AFSK_1:
-			setGPIO(1, 12, 1);
-			setGPIO(1, 11, 0);
-			setGPIO(1, 10, 0);
+			setGPIO(1, 25, 1);
+			setGPIO(2, 21, 0);
+			setGPIO(1, 26, 0);
 		break;
 		case AFSK_2:
-			setGPIO(1, 12, 0);
-			setGPIO(1, 11, 1);
-			setGPIO(1, 10, 0);
+			setGPIO(1, 25, 0);
+			setGPIO(2, 21, 1);
+			setGPIO(1, 26, 0);
 		break;
 		case GMSK_1:
-			setGPIO(1, 12, 1);
-			setGPIO(1, 11, 1);
-			setGPIO(1, 10, 0);
+			setGPIO(1, 25, 0);
+			setGPIO(2, 21, 1);
+			setGPIO(1, 26, 1);
 		break;
 		case GMSK_2:
-			setGPIO(1, 12, 0);
-			setGPIO(1, 11, 0);
-			setGPIO(1, 10, 1);
+			setGPIO(1, 25, 0);
+			setGPIO(2, 21, 0);
+			setGPIO(1, 26, 1);
 		break;
 	}
 }
@@ -97,20 +107,16 @@ void switching_TX_Device(unsigned char device){
 void switching_RX_Device(unsigned char device){
 	switch (device){
 		case AFSK_1:
-			setGPIO(1, 9, 0);
-			setGPIO(1, 8, 0);
+			setGPIO(2, 15, 0);
 		break;
 		case AFSK_2:
-			setGPIO(1, 9, 0);
-			setGPIO(1, 8, 1);
+			setGPIO(2, 15, 1);
 		break;
 		case GMSK_1:
-			setGPIO(1, 9, 1);
-			setGPIO(1, 8, 0);
+			setGPIO(2, 12, 0);
 		break;
 		case GMSK_2:
-			setGPIO(1, 9, 1);
-			setGPIO(1, 8, 1);
+			setGPIO(2, 12, 1);
 		break;
 	}
 }
