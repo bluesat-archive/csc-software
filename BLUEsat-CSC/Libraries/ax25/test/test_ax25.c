@@ -5,7 +5,7 @@
 #include <string.h>
 
 
-#include "protocols.h"
+#include "ax25.h"
 #include "CuTest.h"
 
 #define MAX_PACKETS_SIZE_IN_BYTES 10
