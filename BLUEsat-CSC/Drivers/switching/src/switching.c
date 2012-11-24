@@ -82,9 +82,9 @@ void switching_TX_Device(unsigned char device){
 			setGPIO(1, 26, 0);
 		break;
 		case AFSK_1:
-			setGPIO(1, 25, 1);
+			setGPIO(1, 25, 0);
 			setGPIO(2, 21, 0);
-			setGPIO(1, 26, 0);
+			setGPIO(1, 26, 1);
 		break;
 		case AFSK_2:
 			setGPIO(1, 25, 0);
@@ -92,14 +92,14 @@ void switching_TX_Device(unsigned char device){
 			setGPIO(1, 26, 0);
 		break;
 		case GMSK_1:
-			setGPIO(1, 25, 0);
+			setGPIO(1, 25, 1);
 			setGPIO(2, 21, 1);
-			setGPIO(1, 26, 1);
+			setGPIO(1, 26, 0);
 		break;
 		case GMSK_2:
-			setGPIO(1, 25, 0);
+			setGPIO(1, 25, 1);
 			setGPIO(2, 21, 0);
-			setGPIO(1, 26, 1);
+			setGPIO(1, 26, 0);
 		break;
 	}
 }
