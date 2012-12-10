@@ -145,7 +145,7 @@ void vPrintString(portCHAR const *pcPtr, unsigned portSHORT usLength);
 			{
 				Comms_UART_Read_Char(&pcBuffer[usIndex], portMAX_DELAY);
 
-				if (pcBuffer[usIndex] == '\r') break;
+				if (pcBuffer[usIndex] == '\r' || pcBuffer[usIndex] == '\n') break;
 			}
 			pcBuffer[usIndex] = '\0';
 		}
