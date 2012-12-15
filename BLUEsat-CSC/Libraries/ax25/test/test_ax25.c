@@ -326,12 +326,13 @@ void TestAX25Entry (CuTest* tc)
    expected_size = AX25Old(input, expected, 300);
    result = ax25Entry (&present, actual, &actual_size );
    CuAssertTrue(tc, result == generationSuccess);
+/*
    printf ("\n-%d-\n",result);
    for (index = 0 ; index< 25; ++index)
       {
          printf ("0x%2x - 0x%2x\n",expected[index],actual[index]);
       }
-
+*/
    CuAssertTrue(tc, true == true);
 }
 
@@ -579,7 +580,7 @@ CuSuite* CuGetSuite(void)
    SUITE_ADD_TEST(suite, TestCtrlBuilder);
    SUITE_ADD_TEST(suite, TestInfoBuilder);
    SUITE_ADD_TEST(suite, TestAX25FcsCalc);
-  // SUITE_ADD_TEST(suite, TestAX25Entry);
+   SUITE_ADD_TEST(suite, TestAX25Entry);
 
 
 	return suite;

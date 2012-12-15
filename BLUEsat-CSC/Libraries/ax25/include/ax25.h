@@ -200,16 +200,50 @@ typedef enum //protoReturn
    infoGenError,
    packError,
    generationSuccess,
+   decodeSuccess,
+   FCSError,
+   notUsError,
+   packetError,
+
 }protoReturn;
 
+typedef enum // decodeOptions
+{
+   notUs,
+   forUs,
+   weRepeat,
+}decodeOptions;
 
+typedef struct //rxPktStubs
+   {
+      LocSubField * dest;
+      LocSubField * src;
+      LocSubField * rep1;
+      LocSubField * rep2;
+      ControlFrame  ctrl;
+      char pid;
+      char * info;
+      unsigned int infoSize;
+      char * rest;
+      unsigned int left;
+   }rxPktStubs;
+
+typedef struct //receivedPacket
+   {
+      Location source;
+      Location dest;
+      ControlInfo control;
+      char pid;
+      char * info;
+      unsigned int infoSize;
+   }receivedPacket;
 
 protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * outputSize );
 
 
 
 #ifdef UNIT_TEST
-
+//Encode
 UnivRetCode test_stuffBuf (char * inputBuff, unsigned int input_size, buffer * outputBuff);
 UnivRetCode test_initBuffer(buffer * input, char * buff, unsigned int size);
 UnivRetCode test_bitPop (buffer* buff, char * out, unsigned int size);
@@ -224,6 +258,9 @@ UnivRetCode test_InfoBuilder (stateBlock * presentState, rawPacket* output);
 UnivRetCode test_unconnectedEngine (stateBlock* presentState,  rawPacket* output);
 UnivRetCode test_AX25fcsCalc( rawPacket* input, unsigned char *fcsByte0, unsigned char * fcsByte1);
 
+//Decode
+decodeOptions test_determineDest ( rxPktStubs* input, const Location * self);
+protoReturn test_ax25Receive (receivedPacket* out, char* input, unsigned int inputSize, const Location * self );
 #endif
 
 #endif

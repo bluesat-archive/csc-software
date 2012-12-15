@@ -40,6 +40,15 @@ char * strncpy(char * dest, const char *src, unsigned long count);
 void * memcpy(void * dest, const void *src, unsigned long count);
 
 /**
+* memcmp - Compare memory to see if the data is identical
+* @s1: Location 1
+* @s2: Location 1
+* @size: The size of the area.
+*
+*/
+int memcmp(const void * s1, const void * s2, unsigned long size);
+
+/**
  * Convert value to hex decimal
  */
 char cValToHex(unsigned char ucValue);

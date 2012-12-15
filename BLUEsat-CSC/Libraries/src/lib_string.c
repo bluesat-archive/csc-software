@@ -35,6 +35,22 @@ void * memcpy(void * dest, const void *src, unsigned long count)
 	return dest;
 }
 
+
+int memcmp(const void * s1, const void * s2, unsigned long size)
+{
+   unsigned char u1, u2;
+
+   for ( ; size-- ; s1++, s2++) {
+      u1 = * (unsigned char *) s1;
+      u2 = * (unsigned char *) s2;
+      if ( u1 != u2) {
+          return (u1-u2);
+      }
+   }
+   return 0;
+}
+
+
 #define NUM_ASCII_OFFSET	'0'
 #define ALPHA_ASCII_OFFSET	'A'
 #define DECIMAL_BASE		10
