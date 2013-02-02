@@ -45,15 +45,15 @@ void setGPIO(unsigned char portNo, unsigned char pinNo, unsigned char newValue){
 //get GPIO input value
 int getGPIO(unsigned char portNo, unsigned char pinNo){
 	if (portNo == 0){
-		return FIO0PIN&(0x1<<pinNo);
+		return (FIO0PIN&(0x1<<pinNo))>>pinNo;
 	} else if (portNo == 1){
-		return FIO1PIN&(0x1<<pinNo);
+		return (FIO1PIN&(0x1<<pinNo))>>pinNo;
 	} else if (portNo == 2){
-		return FIO2PIN&(0x1<<pinNo);
+		return (FIO2PIN&(0x1<<pinNo))>>pinNo;
 	} else if (portNo == 3){
-		return FIO3PIN&(0x1<<pinNo);
+		return (FIO3PIN&(0x1<<pinNo))>>pinNo;
 	} else {
-		return FIO4PIN&(0x1<<pinNo);
+		return (FIO4PIN&(0x1<<pinNo))>>pinNo;
 	}
 }
 //set GPIO direction to be input/output
@@ -137,4 +137,30 @@ void set_Gpio_func(unsigned char portNo, unsigned char pinNo, unsigned char func
 }
 void Gpio_Init(void){
 	SCS|= 1; //make port 0 and port 1 non legacy
+}
+void led_init(void){
+	int i;
+	for (i = 23; i < 27; ++i)
+	{
+		set_Gpio_func(3, i, 0);
+		setGPIOdir(3, i, OUTPUT);
+	}
+	set_Gpio_func(2, 18, 0);
+	setGPIOdir(2, 18, OUTPUT);
+	set_Gpio_func(2, 23, 0);
+	setGPIOdir(2, 23, OUTPUT);
+	set_Gpio_func(2, 25, 0);
+	setGPIOdir(2, 25, OUTPUT);
+	set_Gpio_func(2, 26, 0);
+	setGPIOdir(2, 26, OUTPUT);
+}
+void led(char output){
+	setGPIO(3, 23, output&1);
+	setGPIO(2, 23, (output&2)>>1);
+	setGPIO(2, 18, (output&4)>>2);
+	setGPIO(3, 24, (output&8)>>3);
+	setGPIO(2, 26, (output&16)>>4);
+	setGPIO(3, 25, (output&32)>>5);
+	setGPIO(3, 26, (output&64)>>6);
+	setGPIO(2, 25, (output&128)>>7);
 }

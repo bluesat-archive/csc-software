@@ -36,7 +36,7 @@
 #define DTMF_INT_1					 ((unsigned portLONG) 0x1<<5)
 #define DTMF_INT_2					 ((unsigned portLONG) 0x1)
 
-#define DTMF_INT_PINS_SIN        ((1<<5)&(1))
+#define DTMF_INT_PINS_SIN        ((1<<5)|(1))
 #define DTMF_BUFF_LENGTH         ( ( unsigned portLONG ) 20 )//50 Tone long buffer
 #define DTMF_BUFF_Empty          ( ( unsigned portLONG ) 0 )
 
@@ -172,6 +172,7 @@ void Comms_DTMF_Handler (void)
    portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
 //   char s[3];
    Boolean bPriDecodeFailed = true;
+
    if (FIO2PIN&DTMF_INT_PINS_SIN)//Will only be necessary/have effect if we have other GPIO Interrupt sources
    {//One decoder has decoded something
       if (FIO2PIN&(DTMF_INT_1))
@@ -190,7 +191,7 @@ void Comms_DTMF_Handler (void)
          tone.tone = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
      	//Comms_UART_Write_Str("b",1 );
-
+         newData = 1;
       }
       if ((FIO2PIN&(DTMF_INT_1)) && bPriDecodeFailed)
       {// If the first decoder was not ready try it again
@@ -198,7 +199,7 @@ void Comms_DTMF_Handler (void)
          tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
      	//Comms_UART_Write_Str("c",1 );
-
+         newData = 1;
       }
   }
 
