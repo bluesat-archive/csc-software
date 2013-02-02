@@ -71,4 +71,7 @@ void set_Gpio_func(unsigned char portNo, unsigned char pinNo, unsigned char func
  */
 void Gpio_Init(void);
 
+void led_init(void);
+void led(char output);
+
 #endif /* GPIO_H_*/
