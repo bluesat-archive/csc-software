@@ -1,5 +1,5 @@
-#ifndef PROTOCOLS_H_
-#define PROTOCOLS_H_
+#ifndef AX25_H_
+#define AX25_H_
 #include "UniversalReturnCode.h"
 
 enum PROTOCOL_TO_USE_SENDING{

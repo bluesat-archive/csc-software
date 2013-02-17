@@ -36,12 +36,12 @@ INCLUSION_LIST	  	=$(CSC_DIR)/SysBootAgent/include/ActiveModuleIncList.h
 
 #---------------------
 # Compiler / Settings
-#---------------------
+#--------------------- #Werror
 C			=gcc
 CC			=arm-elf-gcc
 PP			=arm-elf-cpp
 OBJCOPY	=arm-elf-objcopy
-WARNINGS =-Wall -Werror -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
+WARNINGS =-Wall -Wextra -Wshadow -Wpointer-arith -Wbad-function-cast -Wcast-align -Wsign-compare \
 -Waggregate-return -Wstrict-prototypes -Wmissing-prototypes -Wmissing-declarations -Wunused -Wformat-security
 CRT0		=$(CORE_SOURCE_DIR)/boot.s
 DEBUG		=#-D NO_DEBUG ###[NO_DEBUG] remember to check for functions uses usDebugRead()

@@ -45,6 +45,16 @@ void vComms_Init(unsigned portBASE_TYPE uxPriority)
 
 }
 
+/*
+ * Init switching circuit
+ * init modem
+ * encode and send packet
+ * wait 10 secs
+ * encode and send packet
+ *
+ *
+ * */
+
 static portTASK_FUNCTION(vCommsTask, pvParameters)
 {
 	(void) pvParameters;
@@ -101,7 +111,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		counter_should_not_be_final++;
 	}
 }
-
+/*
 int iSendData(TaskToken token, char *data, int size)
 {
 	Message m;
@@ -114,4 +124,4 @@ int iSendData(TaskToken token, char *data, int size)
 	mp.Data = (unsigned long)&m;
 
 	return enProcessRequest(&mp,  0);
-}
+}*/
