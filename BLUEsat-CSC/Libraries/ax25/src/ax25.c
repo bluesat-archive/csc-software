@@ -103,12 +103,12 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
    if ( presentState == NULL) return stateError;
 
 
-   tempState = *presentState;
+   //tempState = *presentState;
 
    // Process State
-   switch (tempState.mode)
+   switch (presentState->mode)
    {
-      case unconnected:   if (unconnectedEngine (&tempState,  &packet) == URC_FAIL) return stateError;
+      case unconnected:   if (unconnectedEngine (presentState,  &packet) == URC_FAIL) return stateError;
                      break;
       case connected:                             //TODO: Create connected state
       default:
@@ -116,17 +116,17 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
    }
 
    // Build Address
-   if (addrBuilder (addrBuff, &addrBuffSize, &tempState.route) == URC_FAIL) return addrGenError;
+   if (addrBuilder (addrBuff, &addrBuffSize, &(presentState->route)) == URC_FAIL) return addrGenError;
    packet.addr       = addrBuff;
    packet.addr_size  = addrBuffSize;
 
    // BUild Info
-   if (InfoBuilder (&tempState,  &packet) == URC_FAIL) return infoGenError;
+   if (InfoBuilder (presentState,  &packet) == URC_FAIL) return infoGenError;
 
    //build packet in output buffer
    if ( buildPacket (&packet, output, outputSize ) == URC_FAIL) return packError;
 
-   *presentState = tempState;
+ ///  *presentState = tempState;
 
    return generationSuccess;
 }
@@ -479,7 +479,7 @@ static UnivRetCode pushBuf (char * inputBuff, unsigned int input_size, buffer * 
    if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
    while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
-         outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
+       //  outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
          if (bitPush (outputBuff, temp)== URC_FAIL)return result;
       }
    return URC_SUCCESS;

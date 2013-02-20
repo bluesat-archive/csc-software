@@ -108,7 +108,7 @@ unsigned int initApplications(void)
 
 #ifdef MEMORY_DEMO_H_
 	//Demonstration additional volatile memory and stack memory usage
-	//vMemoryDemo_Init(APP_TASK_PRIORITY);
+	vMemoryDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef STORAGE_DEMO_H_

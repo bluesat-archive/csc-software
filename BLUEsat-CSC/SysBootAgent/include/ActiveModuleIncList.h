@@ -24,6 +24,7 @@
 #include "Int_Flash.h"
 #include "lib_string.h"
 #include "memory.h"
+#include "memoryDemo.h"
 #include "modem.h"
 #include "sensor_sweep.h"
 #include "storage.h"
