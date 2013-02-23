@@ -86,6 +86,12 @@ UnivRetCode test_AX25fcsCalc( rawPacket* input, unsigned char *fcsByte0, unsigne
 
 #endif
 
+TaskToken         sharedTaskToken;
+
+void vSetToken(TaskToken         taskToken)
+{
+   sharedTaskToken = taskToken;
+}
 
 //State block built by comms task
 //Return multiple negative numbers to indicate the issue
@@ -103,12 +109,12 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
    if ( presentState == NULL) return stateError;
 
 
-   //tempState = *presentState;
+   tempState = *presentState;
 
    // Process State
    switch (presentState->mode)
    {
-      case unconnected:   if (unconnectedEngine (presentState,  &packet) == URC_FAIL) return stateError;
+      case unconnected:   if (unconnectedEngine (&tempState,  &packet) == URC_FAIL) return stateError;
                      break;
       case connected:                             //TODO: Create connected state
       default:
@@ -116,17 +122,17 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
    }
 
    // Build Address
-   if (addrBuilder (addrBuff, &addrBuffSize, &(presentState->route)) == URC_FAIL) return addrGenError;
+   if (addrBuilder (addrBuff, &addrBuffSize, &(tempState.route)) == URC_FAIL) return addrGenError;
    packet.addr       = addrBuff;
    packet.addr_size  = addrBuffSize;
 
    // BUild Info
-   if (InfoBuilder (presentState,  &packet) == URC_FAIL) return infoGenError;
+   if (InfoBuilder (&tempState,  &packet) == URC_FAIL) return infoGenError;
 
    //build packet in output buffer
    if ( buildPacket (&packet, output, outputSize ) == URC_FAIL) return packError;
 
- ///  *presentState = tempState;
+   *presentState = tempState;
 
    return generationSuccess;
 }
@@ -175,6 +181,24 @@ static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output)
    return URC_SUCCESS;
 }
 
+static UnivRetCode pushBuftest (char * inputBuff, unsigned int input_size, buffer * outputBuff)
+{
+   UnivRetCode result = URC_FAIL;
+   char temp;
+   buffer input;
+   if (inputBuff==NULL || outputBuff == NULL ||input_size==0)
+   {
+         return result;
+   }
+   if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
+   while (bitPop (&input, &temp, sizeof (char))==URC_SUCCESS)
+      {
+       //  outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
+         if (bitPush (outputBuff, temp)== URC_FAIL)return result;
+      }
+   return URC_SUCCESS;
+}
+
 static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsigned int * outFinalSize )
 {
    UnivRetCode result = URC_FAIL;
@@ -193,17 +217,30 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
    if (AX25fcsCalc( inputDetails, &fcs0, &fcs1) == URC_FAIL ) return result;
 
    // Stuff data into output packet
+   pushBuf (&flag, 1, &outBuff);
    if (pushBuf  (&flag, 1, &outBuff) == URC_FAIL ) return result;
+ //  vDebugPrint(sharedTaskToken, "Flag > %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
    if (stuffBuf (inputDetails->addr, inputDetails->addr_size, &outBuff) == URC_FAIL ) return result;
+//   vDebugPrint(sharedTaskToken, "adderess > %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
    if (stuffBuf ((char *) &inputDetails->ctrl, 1, &outBuff) == URC_FAIL ) return result;
+ //  vDebugPrint(sharedTaskToken, "Control > %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
    if (inputDetails->pid!=NULL)
    {
       if (stuffBuf ((char *) inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
+//      vDebugPrint(sharedTaskToken, "PID > %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
    }
+
+
    if (stuffBuf (inputDetails->info, inputDetails->info_size, &outBuff) == URC_FAIL ) return result;
+
+ //  vDebugPrint(sharedTaskToken, "info> %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
    if (stuffBuf ((char *)&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
+
+ //  vDebugPrint(sharedTaskToken, "FCS0> %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
    if (stuffBuf ((char *)&fcs1, 1 , &outBuff) == URC_FAIL ) return result;
-   if (pushBuf  (&flag, 1,  &outBuff) == URC_FAIL ) return result;
+
+//  vDebugPrint(sharedTaskToken, "FCS1> %300x\n\r",outFinal , NO_INSERT, NO_INSERT);
+   if (pushBuftest  (&flag, 1,  &outBuff) == URC_FAIL ) return result;
 
    // The index the the present location in the buffer not the total size.
    // The result returns the total size in the buffer

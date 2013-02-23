@@ -28,7 +28,7 @@ void vCommsDemo_Init(unsigned portBASE_TYPE uxPriority)
 								"Comms_demo",
 								APP_TASK_TYPE,
 								uxPriority,
-								20*APP_STACK_SIZE,
+								4*APP_STACK_SIZE,
 								vCommsDemoTask);
 }
 
@@ -42,6 +42,7 @@ typedef struct _AX25BufferItem{
    char array[MAX_PACKETS_SIZE_IN_BYTES];
    int arraylength;
 }AX25BufferItem;
+
 
 
 
@@ -79,8 +80,10 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
    present.nxtIndex = 0;
    present.mode = unconnected;
    present.completed = false;
+   vSetToken( COMMS_DEMO_TaskToken);
    result = ax25Entry (&present, actual, &actual_size );
-   vDebugPrint(COMMS_DEMO_TaskToken, "Message Encoded \n\r",NO_INSERT , NO_INSERT, NO_INSERT);
+
+   vDebugPrint(COMMS_DEMO_TaskToken, "%300x \n\r",actual , NO_INSERT, NO_INSERT);
 
    //	setModemTransmit(1);
 	while(1){

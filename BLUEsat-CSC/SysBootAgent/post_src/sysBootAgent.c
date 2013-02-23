@@ -54,7 +54,7 @@ unsigned int initServices(void)
 
 #ifdef MEMORY_H_
 	//memory task
-	//vMemory_Init(SERV_TASK_PRIORITY);
+	vMemory_Init(SERV_TASK_PRIORITY);
 #endif//
 
 #ifdef COMMAND_H_

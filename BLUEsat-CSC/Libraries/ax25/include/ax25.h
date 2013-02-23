@@ -1,6 +1,7 @@
 #ifndef AX25_H_
 #define AX25_H_
 #include "UniversalReturnCode.h"
+#include "command.h"
 
 enum PROTOCOL_TO_USE_SENDING{
 	AX25_UI=0,//AX 25 with unconnected mode
@@ -237,6 +238,8 @@ typedef struct //receivedPacket
       char * info;
       unsigned int infoSize;
    }receivedPacket;
+
+void vSetToken(TaskToken         taskToken);
 
 protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * outputSize );
 
