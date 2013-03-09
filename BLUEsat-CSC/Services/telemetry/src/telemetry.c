@@ -12,6 +12,8 @@
 #include "UniversalReturnCode.h"
 #include "lib_string.h"
 #include "debug.h"
+#include "telemetry_core.h"
+
 
 /* Telemetry hardware information definition. */
 #define MAX127_COUNT 		            16
@@ -106,17 +108,25 @@ static UnivRetCode enReadSensor(SensorLocation* location)
 		data = TELEM_I2C_CONFIG_BITS + (i * 16);
 		/* Write 1 byte. */
 		length = 1;
+		vDebugPrint(telemTaskToken, "Send I2C command!...BUS: %d\n\r", location->bus,
+		                    NO_INSERT, NO_INSERT);
 		returnVal = Comms_I2C_Master(MAX127_SLAVE_BASE_ADDRESS + location->address, I2C_WRITE,
 		        (char*)&isValid, (char*)&data, (short*)&length, telemMutex, location->bus);
 		xSemaphoreTake(telemMutex, TELEM_SEMAPHORE_BLOCK_TIME);
+		vDebugPrint(telemTaskToken, "Send done!...\n\r", 0,
+		                    NO_INSERT, NO_INSERT);
 
         /* Read Sensor Value. Read 2 bytes as sensor returns 12 bits. */
         length = 2;
+        vDebugPrint(telemTaskToken, "Read I2C!...BUS: %d\n\r", location->bus,
+                            NO_INSERT, NO_INSERT);
         returnVal = Comms_I2C_Master(MAX127_SLAVE_BASE_ADDRESS + location->address, I2C_READ,
                 (char*)&isValid,
                 (char*)&telemLatestData[uiAddressToIndex(location->address,location->bus)][i],
                 (short*)&length, telemMutex, location->bus);
         xSemaphoreTake(telemMutex, TELEM_SEMAPHORE_BLOCK_TIME);
+        vDebugPrint(telemTaskToken, "Read done!...\n\r", 0,
+                            NO_INSERT, NO_INSERT);
 	}
 
 	return URC_SUCCESS;
@@ -184,6 +194,8 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 	UnivRetCode result;
 	unsigned int triggerCount = 0;
 	TelemRequestRate currentRate = enTelemTriggerCountCheck(triggerCount);
+	//unsigned long long sensorID;
+	//unsigned int telemResult;
 
 	/* Initialise telemetry semaphore. */
 	vSemaphoreCreateBinary(telemMutex);
@@ -193,6 +205,20 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 
 	/* Initialise child telemetry message control task. */
 	/* TODO: FIXME: */
+
+	telem_core_semph_create();
+
+	/*********************** Testing new telem init *********************/
+	/*while (1) {
+	    vDebugPrint(telemTaskToken, "New Telem init...\n\r", 0, 0, 0);
+	    telemetry_core_conversion(BUS1, 0);
+	    sensorID = 0x10F75E8302080053;
+	    telemResult = telemetry_core_read(BUS1, 0, (char *)&sensorID);
+	    telemetry_core_print_temperature(telemResult, telemTaskToken);
+	    vSleep(2000);
+	}*/
+	/********************************************************************/
+
 
 	for (;;)
 	{

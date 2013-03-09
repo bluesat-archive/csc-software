@@ -8,9 +8,6 @@
 #ifndef TELEMETRY_CORE_H_
 #define TELEMETRY_CORE_H_
 
-
-//void telem_init_hack(TaskToken telemTaskToken);
-
 void telem_core_semph_create(void);
 
 unsigned int telemetry_core_read(unsigned int bus, unsigned int interface, char *sensorID);
