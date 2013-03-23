@@ -16,20 +16,47 @@
 #include "debug.h"
 #include "string.h"
 
+/*
+ *  data structure
+ *
+ *  bit
+ *  0       1       2       3  ...  255
+ *
+ * info  entry 1  entry 2
+ *
+ */
+
 struct telem_storage_info_t
 {
-    unsigned char idList[TELEM_STORAGE_IDLIST_SIZE];
+    unsigned char idFreeList[TELEM_STORAGE_IDLIST_SIZE];
+    unsigned int idFreeListCount;
     unsigned int current;
+    unsigned int latest;
 };
 
 static struct telem_storage_info_t info;
 
-static void
-telemetry_storage_update_current(void)
+static unsigned int
+telemetry_get_next_free_id(void)
 {
-    while (info.idList[info.current] != 0) {
+    unsigned int returnVal;
+
+    if (info.idFreeListCount == 0) {
+        if (info.current == (TELEM_STORAGE_IDLIST_SIZE - 1)) {
+            info.current = 1;
+        }
+        returnVal = info.current;
         info.current++;
+    } else {
+        returnVal = info.idFreeList[info.idFreeListCount - 1];
+        info.idFreeList[info.idFreeListCount - 1] = 0;
+        info.idFreeListCount--;
     }
+
+    /* Update the latest entry. */
+    info.latest = returnVal;
+
+    return returnVal;
 }
 
 static void
@@ -49,12 +76,18 @@ telemetry_storage_init(TaskToken telemTaskToken)
 {
     unsigned long size;
     UnivRetCode enResult;
+    unsigned int i;
 
     enResult = enDataSize(telemTaskToken, 0, &size);
     /* Check if the storage DID exists. */
     if (size != sizeof(struct telem_storage_info_t)) {
         /* Initialise the structure. */
-        info.current = 0;
+        info.idFreeListCount = 0;
+        info.current = 1;
+
+        for (i = 0; i < TELEM_STORAGE_IDLIST_SIZE; i++) {
+            info.idFreeList[i] = 0;
+        }
         telemetry_storage_update_info(telemTaskToken);
     }
 }
@@ -65,11 +98,13 @@ telemetry_storage_write(TaskToken telemTaskToken, char *buf, size_t nbytes)
     UnivRetCode enResult;
     int returnDID;
 
-    enResult = enDataStore(telemTaskToken, (info.current + 1), nbytes, buf);
-    info.idList[info.current] = info.current + 1;
-    returnDID = info.current;
+    returnDID = telemetry_get_next_free_id();
+    /* Delete the entry before right every time. Allow overwrite to happen. */
+    enResult = enDataDelete(telemTaskToken, returnDID);
 
-    telemetry_storage_update_current();
+    enResult = enDataStore(telemTaskToken, returnDID, nbytes, buf);
+
+    /* Perform memory access for a single entry. */
     telemetry_storage_update_info(telemTaskToken);
     return returnDID;
 }

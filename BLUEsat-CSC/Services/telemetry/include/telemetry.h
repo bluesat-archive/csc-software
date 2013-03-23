@@ -1,7 +1,7 @@
 /*
  * telemetry.h
  *
- *  Created on: 16/06/2012
+ *  Created on: Mar 23, 2013
  *      Author: andyc
  */
 
@@ -9,38 +9,38 @@
 #define TELEMETRY_H_
 
 #include "UniversalReturnCode.h"
-#include "sensor_sweep.h"
-
-typedef struct {
-	unsigned short address;
-	unsigned char channelMask;
-	unsigned char bus;
-} SensorLocation;
 
 typedef enum
 {
-	SETSWEEP,
-	READSWEEP
-} TelemOperation;
+    TRANSLATOR_A = 0,
+    TRANSLATOR_B,
+    TRANSLATOR_C,
+    TRANSLATOR_D,
+    TRANSLATOR_COUNT
+} telem_interface;
+
+typedef enum
+{
+    TELEM_READ_ALL = 0,
+    TELEM_READ_SINGLE,
+    TELEM_READ_LATEST
+} telem_operation;
 
 typedef struct
 {
-    /* Telem server operation. */
-	TelemOperation operation;
-	/* Declare the size of the input buffer or the sweep buffer. */
-	unsigned int size;
-	union
-	{
-	    /* For storing the sweep settings. */
-		TelemEntityConfig *paramBuffer;
-		/* Pointer to the buffer where the results are. */
-		unsigned short *buffer;
-	};
-} TelemCommand;
+    /* Telem interface. */
+    telem_interface interface;
+    /* Telem access operation. */
+    telem_operation operation;
+
+    /* Telem index for single read. */
+    unsigned int index;
+
+    char *buffer;
+    char size;
+} telem_command_t;
 
 UnivRetCode enTelemServiceMessageSend(TaskToken taskToken, unsigned portLONG data);
-
-void vTelemDebugPrint(void);
 
 UnivRetCode vTelemInit(unsigned portBASE_TYPE uxPriority);
 
