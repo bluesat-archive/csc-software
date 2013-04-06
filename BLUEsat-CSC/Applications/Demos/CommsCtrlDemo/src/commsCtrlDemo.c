@@ -21,6 +21,8 @@ static TaskToken COMMS_DEMO_TaskToken;
 static portTASK_FUNCTION(vCommsDemoTask, pvParameters);
 void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel );
 void setModemTransmit(portSHORT sel);
+void switching_TX(unsigned char TX);
+void switching_TX_Device(unsigned char device);
 
 void vCommsDemo_Init(unsigned portBASE_TYPE uxPriority)
 {
@@ -97,6 +99,9 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
    vDebugPrint(COMMS_DEMO_TaskToken, "%300x \n\r",actual , NO_INSERT, NO_INSERT);
 
    setModemTransmit(1);
+   switching_TX(0);
+   switching_TX_Device(1);
+
 	while(1){
 	      vDebugPrint(COMMS_DEMO_TaskToken, "Sending Message %d \n\r", counter++, NO_INSERT, NO_INSERT);
 	     Comms_Modem_Write_Str(actual,actual_size, 1);
