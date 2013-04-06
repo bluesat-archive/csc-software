@@ -16,106 +16,73 @@
 #include "debug.h"
 #include "string.h"
 
-/*
- *  data structure
- *
- *  bit
- *  0       1       2       3  ...  255
- *
- * info  entry 1  entry 2
- *
- */
+struct telem_storage_entry_t *cur;
 
-struct telem_storage_info_t
+void
+telemetry_storage_init(void)
 {
-    unsigned char idFreeList[TELEM_STORAGE_IDLIST_SIZE];
-    unsigned int idFreeListCount;
-    unsigned int current;
-    unsigned int latest;
-};
-
-static struct telem_storage_info_t info;
-
-static unsigned int
-telemetry_get_next_free_id(void)
-{
-    unsigned int returnVal;
-
-    if (info.idFreeListCount == 0) {
-        if (info.current == (TELEM_STORAGE_IDLIST_SIZE - 1)) {
-            info.current = 1;
-        }
-        returnVal = info.current;
-        info.current++;
-    } else {
-        returnVal = info.idFreeList[info.idFreeListCount - 1];
-        info.idFreeList[info.idFreeListCount - 1] = 0;
-        info.idFreeListCount--;
-    }
-
-    /* Update the latest entry. */
-    info.latest = returnVal;
-
-    return returnVal;
-}
-
-static void
-telemetry_storage_update_info(TaskToken telemTaskToken)
-{
-    UnivRetCode enResult;
-    /* DID 0 is reserved for telemtry data info. */
-    enResult = enDataDelete(telemTaskToken, 0);
-
-    enResult = enDataStore(telemTaskToken, 0, sizeof(struct telem_storage_info_t), (char *)&info);
-
-    /* FIXME: error handling. */
+    cur = (struct telem_storage_entry_t *)TELEM_STORAGE_BASE_ADDR;
 }
 
 void
-telemetry_storage_init(TaskToken telemTaskToken)
+telemetry_storage_reset(void)
 {
-    unsigned long size;
-    UnivRetCode enResult;
-    unsigned int i;
+    unsigned int *ptr = (unsigned int *)TELEM_STORAGE_BASE_INDEX;
+    *ptr = 0;
+}
 
-    enResult = enDataSize(telemTaskToken, 0, &size);
-    /* Check if the storage DID exists. */
-    if (size != sizeof(struct telem_storage_info_t)) {
-        /* Initialise the structure. */
-        info.idFreeListCount = 0;
-        info.current = 1;
+void
+telemetry_storage_save_cur(void)
+{
+    unsigned int *ptr = (unsigned int *)TELEM_STORAGE_BASE_INDEX;
+    *ptr = (unsigned int)cur;
+}
 
-        for (i = 0; i < TELEM_STORAGE_IDLIST_SIZE; i++) {
-            info.idFreeList[i] = 0;
-        }
-        telemetry_storage_update_info(telemTaskToken);
+void
+telemetry_storage_load_prev_cur(void)
+{
+    cur = (struct telem_storage_entry_t *)*((volatile unsigned int *)TELEM_STORAGE_BASE_INDEX);
+}
+
+int
+telemetry_storage_write(struct telem_storage_entry_t *buf)
+{
+    if (!buf) {
+        return -1;
     }
+
+    memcpy((char *)cur, (char *)buf, sizeof(struct telem_storage_entry_t));
+    cur++;
+
+    if ((unsigned int)cur == (TELEM_STORAGE_BASE_ADDR + (TELEM_MAX_ENTRIES *
+            sizeof(struct telem_storage_entry_t)))) {
+        cur = (struct telem_storage_entry_t *)TELEM_STORAGE_BASE_ADDR;
+    }
+
+    return 0;
 }
 
 int
-telemetry_storage_write(TaskToken telemTaskToken, char *buf, size_t nbytes)
+telemetry_storage_read_cur(struct telem_storage_entry_t *buf)
 {
-    UnivRetCode enResult;
-    int returnDID;
+    if (!buf) {
+        return -1;
+    }
 
-    returnDID = telemetry_get_next_free_id();
-    /* Delete the entry before right every time. Allow overwrite to happen. */
-    enResult = enDataDelete(telemTaskToken, returnDID);
-
-    enResult = enDataStore(telemTaskToken, returnDID, nbytes, buf);
-
-    /* Perform memory access for a single entry. */
-    telemetry_storage_update_info(telemTaskToken);
-    return returnDID;
+    memcpy((char *)buf, (char *)cur, sizeof(struct telem_storage_entry_t));
+    return 0;
 }
 
 int
-telemetry_storage_read(TaskToken telemTaskToken, unsigned char DID, char *buf, size_t nbytes,
-        size_t offset)
+telemetry_storage_read_index(unsigned int i, struct telem_storage_entry_t *buf)
 {
-    UnivRetCode enResult;
-    unsigned long size;
-    enResult = enDataRead(telemTaskToken, DID, nbytes, offset, buf, &size);
+    struct telem_storage_entry_t *entry;
 
-    return size;
+    if (i > TELEM_MAX_ENTRIES) return -1;
+
+    entry = (struct telem_storage_entry_t *)(TELEM_STORAGE_BASE_ADDR +
+            (i * sizeof(struct telem_storage_entry_t)));
+    memcpy((char *)buf, (char *)entry, sizeof(struct telem_storage_entry_t));
+
+    return 0;
 }
