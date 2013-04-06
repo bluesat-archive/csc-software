@@ -43,6 +43,10 @@ typedef struct _AX25BufferItem{
    int arraylength;
 }AX25BufferItem;
 
+typedef struct {//ControlFrame
+         char sFrame:1;
+
+      }Cttt;
 
 
 
@@ -50,6 +54,8 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
 {
 	(void) pvParameters;
 	unsigned int counter = 0;
+	unsigned int sizeLocSubField;
+	unsigned int sizeControlFrame;
 	stateBlock present;
    AX25BufferItem input;
 
@@ -59,9 +65,14 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
 	memset (actual, 0, 300);
 	memcpy (input.array,"abcedfghij",10);
 	input.arraylength = 10;
-	vDebugPrint(COMMS_DEMO_TaskToken, "%10s \n\r", input.array, NO_INSERT, NO_INSERT);
+	//vDebugPrint(COMMS_DEMO_TaskToken, "%10s \n\r", input.array, NO_INSERT, NO_INSERT);
+
+	sizeLocSubField = sizeof (LocSubField);
+	sizeControlFrame = sizeof (Cttt);
+	vDebugPrint(COMMS_DEMO_TaskToken, "sizeLocSubField: %d \n\r sizeControlFrame: %d\n\r",sizeLocSubField, sizeControlFrame, NO_INSERT);
 
 	//Build state block
+
    present.src = input.array;
    present.srcSize = 10;
    memcpy (present.route.dest.callSign,"BLUEGS",CALLSIGN_SIZE);
@@ -85,10 +96,10 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
 
    vDebugPrint(COMMS_DEMO_TaskToken, "%300x \n\r",actual , NO_INSERT, NO_INSERT);
 
-   //	setModemTransmit(1);
+   setModemTransmit(1);
 	while(1){
 	      vDebugPrint(COMMS_DEMO_TaskToken, "Sending Message %d \n\r", counter++, NO_INSERT, NO_INSERT);
-	     // Comms_Modem_Write_Str(actual,actual_size, 1);
+	     Comms_Modem_Write_Str(actual,actual_size, 1);
 
 	      vSleep(2000);
 	}
