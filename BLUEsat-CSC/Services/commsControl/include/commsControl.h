@@ -14,6 +14,8 @@
 #ifndef COMMS_H_
 #define COMMS_H_
 
+#include "service.h"
+
 void vComms_Init(unsigned portBASE_TYPE uxPriority);
 
 int iSendData(TaskToken token, char *data, int size);
