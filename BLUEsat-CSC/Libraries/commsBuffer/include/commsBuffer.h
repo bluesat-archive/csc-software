@@ -21,11 +21,14 @@ typedef struct //buffer
 
 #define PatternLimit       5
 #define MSB_bit_mask       0x80
+#define LSB_bit_mask       0x01
 
-UnivRetCode stuffBuf   (char * inputBuff, unsigned int input_size, buffer * outputBuff);
+UnivRetCode stuffBufMSBtoLSB (char * inputBuff, unsigned int input_size, buffer * outputBuff);
+UnivRetCode stuffBufLSBtoMSB (char * inputBuff, unsigned int input_size, buffer * outputBuff);
 UnivRetCode pushBuf    (char * inputBuff, unsigned int input_size, buffer * outputBuff);
 UnivRetCode initBuffer (buffer * input, char * buff, unsigned int size);
-UnivRetCode bitPop     (buffer* buff, char * out, unsigned int size);
+UnivRetCode bitPopMSBtoLSB (buffer* buff, char * out, unsigned int size);
+UnivRetCode bitPopLSBtoMSB (buffer* buff, char * out, unsigned int size);
 UnivRetCode bitPush    (buffer* buff, char in);
 
 #endif /* COMMSBUFFER_H_ */

@@ -9,7 +9,7 @@
 #define AX25CONFIG_H_
 
 #define CALLSIGN_SIZE 6
-#define BLANK_SPACE 0x40
+#define BLANK_SPACE 0x20
 #define PROCTOCOLS_Q_SIZE  5
 #define SIZE_FLAG          1   //Byte
 #define SIZE_ADDR          14
