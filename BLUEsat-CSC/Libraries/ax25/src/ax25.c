@@ -351,7 +351,7 @@ static UnivRetCode AX25fcsCalc( rawPacket* input,unsigned char *fcsByte0, unsign
    return URC_SUCCESS;
 }
 
-/*
+/*-------------------------------
  * Packet Construction Functions
  * ------------------------------
  * */
