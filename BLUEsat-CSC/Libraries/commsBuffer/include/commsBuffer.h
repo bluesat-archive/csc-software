@@ -29,6 +29,7 @@ UnivRetCode pushBuf    (char * inputBuff, unsigned int input_size, buffer * outp
 UnivRetCode initBuffer (buffer * input, char * buff, unsigned int size);
 UnivRetCode bitPopMSBtoLSB (buffer* buff, char * out, unsigned int size);
 UnivRetCode bitPopLSBtoMSB (buffer* buff, char * out, unsigned int size);
-UnivRetCode bitPush    (buffer* buff, char in);
+UnivRetCode bitPushLSBtoMSB(buffer* buff, char in);
+UnivRetCode bitPushMSBtoLSB(buffer* buff, char in);
 
 #endif /* COMMSBUFFER_H_ */
