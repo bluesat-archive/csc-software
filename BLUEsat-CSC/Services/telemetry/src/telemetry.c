@@ -14,9 +14,11 @@
 #include "debug.h"
 #include "telemetry_core.h"
 #include "telemetry_storage.h"
+#include "telemetry_sensor_map.h"
 
 /* Telemetry hardware information definition. */
 #define TRANSLATOR_COUNT                4
+#define MAX_TRANSLATOR_SENSOR_COUNT     10
 #define TELEM_QUEUE_SIZE                16
 
 /* Telemetry I2C control definition. */
@@ -24,6 +26,9 @@
 
 /* Telemetry sweep control definition. */
 #define DEF_SWEEP_TIME                  2000 / portTICK_RATE_MS /* 20 seconds. */
+
+/* Telemetry interface sensor count definition. */
+static unsigned int telemInterfaceSensorCount[] = {10, 10, 10, 10};
 
 TaskToken telemTaskToken;
 static xSemaphoreHandle telemMutex;
@@ -47,6 +52,19 @@ telemetry_read_latest(unsigned int interface, char *buffer, unsigned int size)
 }
 
 static void
+telemetry_sensor_store(int interface)
+{
+    int i;
+    char *curSensor;
+    unsigned short curResult;
+
+    for (i = 0; i < telemInterfaceSensorCount[interface]; i++) {
+        curSensor = (char *)telemetry_sensor_map[interface][i];
+        curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
+    }
+}
+
+static void
 telemetry_sensor_poll(void)
 {
     int i;
@@ -55,7 +73,7 @@ telemetry_sensor_poll(void)
     }
 
     /* Read all data and store into the storage. */
-
+    telemetry_sensor_store(0);
 }
 
 

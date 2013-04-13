@@ -14,7 +14,7 @@
 #include "lib_string.h"
 #include "debug.h"
 
-#define SLAVE_ADDRESS_PREFIX        24
+#define SLAVE_ADDRESS_PREFIX        24 /* 11000 << 1 = 110000 */
 #define TELEM_CORE_BLOCK_TIME       (portTICK_RATE_MS * 5)
 
 static xSemaphoreHandle telemMutex;
