@@ -36,8 +36,8 @@ void vCommsDemo_Init(unsigned portBASE_TYPE uxPriority)
 
 
 #define AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE 0xF0
-#define BLUESAT_SAT_SSID 0x2
-#define BLUESAT_GS_SSID 0x7
+#define BLUESAT_SAT_SSID 0x1
+#define BLUESAT_GS_SSID 0x0
 #define MAX_PACKETS_SIZE_IN_BYTES 10
 
 typedef struct _AX25BufferItem{
@@ -65,20 +65,13 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
 	char actual [300];
 	unsigned int actual_size = 300;
 	memset (actual, 0, 300);
-	memcpy (input.array,"abcedfghij",10);
-	input.arraylength = 10;
-	//vDebugPrint(COMMS_DEMO_TaskToken, "%10s \n\r", input.array, NO_INSERT, NO_INSERT);
-
-	sizeLocSubField = sizeof (LocSubField);
-	sizeControlFrame = sizeof (Cttt);
-	vDebugPrint(COMMS_DEMO_TaskToken, "sizeLocSubField: %d \n\r sizeControlFrame: %d\n\r",sizeLocSubField, sizeControlFrame, NO_INSERT);
-
-	//Build state block
+	memcpy (input.array,"a\r",2);
+	input.arraylength = 2;
 
    present.src = input.array;
-   present.srcSize = 10;
+   present.srcSize = 2;
    memcpy (present.route.dest.callSign,"BLUEGS",CALLSIGN_SIZE);
-   memcpy (present.route.src.callSign, "BLUSAT",CALLSIGN_SIZE);
+   memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
    vDebugPrint(COMMS_DEMO_TaskToken, "BLOCK TEXT \n\r", NO_INSERT, NO_INSERT, NO_INSERT);
    present.route.dest.callSignSize = 6;
    present.route.src.callSignSize = 6;
@@ -95,8 +88,8 @@ static portTASK_FUNCTION(vCommsDemoTask, pvParameters)
    present.completed = false;
    vSetToken( COMMS_DEMO_TaskToken);
    result = ax25Entry (&present, actual, &actual_size );
-
-   vDebugPrint(COMMS_DEMO_TaskToken, "%300x \n\r",actual , NO_INSERT, NO_INSERT);
+   actual[14] = 0x61;
+   vDebugPrint(COMMS_DEMO_TaskToken, "%d, %22x\n\r",actual_size ,actual, NO_INSERT);
 
    setModemTransmit(1);
    switching_TX(0);
