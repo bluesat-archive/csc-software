@@ -21,15 +21,12 @@ typedef enum
 
 typedef enum
 {
-    TELEM_READ_ALL = 0,
-    TELEM_READ_SINGLE,
+    TELEM_READ_SINGLE = 0,
     TELEM_READ_LATEST
 } telem_operation;
 
 typedef struct
 {
-    /* Telem interface. */
-    telem_interface interface;
     /* Telem access operation. */
     telem_operation operation;
 
