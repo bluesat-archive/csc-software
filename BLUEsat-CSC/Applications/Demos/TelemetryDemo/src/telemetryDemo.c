@@ -1,5 +1,6 @@
 #include "application.h"
 #include "telemetry.h"
+#include "telemetry_core.h"
 #include "telemetryDemo.h"
 #include "debug.h"
 #include "UniversalReturnCode.h"
@@ -73,6 +74,16 @@ vTelemReadLatest(struct telem_demo_storage_entry_t *entry,
     enTelemMessageSend(token);
 }
 
+static void
+vTelemPrintResult(struct telem_demo_storage_entry_t *entry)
+{
+    int i = 0;
+    for (i = 0; i < TELEM_DEMO_SENSOR_COUNT; i++) {
+        telemetry_core_print_temperature(entry->values[i], telemDemoTaskToken);
+        vDebugPrint(telemDemoTaskToken, "\r\n", NO_INSERT, NO_INSERT, NO_INSERT);
+    }
+}
+
 static
 portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 {
@@ -120,5 +131,8 @@ portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 				/* Should never get here. */
 				break;
 		}
+
+		/* Print result. */
+		vTelemPrintResult(&entry);
 	}
 }
