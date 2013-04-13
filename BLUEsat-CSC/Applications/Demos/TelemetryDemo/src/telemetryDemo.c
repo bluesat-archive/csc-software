@@ -7,18 +7,11 @@
 
 #define INPUT 0
 #define OUTPUT 1
-#define MESSAGE_WAIT_TIME 500
-#define MESSAGE_QUEUE_SIZE 1
 #define TELEM_INPUT_BUFFER_SIZE 10
-#define TELEM_DEMO_MAX127_COUNT 16
-#define TELEM_DEMO_MAX127_SENSOR_COUNT 8
 #define TELEM_CLEAR_SCREEN "\e[2J\e[1;1H"
-#define SET_SWEEP_MESSAGE_ARG_NUM       3
 
 static TaskToken telemDemoTaskToken;
-static unsigned short currentData[TELEM_DEMO_MAX127_COUNT][TELEM_DEMO_MAX127_SENSOR_COUNT];
-static TelemEntityConfig currentSetting[MAX_NUM_GROUPS];
-static TelemCommand command;
+static telem_command_t command;
 
 static portTASK_FUNCTION(vTelemDemoTask, pvParameters);
 
@@ -28,53 +21,24 @@ enTelemMessageSend(TaskToken taskToken)
     return enTelemServiceMessageSend(taskToken, (unsigned portLONG)&command);
 }
 
-static inline void
+static void
 vTelemPrintMenu(void)
 {
 	vDebugPrint(telemDemoTaskToken, "Telemetry Demo Started!\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
 	vDebugPrint(telemDemoTaskToken, "--------------------------------------\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
-	vDebugPrint(telemDemoTaskToken, "(2): Set Sweep (resolution[arg1], rate[arg2])\n\r", NO_INSERT,
+	vDebugPrint(telemDemoTaskToken, "(1): Read single sensor (index[arg0])\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
-	vDebugPrint(telemDemoTaskToken, "(3): Read Sweep (no arg)\n\r", NO_INSERT,
-				NO_INSERT, NO_INSERT);
-	vDebugPrint(telemDemoTaskToken, "(4): Print latest data (no arg)\n\r", NO_INSERT,
+	vDebugPrint(telemDemoTaskToken, "(2): Read latest sensor (no arg)\n\r", NO_INSERT,
 				NO_INSERT, NO_INSERT);
 }
 
-static inline void
+static void
 vTelemConvertCommand(char *inputBuf, unsigned int *outputBuf, int size)
 {
 	int i;
 	for (i = 0; i < size; ++i) outputBuf[i] = inputBuf[i] - '0';
-}
-
-static void
-vTelemReadSweep(void *buffer, TaskToken token)
-{
-    command.operation = READSWEEP;
-    command.size = TELEM_DEMO_MAX127_COUNT * TELEM_DEMO_MAX127_SENSOR_COUNT;
-    /* Pass in the data for processing. */
-    command.buffer = (unsigned short*)buffer;
-    enTelemMessageSend(token);
-}
-
-/* This sets all the entities groups to the same setting. */
-static void
-vTelemSampleSetSweep(int resolution, int rate, TaskToken token)
-{
-    int i;
-    command.operation = SETSWEEP;
-    command.size = SET_SWEEP_MESSAGE_ARG_NUM;
-    for (i = 0; i < MAX_NUM_GROUPS; ++i)
-    {
-        currentSetting[i].resolution = resolution;
-        currentSetting[i].rate = rate;
-    }
-
-    command.paramBuffer = currentSetting;
-    enTelemMessageSend(token);
 }
 
 void
@@ -88,6 +52,27 @@ vTelemetryDemoInit(unsigned portBASE_TYPE uxPriority)
 								vTelemDemoTask);
 }
 
+static void
+vTelemReadSingle(int index, struct telem_demo_storage_entry_t *entry,
+        TaskToken token)
+{
+    command.operation = TELEM_READ_SINGLE;
+    command.index = index;
+    command.buffer = (char*)entry;
+    command.size = sizeof(struct telem_demo_storage_entry_t);
+    enTelemMessageSend(token);
+}
+
+static void
+vTelemReadLatest(struct telem_demo_storage_entry_t *entry,
+        TaskToken token)
+{
+    command.operation = TELEM_READ_LATEST;
+    command.buffer = (char*)entry;
+    command.size = sizeof(struct telem_demo_storage_entry_t);
+    enTelemMessageSend(token);
+}
+
 static
 portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 {
@@ -95,6 +80,7 @@ portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 	char inputBuffer[TELEM_INPUT_BUFFER_SIZE];
 	unsigned int usReadLen;
 	unsigned int commandBuffer[TELEM_INPUT_BUFFER_SIZE - 1];
+	struct telem_demo_storage_entry_t entry;
 
 	vDebugPrint(telemDemoTaskToken, "%s", (unsigned portLONG)TELEM_CLEAR_SCREEN,
 			NO_INSERT, NO_INSERT);
@@ -116,26 +102,19 @@ portTASK_FUNCTION(vTelemDemoTask, pvParameters)
 		 * The input should all be numbers.
 		 * 1st Number: Call number
 		 * 2nd Number: arg0
-		 * 3rd Number: arg1
 		 */
 		switch (commandBuffer[0])
 		{
-			case TELEM_DEMO_SET_SWEEP:
-				vDebugPrint(telemDemoTaskToken, "In Set Sweep | command[1] %d | command[2] %d\n\r",
-						(unsigned portLONG)commandBuffer[1], (unsigned portLONG)commandBuffer[2],
-						NO_INSERT);
+			case TELEM_DEMO_READ_SINGLE:
+				vDebugPrint(telemDemoTaskToken, "Read single -(index) %d\n\r",
+						(unsigned portLONG)commandBuffer[1], NO_INSERT, NO_INSERT);
 
-				vTelemSampleSetSweep(commandBuffer[1], commandBuffer[2], telemDemoTaskToken);
+				vTelemReadSingle(commandBuffer[1], &entry, telemDemoTaskToken);
 				break;
-			case TELEM_DEMO_READ_SWEEP:
-				vDebugPrint(telemDemoTaskToken, "In Read Sweep\n\r", NO_INSERT,
+			case TELEM_DEMO_READ_LATEST:
+				vDebugPrint(telemDemoTaskToken, "Read latest\n\r", NO_INSERT,
 							NO_INSERT, NO_INSERT);
-				vTelemReadSweep((void*)currentData, telemDemoTaskToken);
-				break;
-			case TELEM_DEMO_PRINT_LATEST_DATA:
-				vDebugPrint(telemDemoTaskToken, "In Print Data\n\r", NO_INSERT,
-							NO_INSERT, NO_INSERT);
-				vTelemDebugPrint();
+				vTelemReadLatest(&entry, telemDemoTaskToken);
 				break;
 			default:
 				/* Should never get here. */
