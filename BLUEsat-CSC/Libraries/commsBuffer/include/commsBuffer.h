@@ -19,7 +19,7 @@ typedef struct //buffer
     unsigned int connectedOnes; // Counter to track the number of consecutive 1s when this hits the threshold a 0 is inserted
  }buffer;
 
-#define PatternLimit       5
+#define PatternLimit       4
 #define MSB_bit_mask       0x80
 #define LSB_bit_mask       0x01
 

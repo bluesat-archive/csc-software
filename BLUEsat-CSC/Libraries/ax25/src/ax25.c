@@ -204,7 +204,7 @@ static UnivRetCode buildLocation (LocSubField ** destBuffer, unsigned int * size
    // Populate SSID Field
    dest->cORh =((msgType == Command      && locType == Destination) ||
                 (msgType == Response     && locType == Source)      ||
-                (visitedRepeater == true && locType == Repeater))?1: 0;
+                (visitedRepeater == true && locType == Repeater))?0: 0;
    dest->rept = (isLastRepeater == true)?1:0;
    dest->ssid = loc->ssid;
    dest->res_1 = 1;
@@ -380,12 +380,12 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
    //vDebugPrint(sharedTaskToken, "adderess > %300x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
    if (stuffBufLSBtoMSB ((char *) &inputDetails->ctrl, sizeOfControlFrame, &outBuff) == URC_FAIL ) return result;
    vDebugPrint(sharedTaskToken, "Control > %1x\n\r",(char *)&inputDetails->ctrl , NO_INSERT, NO_INSERT);
-   vDebugPrint(sharedTaskToken, "Control > %300x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
+   vDebugPrint(sharedTaskToken, "Control > %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
    if (inputDetails->pid!=NULL)
    {
       if (stuffBufLSBtoMSB ((char *) inputDetails->pid,  1, &outBuff) == URC_FAIL ) return result; // Assume PID is of size 1 byte
       vDebugPrint(sharedTaskToken, "PID > %1x\n\r",(char *)inputDetails->pid , NO_INSERT, NO_INSERT);
-      vDebugPrint(sharedTaskToken, "PID > %300x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
+      vDebugPrint(sharedTaskToken, "PID > %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
    }
 
 

@@ -19,12 +19,12 @@ UnivRetCode stuffBufMSBtoLSB (char * inputBuff, unsigned int input_size, buffer 
    while (bitPopMSBtoLSB (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
          outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
+         if (bitPushMSBtoLSB (outputBuff, temp)== URC_FAIL)return result;
          if ( outputBuff->connectedOnes > PatternLimit)
             {
-               outputBuff->connectedOnes = 1; // Take into account the 1 to be added after this if block
+               outputBuff->connectedOnes = 0; // Take into account the 1 to be added after this if block
                if (bitPushMSBtoLSB (outputBuff, 0)== URC_FAIL)return result;
             }
-         if (bitPushMSBtoLSB (outputBuff, temp)== URC_FAIL)return result;
       }
    return URC_SUCCESS;
 }
@@ -42,12 +42,12 @@ UnivRetCode stuffBufLSBtoMSB (char * inputBuff, unsigned int input_size, buffer 
    while (bitPopLSBtoMSB (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
          outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
+         if (bitPushLSBtoMSB (outputBuff, temp)== URC_FAIL)return result;
          if ( outputBuff->connectedOnes > PatternLimit)
             {
-               outputBuff->connectedOnes = 1; // Take into account the 1 to be added after this if block
+               outputBuff->connectedOnes = 0; // Take into account the 1 to be added after this if block
                if (bitPushLSBtoMSB (outputBuff, 0)== URC_FAIL)return result;
             }
-         if (bitPushLSBtoMSB (outputBuff, temp)== URC_FAIL)return result;
       }
    return URC_SUCCESS;
 }
