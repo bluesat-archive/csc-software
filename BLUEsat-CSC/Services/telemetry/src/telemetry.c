@@ -33,6 +33,8 @@ static unsigned int telemInterfaceSensorCount[] = {10, 10, 10, 10};
 TaskToken telemTaskToken;
 static xSemaphoreHandle telemMutex;
 
+static int magicNum = 0;
+
 static void
 telemetry_read_single(unsigned int index, char *buffer, unsigned int size)
 {
@@ -40,9 +42,15 @@ telemetry_read_single(unsigned int index, char *buffer, unsigned int size)
     unsigned int nbytes = ((size < sizeof(struct telem_storage_entry_t)) ?
             size : sizeof(struct telem_storage_entry_t));
     struct telem_storage_entry_t entry;
+    struct telem_storage_entry_t *ptr;
 
     telemetry_storage_read_index(index, &entry);
     memcpy(buffer, &entry, nbytes);
+    /********** testing. *************/
+    vDebugPrint(telemTaskToken, "TELEM | Now check the content is actually stored - single...\n\r", 0,
+                NO_INSERT, NO_INSERT);
+    ptr = (struct telem_storage_entry_t *)buffer;
+    telemetry_print_entry_content(ptr);
 }
 
 static void
@@ -52,9 +60,17 @@ telemetry_read_latest(char *buffer, unsigned int size)
     unsigned int nbytes = ((size < sizeof(struct telem_storage_entry_t)) ?
             size : sizeof(struct telem_storage_entry_t));
     struct telem_storage_entry_t entry;
+    struct telem_storage_entry_t *ptr;
+
 
     telemetry_storage_read_cur(&entry);
     memcpy(buffer, &entry, nbytes);
+
+    /********** testing. *************/
+    vDebugPrint(telemTaskToken, "TELEM | Now check the content is actually stored...\n\r", 0,
+                NO_INSERT, NO_INSERT);
+    ptr = (struct telem_storage_entry_t *)buffer;
+    telemetry_print_entry_content(ptr);
 }
 
 static void
@@ -72,25 +88,25 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
 
     for (i = 0; i < telemInterfaceSensorCount[interface]; i++) {
         curSensor = (char *)telemetry_sensor_map[interface][i];
-        curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
-
+        //curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
+        curResult = (unsigned short)(magicNum * 1337 + i + (100 * interface));
         /* Store current result. */
+        vDebugPrint(telemTaskToken, "TELEM | cur result is %d...\n\r", curResult, 0, 0);
         entry->values[baseIndex + i] = curResult;
     }
-
-    /* Calculate timestamp. */
-    entry->timestamp = 1337; /* TODO: */
+    magicNum++;
 }
 
 static void
 telemetry_sensor_poll(void)
 {
-    int i;
     struct telem_storage_entry_t entry;
-
-    for (i = 0; i < TRANSLATOR_COUNT; i++) {
+    memset((char *)&entry, 0, sizeof(struct telem_storage_entry_t));
+    /*for (i = 0; i < TRANSLATOR_COUNT; i++) {
         telemetry_core_conversion(BUS1, i);
-    }
+    }*/
+    vDebugPrint(telemTaskToken, "TELEM | End of conversion stage...\n\r", 0,
+                NO_INSERT, NO_INSERT);
 
     /* Read all data and store into the storage. */
     telemetry_sensor_store(0, &entry);
@@ -98,10 +114,22 @@ telemetry_sensor_poll(void)
     //telemetry_sensor_store(2, &entry);
     //telemetry_sensor_store(3, &entry);
 
+    /* Calculate timestamp. */
+    entry.timestamp = 1337; /* TODO: */
+    vDebugPrint(telemTaskToken, "TELEM | cur addr is %d...\n\r", (int)cur, 0, 0);
     /* Store the data in memory. */
     telemetry_storage_write(&entry);
 }
 
+void
+telemetry_print_entry_content(struct telem_storage_entry_t *entry)
+{
+    int i;
+    for (i = 0; i < TELEM_SENSOR_COUNT; i++) {
+        vDebugPrint(telemTaskToken, "TELEM | Sensor %d: value is %d\r\n", i, entry->values[i], 0);
+    }
+    vDebugPrint(telemTaskToken, "TELEM | Timestamp is %d\r\n", entry->timestamp, 0, 0);
+}
 
 /* Telemetry service main function. */
 static portTASK_FUNCTION(vTelemTask, pvParameters)
@@ -116,6 +144,8 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
 
     telem_core_semph_create();
 
+    telemetry_storage_reset();
+    telemetry_storage_init();
     for (;;)
     {
         enResult = enGetRequest(telemTaskToken, &incomingPacket, DEF_SWEEP_TIME);

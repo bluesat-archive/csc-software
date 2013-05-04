@@ -50,7 +50,6 @@ telemetry_storage_write(struct telem_storage_entry_t *buf)
     if (!buf) {
         return -1;
     }
-
     memcpy((char *)cur, (char *)buf, sizeof(struct telem_storage_entry_t));
     cur++;
 
@@ -65,11 +64,14 @@ telemetry_storage_write(struct telem_storage_entry_t *buf)
 int
 telemetry_storage_read_cur(struct telem_storage_entry_t *buf)
 {
+    struct telem_storage_entry_t *entry = cur;
+    entry--;
     if (!buf) {
         return -1;
     }
 
-    memcpy((char *)buf, (char *)cur, sizeof(struct telem_storage_entry_t));
+
+    memcpy((char *)buf, (char *)entry, sizeof(struct telem_storage_entry_t));
     return 0;
 }
 
@@ -86,3 +88,4 @@ telemetry_storage_read_index(unsigned int i, struct telem_storage_entry_t *buf)
 
     return 0;
 }
+
