@@ -75,8 +75,10 @@ void Comms_Modem_Timer_Handler(void)
 {
 	if (((TX_BUFF_1[TX_BUFF_1_SP]&(0x1<<TX_BUFF_1_BC))>>TX_BUFF_1_BC)== 0) {
 		buffer = !buffer;
+		setGPIO(0,15,buffer);
 		setGPIO(4,22,buffer);
 	} else {
+		setGPIO(0,15,buffer);
 		setGPIO(4,22,buffer);
 	}
 	if (TX_BUFF_1_BC == 7){
@@ -197,7 +199,7 @@ signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBl
 /*
 
 unsigned portSHORT Comms_Modem_Read_Str( portCHAR * pcString, unsigned portSHORT usStringLength, portTickType xBlockTime, portSHORT sel  )
-{
+{pcInputBuf
 	portCHAR * tmp;
 	unsigned portSHORT count;
 	( void ) usStringLength;
@@ -222,7 +224,7 @@ void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT 
 	/* Send each character in the string, one at a time. */
 	pxNext = ( const signed portCHAR * ) pcString;
 	{
-		while( *pxNext && (usLength < usStringLength))
+		while(usLength < usStringLength)
 		{
 
 			Comms_Modem_Write_Char( *pxNext, 1, sel );
