@@ -2,13 +2,12 @@
  *  \file commsControl.h
  *
  *  \brief control task for message sending
- *  This task sends message to switching circuit control
- *  to switch to the modem, then send message to modem
+ *  This task is now hacked to send telem log and beacon
  *
  *  \author $Author: Sam Jiang $
- *  \version 1.0
+ *  \version 2.0
  *
- *  $Date: 2/6/2012
+ *  $Date: 4/5/2013
  */
 
 #include "service.h"
@@ -16,14 +15,14 @@
 #include "switching.h"
 #include "modem.h"
 #include "debug.h"
+#include "telemetry_storage.h"
+#include "ax25.h"
+#include "lib_string.h"
 
-#define COMMS_Q_SIZE	16
+#define AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE 0xF0
 
-typedef struct
-{
-	int size;
-	char *data;
-} Message;
+//global variable for modem usage
+int modem;
 
 //task token for accessing services
 static TaskToken Comms_TaskToken;
@@ -33,15 +32,13 @@ static portTASK_FUNCTION(vCommsTask, pvParameters);
 
 void vComms_Init(unsigned portBASE_TYPE uxPriority)
 {
-	/* initialise the beacon task by inserting into scheduler*/
-	Comms_TaskToken = ActivateTask(TASK_COMMS,
-								"Comms",
-								SEV_TASK_TYPE,
-								uxPriority,
-								SERV_STACK_SIZE,
-								vCommsTask);
 
-	vActivateQueue(Comms_TaskToken, 4);
+	Comms_TaskToken = ActivateTask(TASK_COMMS,
+								   "Comms",
+								   SEV_TASK_TYPE,
+								   uxPriority,
+								   SERV_STACK_SIZE,
+								   vCommsTask);
 
 }
 
@@ -58,57 +55,65 @@ void vComms_Init(unsigned portBASE_TYPE uxPriority)
 static portTASK_FUNCTION(vCommsTask, pvParameters)
 {
 	(void) pvParameters;
-	UnivRetCode enResult;
-	MessagePacket incoming_packet;
-	int counter_should_not_be_final = 0;
-
+	struct telem_storage_entry_t temp;
+	stateBlock present;
+    char input [64];
+    char actual [64];
+    unsigned int actual_size = 64;
+    int i, m;
 	for ( ; ; )
 	{
-		// grab message from queue
-		enResult = enGetRequest(Comms_TaskToken, &incoming_packet, portMAX_DELAY);
-		if (enResult != URC_SUCCESS) continue;
-		//(long)((Message*)incoming_packet.Data)->data
-		vDebugPrint(Comms_TaskToken,"G\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
-		// grab semaphore
-		switching_takeSemaphore();
-		vDebugPrint(Comms_TaskToken,"S\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
-		// grab sysinfo
-		// determine what to do based on current status
+		// grab message from telem log
+		telemetry_storage_read_cur(&temp);
 
-		// call switching circuit
-		switching_OPMODE(DEVICE_MODE);
-		if (1)
-		{
-			switching_TX_Device(AFSK_1);
-			switching_TX(TX_1);
-
-			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, ((Message*)incoming_packet.Data)->size, MODEM_1 );
-			modem_takeSemaphore(MODEM_1);
-		} else if (counter_should_not_be_final % 4 == 1)
-		{
-			switching_TX_Device(AFSK_1);
-			switching_TX(TX_2);
-			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
-			modem_takeSemaphore(MODEM_1);
-		} else if (counter_should_not_be_final % 4 == 2)
-		{
-			switching_TX_Device(AFSK_2);
-			switching_TX(TX_1);
-			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
-			modem_takeSemaphore(MODEM_2);
-		} else {
-			switching_TX_Device(AFSK_2);
-			switching_TX(TX_2);
-			Comms_Modem_Write_Str(((Message*)incoming_packet.Data)->data, 1, MODEM_1 );
-			modem_takeSemaphore(MODEM_2);
+		vDebugPrint(Comms_TaskToken,"got log\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
+		// compose string
+		// hh:mm:ss\tID:-cc.c\t....
+		for (i = 0, m = 100000; i < 6; i++, m/=10){
+			input[i] = ((temp.timestamp/m)%10) - '0';
 		}
+		input[6] = '\r';
+		// call ax25 to encode it
+		present.src = input;
+		present.srcSize = 7;
+		memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
+		memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
 
-		// release semaphore
-		switching_giveSemaphore();
+		present.route.dest.callSignSize = 6;
+		present.route.src.callSignSize = 6;
+		present.route.dest.ssid = 1;
+		present.route.src.ssid = 1;
+		present.route.repeats  = NULL;
+		present.route.totalRepeats = 0;
+		present.route.type = Response;
+		present.presState = stateless;
+		present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
+		present.packetCnt = 0;
+		present.nxtIndex = 0;
+		present.mode = unconnected;
+		present.completed = false;
+
+		ax25Entry (&present, actual, &actual_size );
+
+		vDebugPrint(Comms_TaskToken, "%d, %23x\n\r",actual_size ,actual, NO_INSERT);
+
+		// TX and modem will be chosen by GS
+		switching_OPMODE(DEVICE_MODE);
+		switching_TX_Device(AFSK_1);
+		Comms_Modem_Write_Str(actual, actual_size);
+		modem_takeSemaphore();
+
 		vDebugPrint(Comms_TaskToken,"T\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
 
-		vCompleteRequest(incoming_packet.Token, URC_SUCCESS);
-		counter_should_not_be_final++;
+		//now beacon
+		switching_OPMODE(DEVICE_MODE);
+		switching_TX_Device(BEACON);
+
+		vDebugPrint(Comms_TaskToken, "Finished setup switching TX device, transmit for %d ms\n\r", TRANSMISSION_TIME ,0, 0);
+
+		vSleep( TRANSMISSION_TIME );
+		//turn off beacon
+		switching_TX_Device(AFSK_1);
 	}
 }
 /*

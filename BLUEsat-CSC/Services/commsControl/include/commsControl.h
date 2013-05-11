@@ -16,6 +16,8 @@
 
 #include "service.h"
 
+#define TRANSMISSION_TIME	2000
+
 void vComms_Init(unsigned portBASE_TYPE uxPriority);
 
 int iSendData(TaskToken token, char *data, int size);
