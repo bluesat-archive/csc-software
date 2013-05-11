@@ -42,7 +42,6 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
 
 
    tempState = *presentState;
-
    // Process State
    switch (presentState->mode)
    {
@@ -59,6 +58,7 @@ protoReturn ax25Entry (stateBlock* presentState, char* output, unsigned int * ou
    packet.addr_size  = addrBuffSize;
 
    // BUild Info
+
    if (InfoBuilder (&tempState,  &packet) == URC_FAIL) return infoGenError;
 
    //build packet in output buffer
@@ -258,6 +258,7 @@ static UnivRetCode addrBuilder (char * output, unsigned int * outputSize, Delive
 // The info should always have stuff in it.
 static UnivRetCode InfoBuilder (stateBlock * presentState, rawPacket* output)
 {
+
    UnivRetCode result = URC_FAIL;
    unsigned int remaining;
    if (presentState == NULL || output == NULL) return result;
@@ -358,6 +359,7 @@ static UnivRetCode AX25fcsCalc( rawPacket* input,unsigned char *fcsByte0, unsign
 
 static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsigned int * outFinalSize )
 {
+
    UnivRetCode result = URC_FAIL;
    char flag = FLAG;
    char testitem = 0xFF;
@@ -391,13 +393,15 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
 
    if (stuffBufLSBtoMSB (inputDetails->info, inputDetails->info_size, &outBuff) == URC_FAIL ) return result;
 
-   vDebugPrint(sharedTaskToken, "info> %10s %10x\n\r",(char *)inputDetails->info , (char *)inputDetails->info, NO_INSERT);
-   if (stuffBufMSBtoLSB ((char *)&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
+   //vDebugPrint(sharedTaskToken, "info> %39s \n\r%39x\n\r",(char *)inputDetails->info , (char *)inputDetails->info, NO_INSERT);
+   vDebugPrint(sharedTaskToken, "FCS0> %d FCS1> %d\n\r",fcs0 , fcs1, NO_INSERT);
+   vDebugPrint(sharedTaskToken, "before FCS> %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
+   if (stuffBufLSBtoMSB ((char *)&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
 
-   //vDebugPrint(sharedTaskToken, "FCS0> %300x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
-   if (stuffBufMSBtoLSB ((char *)&fcs1, 1 , &outBuff) == URC_FAIL ) return result;
+   vDebugPrint(sharedTaskToken, "FCS0> %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
+   if (stuffBufLSBtoMSB ((char *)&fcs1, 1 , &outBuff) == URC_FAIL ) return result;
 
-  //vDebugPrint(sharedTaskToken, "FCS1> %300x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
+   vDebugPrint(sharedTaskToken, "FCS1> %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
    if (pushBuf (&flag, 1,  &outBuff) == URC_FAIL ) return result;
 
    // The index the the present location in the buffer not the total size.
