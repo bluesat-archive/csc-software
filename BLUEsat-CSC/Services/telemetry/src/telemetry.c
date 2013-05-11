@@ -118,7 +118,7 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
     for (i = 0; i < telemInterfaceSensorCount[interface]; i++) {
         curSensor = (char *)telemetry_sensor_map[interface][i];
         //curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
-        curResult = (unsigned short)(magicNum * 1337 + i + (100 * interface));
+        curResult = (unsigned char)(magicNum * 1337 + i + (100 * interface));
         data = 0;
         telemetry_data_compress(curResult, &data);
         /* Store current result. */
