@@ -18,25 +18,6 @@
 #include "task.h"
 #include "semphr.h"
 
-static xSemaphoreHandle switching_MUTEX;
-
-static int createSwitchingSemaphore(void)
-{
-	vSemaphoreCreateBinary( switching_MUTEX );
-	if(!switching_MUTEX) return pdFAIL;
-	return pdTRUE;
-}
-
-void switching_takeSemaphore(void)
-{
-	xSemaphoreTake( switching_MUTEX, 10000 );
-}
-
-void switching_giveSemaphore(void)
-{
-	xSemaphoreGive( switching_MUTEX );
-}
-
 void Switching_Init(void){
 	//set S0 to S7 to be GPIO
 	set_Gpio_func(2, 11, 0);
@@ -57,8 +38,6 @@ void Switching_Init(void){
 	setGPIOdir(1, 26, OUTPUT);
 	setGPIOdir(2, 21, OUTPUT);
 	setGPIOdir(1, 25, OUTPUT);
-	//Initialise the semaphore
-	createSwitchingSemaphore();
 
 }
 

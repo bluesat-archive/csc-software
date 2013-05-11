@@ -33,11 +33,11 @@
 
 void Comms_Modem_Timer_Init(void);
 
-signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBlockTime, portSHORT sel );
-void Comms_Modem_Write_Str( const  portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel );
-void Comms_Modem_Write_Hex(const void * const loc, unsigned portSHORT usStringLength,portSHORT sel);
+signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBlockTime);
+void Comms_Modem_Write_Str( const  portCHAR * const pcString, unsigned portSHORT usStringLength);
+void Comms_Modem_Write_Hex(const void * const loc, unsigned portSHORT usStringLength);
 void setModemTransmit(portSHORT sel);
 void setModemReceive(portSHORT sel);
-void modem_takeSemaphore(unsigned char modem);
-void modem_giveSemaphore(unsigned char modem);
+void modem_takeSemaphore(void);
+void modem_giveSemaphore(void);
 #endif /* MODEM_H_ */

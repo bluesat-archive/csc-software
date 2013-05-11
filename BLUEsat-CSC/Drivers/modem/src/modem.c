@@ -22,50 +22,34 @@
 /*-----------------------------------------------------------*/
 /* Cyclic buffer to store characters waiting to be
 transmitted. */
-static char TX_BUFF_1[BUFFER_SIZE];
-static int TX_BUFF_1_SP = 0;
-static int TX_BUFF_1_EP = 0;
-static int TX_BUFF_1_BC = 0;
-static volatile portLONG Modem_1_FREE;
-static char TX_BUFF_2[BUFFER_SIZE];
-static int TX_BUFF_2_SP = 0;
-static int TX_BUFF_2_EP = 0;
-static volatile portLONG Modem_2_FREE;
-static char buffer = 0;
+static char TX_BUFF[BUFFER_SIZE];
+static int TX_BUFF_SP = 0; //Start position
+static int TX_BUFF_EP = 0; //End position
+static int TX_BUFF_BC = 0; //bit count
+static char buffer = 0; //current output
+
 void Comms_Modem_Timer_Handler(void);
 void Comms_Modem_Timer_Wrapper( void ) __attribute__ ((naked));
 
-static xSemaphoreHandle modem_1_MUTEX;
-static xSemaphoreHandle modem_2_MUTEX;
+static xSemaphoreHandle modem_MUTEX;
 
 static int createModem_Semaphore(void)
 {
-	vSemaphoreCreateBinary( modem_1_MUTEX );
-	if(!modem_1_MUTEX) return pdFAIL;
-	xSemaphoreTake( modem_1_MUTEX, 1 );
-	vSemaphoreCreateBinary( modem_2_MUTEX );
-	if(!modem_2_MUTEX) return pdFAIL;
-	xSemaphoreTake( modem_2_MUTEX, 1 );
+	vSemaphoreCreateBinary( modem_MUTEX );
+	if(!modem_MUTEX) return pdFAIL;
+	xSemaphoreTake( modem_MUTEX, 1 );
 	return pdTRUE;
 }
 
-void modem_takeSemaphore(unsigned char modem)
+void modem_takeSemaphore(void)
 {
-	if (modem == MODEM_1){
-		xSemaphoreTake( modem_1_MUTEX, 2000 );
-	} else {
-		xSemaphoreTake( modem_2_MUTEX, 2000 );
-	}
+	xSemaphoreTake( modem_MUTEX, 2000 );
 }
 
-void modem_giveSemaphore(unsigned char modem)
+void modem_giveSemaphore(void)
 {
 	signed portBASE_TYPE i;
-	if (modem == MODEM_1){
-		xSemaphoreGiveFromISR(modem_1_MUTEX,&i);
-	} else {
-		xSemaphoreGiveFromISR(modem_2_MUTEX,&i);
-	}
+	xSemaphoreGiveFromISR(modem_MUTEX,&i);
 }
 
 /*-------------------------------------------------------------*/
@@ -73,7 +57,7 @@ void modem_giveSemaphore(unsigned char modem)
 
 void Comms_Modem_Timer_Handler(void)
 {
-	if (((TX_BUFF_1[TX_BUFF_1_SP]&(0x1<<TX_BUFF_1_BC))>>TX_BUFF_1_BC)== 0) {
+	if (((TX_BUFF[TX_BUFF_SP]&(0x1<<TX_BUFF_BC))>>TX_BUFF_BC)== 0) {
 		buffer = !buffer;
 		setGPIO(0,15,buffer);
 		setGPIO(4,22,buffer);
@@ -81,18 +65,17 @@ void Comms_Modem_Timer_Handler(void)
 		setGPIO(0,15,buffer);
 		setGPIO(4,22,buffer);
 	}
-	if (TX_BUFF_1_BC == 7){
-		TX_BUFF_1_BC = 0;
-		TX_BUFF_1_SP = (TX_BUFF_1_SP+1)%BUFFER_SIZE;
-		Modem_1_FREE = 1;
-		if (TX_BUFF_1_SP == TX_BUFF_1_EP){
-			modem_giveSemaphore(MODEM_1);
+	if (TX_BUFF_BC == 7){
+		TX_BUFF_BC = 0;
+		TX_BUFF_SP = (TX_BUFF_SP+1)%BUFFER_SIZE;
+		if (TX_BUFF_SP == TX_BUFF_EP){
+			modem_giveSemaphore();
 			disable_VIC_irq(MODEM_INTERRUPTS);
 		}
 	} else {
-		TX_BUFF_1_BC++;
+		TX_BUFF_BC++;
 	}
-	//setGPIO(2,11,TX_BUFF_1[TX_BUFF_1_SP]);
+
 	T1IR = 0xFF;
 	/* Clear the ISR in the VIC. */
 	VICVectAddr = CLEAR_VIC_INTERRUPT;
@@ -175,24 +158,11 @@ signed portBASE_TYPE Comms_Modem_Read_Char( signed portCHAR *pcRxedChar, portTic
 }
 */
 
-signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBlockTime, portSHORT sel )
+signed portBASE_TYPE Comms_Modem_Write_Char( portCHAR cOutChar, portTickType xBlockTime)
 {
 	(void) xBlockTime;
-	//enable_VIC_irq(MODEM_INTERRUPTS);
-	//block when it is not free
-	if (sel == 1){
-		TX_BUFF_1[TX_BUFF_1_EP] = cOutChar;
-		TX_BUFF_1_EP = (TX_BUFF_1_EP+1)%BUFFER_SIZE;
-		if (TX_BUFF_1_EP == TX_BUFF_1_SP){
-			Modem_1_FREE = 0;
-		}
-	} else {
-		TX_BUFF_2[TX_BUFF_2_EP] = cOutChar;
-		TX_BUFF_2_EP = (TX_BUFF_2_EP+1)%BUFFER_SIZE;
-		if (TX_BUFF_2_EP == TX_BUFF_2_SP){
-			Modem_2_FREE = 0;
-		}
-	}
+	TX_BUFF[TX_BUFF_EP] = cOutChar;
+	TX_BUFF_EP = (TX_BUFF_EP+1)%BUFFER_SIZE;
 	return 0;
 }
 
@@ -215,11 +185,10 @@ unsigned portSHORT Comms_Modem_Read_Str( portCHAR * pcString, unsigned portSHORT
 
 */
 
-void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT usStringLength, portSHORT sel )
+void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT usStringLength)
 {
 	const signed portCHAR *pxNext;
 	unsigned portSHORT usLength = 0;
-	setModemTransmit(sel);
 	//signed portBASE_TYPE ret;
 	/* Send each character in the string, one at a time. */
 	pxNext = ( const signed portCHAR * ) pcString;
@@ -227,19 +196,17 @@ void Comms_Modem_Write_Str( const portCHAR * const pcString, unsigned portSHORT 
 		while(usLength < usStringLength)
 		{
 
-			Comms_Modem_Write_Char( *pxNext, 1, sel );
+			Comms_Modem_Write_Char( *pxNext, 1);
 			pxNext++;
 			usLength++;
 		}
 	}
 	enable_VIC_irq(MODEM_INTERRUPTS);
-
 }
 
 /*-----------------------------------------------------------*/
-void Comms_Modem_Write_Hex(const void * const loc, unsigned portSHORT usStringLength,portSHORT sel)
+void Comms_Modem_Write_Hex(const void * const loc, unsigned portSHORT usStringLength)
 {
-	(void)sel;
 	const portCHAR *temp;
 	portSHORT index;
 	{

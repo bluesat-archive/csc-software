@@ -38,9 +38,6 @@
 #define GMSK_1 3
 #define GMSK_2 4
 
-void switching_takeSemaphore(void);
-
-void switching_giveSemaphore(void);
 
 void Switching_Init(void);
 
