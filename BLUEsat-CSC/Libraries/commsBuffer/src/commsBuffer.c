@@ -1,7 +1,7 @@
 #include "commsBuffer.h"
 #include "debug.h"
 // TaskToken globtoken;
-extern TaskToken         sharedTaskToken;
+//extern TaskToken         sharedTaskToken;
 /*
  *  Bit Stuffing Functions
  * ---------------------
@@ -16,13 +16,13 @@ UnivRetCode stuffBufMSBtoLSB (char * inputBuff, unsigned int input_size, buffer 
          return result;
    }
    if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
-   vDebugPrint(sharedTaskToken, "%1x\n\r",&outputBuff->buff[outputBuff->index] , NO_INSERT, NO_INSERT);
+   //vDebugPrint(sharedTaskToken, "%1x\n\r",&outputBuff->buff[outputBuff->index] , NO_INSERT, NO_INSERT);
    while (bitPopMSBtoLSB (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
-	   vDebugPrint(sharedTaskToken, "%d\n\r",temp, NO_INSERT, NO_INSERT);
+	   //vDebugPrint(sharedTaskToken, "%d\n\r",temp, NO_INSERT, NO_INSERT);
          outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
          if (bitPushMSBtoLSB (outputBuff, temp)== URC_FAIL)return result;
-         vDebugPrint(sharedTaskToken, "%1x\n\r",&outputBuff->buff[outputBuff->index] , NO_INSERT, NO_INSERT);
+         //vDebugPrint(sharedTaskToken, "%1x\n\r",&outputBuff->buff[outputBuff->index] , NO_INSERT, NO_INSERT);
          if ( outputBuff->connectedOnes > PatternLimit)
             {
                outputBuff->connectedOnes = 0; // Take into account the 1 to be added after this if block
@@ -42,9 +42,12 @@ UnivRetCode stuffBufLSBtoMSB (char * inputBuff, unsigned int input_size, buffer 
    {
          return result;
    }
+
    if (initBuffer(&input, inputBuff, input_size) == URC_FAIL)return result;
+
    while (bitPopLSBtoMSB (&input, &temp, sizeof (char))==URC_SUCCESS)
       {
+
          outputBuff->connectedOnes = (temp==0)?0: outputBuff->connectedOnes+1;
          if (bitPushLSBtoMSB (outputBuff, temp)== URC_FAIL)return result;
          if ( outputBuff->connectedOnes > PatternLimit)
