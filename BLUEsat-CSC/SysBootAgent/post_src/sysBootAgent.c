@@ -58,7 +58,7 @@ unsigned int initDrivers(void)
 #endif
 
 #ifdef WATCHDOG_H_
-    watchdog_init();
+    //watchdog_init();
 #endif
 
 	return 0;
