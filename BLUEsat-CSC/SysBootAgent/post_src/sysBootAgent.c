@@ -11,6 +11,7 @@
 
 unsigned int initDrivers(void)
 {
+    rtc_time_t time;
 
 #ifdef GPIO_H_
 	Gpio_Init();
@@ -27,7 +28,7 @@ unsigned int initDrivers(void)
 #endif//
 
 #ifdef I2C_H_
-	//Comms_I2C_Init();
+	Comms_I2C_Init();
 #endif//*/
 
 #ifdef SWITCHING_H_
@@ -35,13 +36,26 @@ unsigned int initDrivers(void)
 #endif//
 
 #ifdef MODEM_H_
-	Comms_Modem_Timer_Init();
+	//Comms_Modem_Timer_Init();
 #endif//
 
 #ifdef IAP_H_
 	//Internal Application Programming (IAP)
 	/* NO INITIALISATION REQUIRED */
 #endif//
+
+#ifdef RTC_H_
+	//RTC clock
+	rtc_init();
+    time.rtcSec = 0;
+    time.rtcMin = 0;
+    time.rtcHour = 0;
+    time.rtcMday = 1;
+    time.rtcMon = 1;
+    time.rtcYear = 1337;
+    rtc_set_current_time(time);
+    rtc_start();
+#endif
 
 	return 0;
 }
@@ -54,7 +68,7 @@ unsigned int initServices(void)
 
 #ifdef MEMORY_H_
 	//memory task
-	vMemory_Init(SERV_TASK_PRIORITY);
+	//vMemory_Init(SERV_TASK_PRIORITY);
 #endif//
 
 #ifdef COMMAND_H_
@@ -108,7 +122,7 @@ unsigned int initApplications(void)
 
 #ifdef MEMORY_DEMO_H_
 	//Demonstration additional volatile memory and stack memory usage
-	vMemoryDemo_Init(APP_TASK_PRIORITY);
+	//vMemoryDemo_Init(APP_TASK_PRIORITY);
 #endif
 
 #ifdef STORAGE_DEMO_H_
@@ -137,7 +151,7 @@ unsigned int initApplications(void)
 #endif
 
 #ifdef COMMSDEMO_H_
-	vCommsDemo_Init(APP_TASK_PRIORITY);
+	//vCommsDemo_Init(APP_TASK_PRIORITY);
 #endif
 	return 0;
 }
