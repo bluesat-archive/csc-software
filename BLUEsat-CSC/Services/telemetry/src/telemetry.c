@@ -196,7 +196,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
         enResult = enGetRequest(telemTaskToken, &incomingPacket, DEF_SWEEP_TIME);
 
         /* Feed the dog. */
-        watchdog_feed();
+        //watchdog_feed();
 
         /* Poll once when it gets unblocked regardless. */
         telemetry_sensor_poll();
