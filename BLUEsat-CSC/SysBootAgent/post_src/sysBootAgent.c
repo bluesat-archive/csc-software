@@ -57,6 +57,10 @@ unsigned int initDrivers(void)
     rtc_start();
 #endif
 
+#ifdef WATCHDOG_H_
+    watchdog_init();
+#endif
+
 	return 0;
 }
 
@@ -91,7 +95,7 @@ unsigned int initServices(void)
 #endif//
 
 #ifdef TELEMETRY_H_
-	//vTelemInit(SERV_TASK_PRIORITY);
+	vTelemInit(SERV_TASK_PRIORITY);
 #endif
 
 #ifdef COMMS_DTMF_H_
@@ -99,7 +103,7 @@ unsigned int initServices(void)
 #endif
 
 #ifdef COMMS_H_
-	vComms_Init(SERV_TASK_PRIORITY);
+	//vComms_Init(SERV_TASK_PRIORITY);
 #endif
 	return 0;
 }

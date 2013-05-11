@@ -15,6 +15,7 @@
 #include "telemetry_core.h"
 #include "telemetry_storage.h"
 #include "telemetry_sensor_map.h"
+#include "rtc.h"
 
 /* Telemetry hardware information definition. */
 #define TRANSLATOR_COUNT                4
@@ -74,12 +75,40 @@ telemetry_read_latest(char *buffer, unsigned int size)
 }
 
 static void
+telemetry_data_compress(unsigned short in, char *out)
+{
+    char upper = (char)(in >> 8);
+    char lower = (char)(in & 0xff);
+    int i;
+    int start;
+
+    if (upper == 0) {
+        /* No sign extension. */
+        *out = lower;
+    }  else {
+        /* Find a 1 from MSB. */
+        for (i = 7; i >= 0; i--) {
+            if ((lower & (1 << i)) != 0) {
+                /* found */
+                break;
+            }
+        }
+        start = i;
+        for (i = start + 1; i < 7; i++) {
+            lower |= (1 << i);
+        }
+        *out = lower;
+    }
+}
+
+static void
 telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
 {
     unsigned int i;
     char *curSensor;
     unsigned short curResult;
     unsigned int baseIndex = 0;
+    char data;
 
     /* Calculate base index. */
     for (i = 0; i < (unsigned int)interface; i++) {
@@ -90,9 +119,11 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
         curSensor = (char *)telemetry_sensor_map[interface][i];
         //curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
         curResult = (unsigned short)(magicNum * 1337 + i + (100 * interface));
+        data = 0;
+        telemetry_data_compress(curResult, &data);
         /* Store current result. */
         vDebugPrint(telemTaskToken, "TELEM | cur result is %d...\n\r", curResult, 0, 0);
-        entry->values[baseIndex + i] = curResult;
+        entry->values[baseIndex + i] = data;
     }
     magicNum++;
 }
@@ -100,6 +131,7 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
 static void
 telemetry_sensor_poll(void)
 {
+    rtc_time_t time;
     struct telem_storage_entry_t entry;
     memset((char *)&entry, 0, sizeof(struct telem_storage_entry_t));
     /*for (i = 0; i < TRANSLATOR_COUNT; i++) {
@@ -115,7 +147,12 @@ telemetry_sensor_poll(void)
     //telemetry_sensor_store(3, &entry);
 
     /* Calculate timestamp. */
-    entry.timestamp = 1337; /* TODO: */
+    /* Timestamp format. */
+    /*  31 - 22 | 21 - 17 | 16 - 12 | 11 - 6 | 5 - 0  */
+    /*  unused  |   day   |   hour  | minute | second */
+    rtc_get_current_time(&time);
+    entry.timestamp = (time.rtcMday << 17) | (time.rtcHour << 12) |
+            (time.rtcMin << 6) | time.rtcSec;
     vDebugPrint(telemTaskToken, "TELEM | cur addr is %d...\n\r", (int)cur, 0, 0);
     /* Store the data in memory. */
     telemetry_storage_write(&entry);
@@ -138,17 +175,28 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
     UnivRetCode enResult;
     MessagePacket incomingPacket;
     telem_command_t *pComamndHandle;
+    rtc_time_t time;
+
+    /* Test feed dog. */
+    /*while (1) {
+        rtc_get_current_time(&time);
+        vDebugPrint(telemTaskToken, "Time is %d: %d: %d\r\n", time.rtcHour, time.rtcMin, time.rtcSec);
+        vSleep(1000);
+        watchdog_feed();
+    }*/
 
     /* Initialise telemetry semaphore. */
     vSemaphoreCreateBinary(telemMutex);
 
     telem_core_semph_create();
-
     telemetry_storage_reset();
     telemetry_storage_init();
     for (;;)
     {
         enResult = enGetRequest(telemTaskToken, &incomingPacket, DEF_SWEEP_TIME);
+
+        /* Feed the dog. */
+        watchdog_feed();
 
         /* Poll once when it gets unblocked regardless. */
         telemetry_sensor_poll();
