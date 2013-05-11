@@ -21,20 +21,12 @@
 #include "FreeRTOS.h"
 #include "DTMF_Common.h"
 
+#define DTMF_SIZE 64
 
 /**
  * \brief Initialise the queue, interrupts and GPIO for the DTMF driver.
  */
 void Comms_DTMF_Init(void);
-
-/**
- * \brief Reads a value off the queue. The value will be 8 bits long and
- *        contain a tone [0-3] and a decoder[4-7]
- *
- * \param[in] xBlockTime Time to block. This should be infinite
- * \param[in] elem Pointer to receive buffer
- */
-void Comms_DTMF_Read( DtmfTone *DTMF_elem, int *new, portTickType xBlockTime );
 
 
 #endif /* COMMS_DTMF_H_ */

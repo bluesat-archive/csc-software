@@ -78,8 +78,9 @@ enum eBoolean {
 */
 typedef enum eBoolean Boolean;
 
-DtmfTone tone;
-int newData;
+char DTMF_BUFF[DTMF_SIZE];
+int DTMF_BUFF_SP = 0; //Start position
+int DTMF_BUFF_EP = 0; //End position
 
 void Comms_DTMF_Init(void)
 {
@@ -177,29 +178,24 @@ void Comms_DTMF_Handler (void)
    {//One decoder has decoded something
       if (FIO2PIN&(DTMF_INT_1))
       {//Check if the First decoder is ready
-         tone.decoder = DTMF_DECODER1;
-         tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
-         newData = 1;
+         //tone.decoder = DTMF_DECODER1;
+         DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+         DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
          bPriDecodeFailed = false;
-         //Comms_UART_Write_Str("a",1 );k
-
-       }
+      }
       if (FIO2PIN&(DTMF_INT_2))
       {//Check if the second decoder is ready
-         tone.decoder = DTMF_DECODER2;
-         tone.tone = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
+         //tone.decoder = DTMF_DECODER2;
+    	  DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
-     	//Comms_UART_Write_Str("b",1 );
-         newData = 1;
+    	  DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
       }
       if ((FIO2PIN&(DTMF_INT_1)) && bPriDecodeFailed)
       {// If the first decoder was not ready try it again
-         tone.decoder = DTMF_DECODER1;
-         tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+          DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+          DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
-     	//Comms_UART_Write_Str("c",1 );
-         newData = 1;
       }
   }
 
@@ -219,13 +215,3 @@ void Comms_DTMF_Wrapper(void)
    Comms_DTMF_Handler();
    portRESTORE_CONTEXT();  // Restore the context
 }
-
-/*signed portBASE_TYPE*/void Comms_DTMF_Read( DtmfTone *DTMF_elem, int *new, portTickType xBlockTime )
-{
-	(void) xBlockTime;
-	*new = newData;
-	*DTMF_elem = tone;
-	newData = 0;
-//   return xQueueReceive(DTMF_BUFF,DTMF_elem,xBlockTime);
-}
-
