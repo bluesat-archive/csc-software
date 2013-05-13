@@ -34,6 +34,8 @@ telemetry_core_read(unsigned int bus, unsigned int interface, char *sensorID)
     unsigned int length;
     portBASE_TYPE returnVal;
     int i;
+    memset(readBuf, 0, 10);
+    memset(command, 0, 10);
 
     /* Passive config. */
     command[0] = 0xD2;
@@ -63,7 +65,7 @@ telemetry_core_read(unsigned int bus, unsigned int interface, char *sensorID)
     /* Sending the unique ID. */
     for (i = 0; i < 8; ++i) {
         command[0] = 0xA5; /* Write. */
-        command[1] = sensorID[7 - i];
+        command[1] = sensorID[i];
         length = 2;
         returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + interface, I2C_WRITE,
                 (char*)&isValid, (char*)command, (short*)&length, telemMutex, bus);
