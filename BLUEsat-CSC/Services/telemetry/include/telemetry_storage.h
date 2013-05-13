@@ -18,7 +18,7 @@
 
 struct telem_storage_entry_t
 {
-    char values[TELEM_SENSOR_COUNT];
+    unsigned short values[TELEM_SENSOR_COUNT];
     unsigned int timestamp;
 };
 

@@ -75,55 +75,31 @@ telemetry_read_latest(char *buffer, unsigned int size)
 }
 
 static void
-telemetry_data_compress(unsigned short in, char *out)
-{
-    char upper = (char)(in >> 8);
-    char lower = (char)(in & 0xff);
-    int i;
-    int start;
-
-    if (upper == 0) {
-        /* No sign extension. */
-        *out = lower;
-    }  else {
-        /* Find a 1 from MSB. */
-        for (i = 7; i >= 0; i--) {
-            if ((lower & (1 << i)) != 0) {
-                /* found */
-                break;
-            }
-        }
-        start = i;
-        for (i = start + 1; i < 7; i++) {
-            lower |= (1 << i);
-        }
-        *out = lower;
-    }
-}
-
-static void
 telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
 {
     unsigned int i;
     char *curSensor;
     unsigned short curResult;
     unsigned int baseIndex = 0;
-    char data;
+    int j;
 
     /* Calculate base index. */
     for (i = 0; i < (unsigned int)interface; i++) {
         baseIndex += telemInterfaceSensorCount[interface];
     }
 
-    for (i = 0; i < telemInterfaceSensorCount[interface]; i++) {
+    for (i = 0; i < 2 /* telemInterfaceSensorCount[interface] */; i++) {
         curSensor = (char *)telemetry_sensor_map[interface][i];
-        //curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
-        curResult = (unsigned char)(magicNum * 1337 + i + (100 * interface));
-        data = 0;
-        telemetry_data_compress(curResult, &data);
+        for (j = 0; j < 8; j++) {
+            vDebugPrint(telemTaskToken, "%d ", telemetry_sensor_map[interface][i][j], NO_INSERT, NO_INSERT);
+        }
+        vDebugPrint(NULL, "\r\n",0, NO_INSERT, NO_INSERT);
+        curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
+        telemetry_core_print_temperature(curResult, telemTaskToken);
+        //curResult = (unsigned char)(magicNum * 1337 + i + (100 * interface));
         /* Store current result. */
-        vDebugPrint(telemTaskToken, "TELEM | cur result is %d...\n\r", curResult, 0, 0);
-        entry->values[baseIndex + i] = data;
+        //vDebugPrint(telemTaskToken, "TELEM | cur result is %d...\n\r", curResult, 0, 0);
+        entry->values[baseIndex + i] = curResult;
     }
     magicNum++;
 }
@@ -132,19 +108,20 @@ static void
 telemetry_sensor_poll(void)
 {
     rtc_time_t time;
+    int i;
     struct telem_storage_entry_t entry;
     memset((char *)&entry, 0, sizeof(struct telem_storage_entry_t));
-    /*for (i = 0; i < TRANSLATOR_COUNT; i++) {
+    for (i = 0; i < TRANSLATOR_COUNT; i++) {
         telemetry_core_conversion(BUS1, i);
-    }*/
+    }
     vDebugPrint(telemTaskToken, "TELEM | End of conversion stage...\n\r", 0,
                 NO_INSERT, NO_INSERT);
 
     /* Read all data and store into the storage. */
-    telemetry_sensor_store(0, &entry);
+    //telemetry_sensor_store(0, &entry);
     //telemetry_sensor_store(1, &entry);
     //telemetry_sensor_store(2, &entry);
-    //telemetry_sensor_store(3, &entry);
+    telemetry_sensor_store(3, &entry);
 
     /* Calculate timestamp. */
     /* Timestamp format. */
@@ -153,6 +130,7 @@ telemetry_sensor_poll(void)
     rtc_get_current_time(&time);
     entry.timestamp = (time.rtcMday << 17) | (time.rtcHour << 12) |
             (time.rtcMin << 6) | time.rtcSec;
+    vDebugPrint(telemTaskToken, "timestamp is %d\r\n", entry.timestamp, 0, 0);
     vDebugPrint(telemTaskToken, "TELEM | cur addr is %d...\n\r", (int)cur, 0, 0);
     /* Store the data in memory. */
     telemetry_storage_write(&entry);
