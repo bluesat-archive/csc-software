@@ -122,14 +122,32 @@ void Comms_Modem_Timer_Init(void)
 	T1TCR = T1TCR & (~(0x2));//turn off reseting
 	//Set GIOP directions
 	//set AFSK 1 TX port
-	setGPIOdir(4,22,1);
-	setGPIOdir(0,15,1);
+	setGPIOdir(4,22,OUTPUT);
+	setGPIOdir(0,15,OUTPUT);
 	//set M0 amd M1 ports for AFSK2
-	setGPIOdir(0,18,1);
-	setGPIOdir(0,19,1);
+	setGPIOdir(0,18,OUTPUT);
+	setGPIOdir(0,19,OUTPUT);
 	//set M0 amd M1 ports for AFSK1
-	setGPIOdir(0,21,1);
-	setGPIOdir(0,22,1);
+	setGPIOdir(0,21,OUTPUT);
+	setGPIOdir(0,22,OUTPUT);
+    // set-up DET (the energy detection for the RX signal)
+    setGPIOdir(0,17,INPUT);
+    setGPIOdir(0,20,INPUT);
+    // Enable DET interrupt (both rising and falling)
+	//disable EXT3 interrupt first, noting all P[0] GPIO pins share EXT3 Interrupt
+	// VICIntEnable &= ~BIT(17);
+	//enable both edge interrupt
+	IO0IntEnR |= BIT(17) | BIT(20);
+	IO0IntEnF |= BIT(17) | BIT(20);
+
+	// EXTINT|= 0x1<<3;//clear the intterupt
+
+	// VICVectAddr =0;
+	IO0IntClr = BIT(17) | BIT(20);//clear the GPIO interrupts
+	// VICIntEnable |= BIT(17);//enable VIC interrupt for EXT3
+	// install_irq(17, Comms_DTMF_Wrapper, HIGHEST_PRIORITY );
+	// enable_VIC_irq(17);
+
 	createModem_Semaphore();
 }
 

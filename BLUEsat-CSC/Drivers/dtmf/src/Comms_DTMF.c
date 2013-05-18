@@ -28,6 +28,8 @@
 #include "gpio.h"
 #include "command.h"
 #include "UniversalReturnCode.h"
+#include "switching.h"
+#include "debug.h"
 
 
 /* DTMF  Settings*/
@@ -49,13 +51,10 @@
 #define DTMF_DECODER2            ( ( unsigned portLONG ) 1 )
 #define DTMF_INVALIDDECODER      ( ( unsigned portLONG ) 3 )
 
-#define IO2IntEnR (*(volatile unsigned long *)(0xE00280B0))//somehow these are not included in lpc24xx.h
-#define IO2IntEnF (*(volatile unsigned long *)(0xE00280B4))
-#define IO2IntClr (*(volatile unsigned long *)(0xE00280AC))
-
 //xQueueHandle DTMF_BUFF;
 
-void Comms_DTMF_Wrapper(void) __attribute__ ((naked));
+// void Comms_DTMF_Wrapper(void) __attribute__ ((naked));
+void GPIO_Handler(void) __attribute__ ((naked));
 void Comms_DTMF_Handler (void);
 
 //unsigned int decoder1value(void);
@@ -130,11 +129,12 @@ void Comms_DTMF_Init(void)
 	IO2IntEnR |= (DTMF_INT_PINS_SIN);
 	IO2IntEnF &=~ DTMF_INT_PINS_SIN;
 
+    // TODO: Move setting up GPIO VIC to gpio driver
 	EXTINT|= 0x1<<3;//clear the intterupt
 	VICVectAddr =0;
 	IO2IntClr = DTMF_INT_PINS_SIN;//clear the GPIO interrupts
-	VICIntEnable |= 0x1<<17;//enable VIC interrupt for EXT3
-	install_irq(17, Comms_DTMF_Wrapper, HIGHEST_PRIORITY );
+	VICIntEnable |= BIT(17);//enable VIC interrupt for EXT3
+	install_irq(17, GPIO_Handler, HIGHEST_PRIORITY );
 	enable_VIC_irq(17);
 
 }
@@ -228,15 +228,55 @@ void Comms_DTMF_Handler (void)
     {
       portYIELD_FROM_ISR();
     }
-	IO2IntClr = DTMF_INT_PINS_SIN;//clear the GPIO interrupts
-	EXTINT|= 0x1<<3;//clear the intterupt
-	VICVectAddr =0;
 
 }
 
-void Comms_DTMF_Wrapper(void)
+// void Comms_DTMF_Wrapper(void)
+// Renamed to GPIO handler to make it a generic handler of GPIO interrupts
+// Check the interrupt pins here and call the appropriate functions
+// TODO: Move GPIO handler to GPIO driver
+void GPIO_Handler(void)
 {
    portSAVE_CONTEXT();     // Save the context
-   Comms_DTMF_Handler();
+   TaskToken commandToken = enGetTaskToken(TASK_COMMAND);
+   vDebugPrint(commandToken,
+                "INTERRUPT!\n",
+                NO_INSERT,
+                NO_INSERT,
+                NO_INSERT);
+   // Check the pins
+   if (FIO2PIN&DTMF_INT_PINS_SIN) {//Will only be necessary/have effect if we have other GPIO Interrupt sources
+       Comms_DTMF_Handler();
+       IO2IntClr = DTMF_INT_PINS_SIN;//clear the GPIO interrupts
+   } else if (IO0IntStatR & BIT(17) || IO0IntStatR & BIT(20)){
+       // Rising edge of DET pin on modem
+       // Turn on the switching circuit from TX -> RX
+       switching_OPMODE(REPEATER_MODE);
+	    vDebugPrint(commandToken,
+					"REPEATER ON!\n",
+                    NO_INSERT,
+					NO_INSERT,
+					NO_INSERT);
+       IO0IntClr = BIT(17) | BIT(20);//clear the GPIO interrupts
+   } else if (IO0IntStatF & BIT(17) || IO0IntStatF & BIT(20)){
+       // Falling edge of DET pin on modem
+       // Turn off switching circuit from TX -> RX
+       switching_OPMODE(DEVICE_MODE);
+       switching_RX_Device(GMSK_1);
+	    vDebugPrint(commandToken,
+					"Repeater off!\n",
+                    NO_INSERT,
+					NO_INSERT,
+					NO_INSERT);
+       IO0IntClr = BIT(17) | BIT(20);//clear the GPIO interrupts
+   }
+   EXTINT|= 0x1<<3;//clear the intterupt
+   VICVectAddr =0;
+   // Clear the interrupt
+    vDebugPrint(commandToken,
+                "INTERRUPT HANDLED BITCH\n\n",
+                NO_INSERT,
+                NO_INSERT,
+                NO_INSERT);
    portRESTORE_CONTEXT();  // Restore the context
 }

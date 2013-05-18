@@ -24,6 +24,18 @@
 #define INPUT 0
 #define OUTPUT 1
 
+#define IO0IntEnR (*(volatile unsigned long *)(0xE0028090))//somehow these are not included in lpc24xx.h
+#define IO0IntEnF (*(volatile unsigned long *)(0xE0028094))
+#define IO0IntStatR (*(volatile unsigned long *)(0xE0028084))
+#define IO0IntStatF (*(volatile unsigned long *)(0xE0028088))
+#define IO0IntClr (*(volatile unsigned long *)(0xE002808C))
+
+#define IO2IntEnR (*(volatile unsigned long *)(0xE00280B0))//somehow these are not included in lpc24xx.h
+#define IO2IntEnF (*(volatile unsigned long *)(0xE00280B4))
+#define IO2IntStatR (*(volatile unsigned long *)(0xE00280A4))
+#define IO2IntStatF (*(volatile unsigned long *)(0xE00280A8))
+#define IO2IntClr (*(volatile unsigned long *)(0xE00280AC))
+
 // Defines a simple helper function to simplify bit masking
 #define BIT(x) (0x1 << x)
 
