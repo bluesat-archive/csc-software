@@ -43,11 +43,11 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 	}
 
 	ActivateTask(TASK_COMMAND, 
-				"Command",
-				SEV_TASK_TYPE,
-				uxPriority, 
-				SERV_STACK_SIZE, 
-				vCommandTask);
+				 "Command",
+				 SEV_TASK_TYPE,
+				 uxPriority, 
+				 SERV_STACK_SIZE, 
+				 vCommandTask);
 
 	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE);
 }
@@ -67,6 +67,10 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 		if (incoming_packet.Dest == TASK_COMMAND)
 		{
 			//TODO msg for command task
+            if (incoming_packet.Src == TASK_COMMAND)
+            {
+                // It was a message from the DTMF interrupt handler! :3
+            }
 		}
 		else
 		{
@@ -112,10 +116,18 @@ UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_
 	//insert quest into command task queue
 	if (xQueueSend(xTaskQueueHandles[TASK_COMMAND], pMessagePacket, block_time) == pdTRUE)
 	{
-		//put request task into sleep
-		xSemaphoreTake(TaskSemphrs[(pMessagePacket->Token)->enTaskID], portMAX_DELAY);  //(1)
-		//return processed request result
-		return (pMessagePacket->Token)->enRetVal;
+        // XXX: ULTRA HACKYNESS (this shouldn't be here if this software was meant to be more robust)
+        // If a packet is sent FROM the COMMAND task, TO the COMMAND task, then it's just an interrupt handler
+        // somewhere, probably the DTMF handler, sending the COMMAND task a message.
+        if (pMessagePacket->Src == TASK_COMMAND && pMessagePacket->Dest == TASK_COMMAND){
+            // Yep, it was definitely successful! No possible errors at all!
+            return URC_SUCCESS;
+        } else {
+            //put request task into sleep
+            xSemaphoreTake(TaskSemphrs[(pMessagePacket->Token)->enTaskID], portMAX_DELAY);  //(1)
+            //return processed request result
+            return (pMessagePacket->Token)->enRetVal;
+        }
 	}
 	else
 	{
@@ -233,6 +245,15 @@ TaskID enGetTaskID(TaskToken taskToken)
 
 	//get task ID from profile
 	return taskToken->enTaskID;
+}
+
+TaskToken enGetTaskToken(TaskID taskID)
+{
+    //catch NO task ID
+    if (taskID == NULL) return NULL;
+
+    // get task Token from token list
+    return &TaskTokens[taskID];
 }
 
 void vSleep(unsigned portSHORT usTimeMS)

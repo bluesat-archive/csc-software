@@ -12,6 +12,8 @@
 #----------
 # Includes
 #----------
+
+default: clean hex
 include ../Burner/lpcburn/Makefile
 
 
@@ -93,8 +95,6 @@ $(SUITES)
 ALL_TESTS 	 = $(TESTS:.c=.o)
 ALL_PRE      = $(ALL_PRE_SRC:.c=.i)
 ALL_POST_PRE = $(ALL_POST_SRC:.c=.i)
-
-default: clean hex
 	
 hex: elf
 	$(OBJCOPY) $(IMAGE_DIR)/csc.elf -O ihex $(IMAGE_DIR)/csc.hex

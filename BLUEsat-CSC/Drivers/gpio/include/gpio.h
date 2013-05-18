@@ -24,6 +24,9 @@
 #define INPUT 0
 #define OUTPUT 1
 
+// Defines a simple helper function to simplify bit masking
+#define BIT(x) (0x1 << x)
+
 /**
  * \brief Set the output of a GPIO
  *

@@ -26,6 +26,8 @@
 #include "task.h"
 #include "irq.h"
 #include "gpio.h"
+#include "command.h"
+#include "UniversalReturnCode.h"
 
 
 /* DTMF  Settings*/
@@ -45,6 +47,7 @@
 
 #define DTMF_DECODER1            ( ( unsigned portLONG ) 0 )
 #define DTMF_DECODER2            ( ( unsigned portLONG ) 1 )
+#define DTMF_INVALIDDECODER      ( ( unsigned portLONG ) 3 )
 
 #define IO2IntEnR (*(volatile unsigned long *)(0xE00280B0))//somehow these are not included in lpc24xx.h
 #define IO2IntEnF (*(volatile unsigned long *)(0xE00280B4))
@@ -89,7 +92,7 @@ void Comms_DTMF_Init(void)
 	//DTMF_BUFF = xQueueCreate( DTMF_BUFF_LENGTH, ( unsigned portBASE_TYPE ) sizeof( DtmfTone ) );
 
 	//disable EXT3 interrupt first, noting all P[2] GPIO pins share EXT3 Interrupt
-	VICIntEnable &= ~(0x1<<17);
+	VICIntEnable &= ~BIT(17);
 
 	//Set edge sensitive
 	EXTMODE |=  DTMF_EDGE_SEN;
@@ -170,6 +173,9 @@ unsigned int decoder2value(){
 
 void Comms_DTMF_Handler (void)
 {
+    DtmfTone tone;
+    tone.decoder = DTMF_INVALIDDECODER;
+    tone.tone = 0;
 	//ported to lpc2468, this ought to work
 	//Interrupts have been disabled should check for decoders before and after pulling data
    portBASE_TYPE xHigherPriorityTaskWoken = pdFALSE;
@@ -181,9 +187,11 @@ void Comms_DTMF_Handler (void)
 	  num = (num+1)%2;
       if (FIO2PIN&(DTMF_INT_1))
       {//Check if the First decoder is ready
-         //tone.decoder = DTMF_DECODER1;
+         tone.decoder = DTMF_DECODER1;
+         tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+
     	 if (num == 1){
-    		 DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+    		 DTMF_BUFF[DTMF_BUFF_EP] = tone.tone;
 			 DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
     	 }
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
@@ -192,18 +200,29 @@ void Comms_DTMF_Handler (void)
       }
       if (FIO2PIN&(DTMF_INT_2) && bPriDecodeFailed)
       {//Check if the second decoder is ready
-         //tone.decoder = DTMF_DECODER2;
-    	  DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
+         tone.decoder = DTMF_DECODER2;
+         tone.tone = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
+    	  DTMF_BUFF[DTMF_BUFF_EP] = tone.tone;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
     	  DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
       }
       if ((FIO2PIN&(DTMF_INT_1)) && bPriDecodeFailed)
       {// If the first decoder was not ready try it again
-          DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+         tone.decoder = DTMF_DECODER1;
+         tone.tone = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+          DTMF_BUFF[DTMF_BUFF_EP] = tone.tone;
           DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
       }
    }
+
+   // Push the tone to the Command task
+   MessagePacket outgoingPacket;
+   outgoingPacket.Src         = TASK_COMMAND; // XXX: Pretend we are the Command task, since we're not really a task
+   outgoingPacket.Dest        = TASK_COMMAND;
+   outgoingPacket.Token       = enGetTaskToken(TASK_COMMAND);
+   outgoingPacket.Data        = (unsigned portLONG) tone.tone; // We don't care about the decoder
+   UnivRetCode ret = enProcessRequest(&outgoingPacket, portMAX_DELAY);
 
     if( xHigherPriorityTaskWoken )
     {

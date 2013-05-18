@@ -172,9 +172,18 @@ portCHAR *pcGetTaskName(TaskToken taskToken);
  *
  * \param[in] taskToken Task token of a task.
  *			
- * \returns Task name
+ * \returns Task ID
  */
 TaskID enGetTaskID(TaskToken taskToken);
+
+/**
+ * \brief Return Task's Token
+ *
+ * \param[in] taskID Task ID of a task.
+ *			
+ * \returns Task token
+ */
+TaskToken enGetTaskToken(TaskID taskID);
 
 /**
  * \brief Sleep for specified time
