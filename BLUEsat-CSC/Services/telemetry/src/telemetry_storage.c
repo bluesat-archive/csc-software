@@ -16,7 +16,7 @@
 #include "debug.h"
 #include "string.h"
 
-struct telem_storage_entry_t *cur;
+struct telem_storage_entry_t *cur = NULL;
 
 void
 telemetry_storage_init(void)
@@ -64,6 +64,9 @@ telemetry_storage_write(struct telem_storage_entry_t *buf)
 int
 telemetry_storage_read_cur(struct telem_storage_entry_t *buf)
 {
+	if (cur == NULL){
+		return -1;
+	}
     struct telem_storage_entry_t *entry = cur;
     entry--;
     if (!buf) {
