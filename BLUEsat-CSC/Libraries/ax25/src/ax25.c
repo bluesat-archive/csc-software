@@ -18,11 +18,11 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
 
 
 
-//TaskToken         sharedTaskToken;
+TaskToken         sharedTaskToken;
 
 void vSetToken(TaskToken         taskToken)
 {
-   //sharedTaskToken = taskToken;
+   sharedTaskToken = taskToken;
 }
 
 //State block built by comms task
@@ -362,15 +362,19 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
    char testitem = 0xFF;
    buffer outBuff;
    unsigned char fcs0, fcs1;
+
    if (inputDetails==NULL) {return result;}
+
    if (inputDetails->addr == NULL ||
        inputDetails->info == NULL){return result;}
+
    if (inputDetails->addr_size == 0 ||
        inputDetails->info_size == 0){return result;}
    // Init Output buffer
 
    if (initBuffer(&outBuff, outFinal,*outFinalSize) == URC_FAIL)return result;
    // Calculate FCS
+
    if (AX25fcsCalc( inputDetails, &fcs0, &fcs1) == URC_FAIL ) return result;
 
    // Stuff data into output packet
@@ -396,7 +400,7 @@ static UnivRetCode buildPacket (rawPacket * inputDetails, char * outFinal, unsig
 
    //vDebugPrint(sharedTaskToken, "info> %39s \n\r%39x\n\r",(char *)inputDetails->info , (char *)inputDetails->info, NO_INSERT);
    //vDebugPrint(sharedTaskToken, "FCS0> %d FCS1> %d\n\r",fcs0 , fcs1, NO_INSERT);
-  // vDebugPrint(sharedTaskToken, "before FCS> %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
+   //vDebugPrint(sharedTaskToken, "before FCS> %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);
    if (stuffBufLSBtoMSB ((char *)&fcs0, 1 , &outBuff) == URC_FAIL ) return result;
 
    //vDebugPrint(sharedTaskToken, "FCS0> %23x\n\r",(char *)outFinal , NO_INSERT, NO_INSERT);

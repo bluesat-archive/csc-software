@@ -81,6 +81,7 @@ typedef enum eBoolean Boolean;
 char DTMF_BUFF[DTMF_SIZE];
 int DTMF_BUFF_SP = 0; //Start position
 int DTMF_BUFF_EP = 0; //End position
+int num = 0;
 
 void Comms_DTMF_Init(void)
 {
@@ -132,6 +133,7 @@ void Comms_DTMF_Init(void)
 	VICIntEnable |= 0x1<<17;//enable VIC interrupt for EXT3
 	install_irq(17, Comms_DTMF_Wrapper, HIGHEST_PRIORITY );
 	enable_VIC_irq(17);
+
 }
 
 
@@ -176,15 +178,19 @@ void Comms_DTMF_Handler (void)
 
    if (FIO2PIN&DTMF_INT_PINS_SIN)//Will only be necessary/have effect if we have other GPIO Interrupt sources
    {//One decoder has decoded something
+	  num = (num+1)%2;
       if (FIO2PIN&(DTMF_INT_1))
       {//Check if the First decoder is ready
          //tone.decoder = DTMF_DECODER1;
-         DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
-         DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
+    	 if (num == 1){
+    		 DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,9))+(getGPIO(2,8)<<1)+(getGPIO(2,7)<<2)+(getGPIO(2,6)<<3);
+			 DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
+    	 }
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
          bPriDecodeFailed = false;
+
       }
-      if (FIO2PIN&(DTMF_INT_2))
+      if (FIO2PIN&(DTMF_INT_2) && bPriDecodeFailed)
       {//Check if the second decoder is ready
          //tone.decoder = DTMF_DECODER2;
     	  DTMF_BUFF[DTMF_BUFF_EP] = (getGPIO(2,4))+(getGPIO(2,3)<<1)+(getGPIO(2,2)<<2)+(getGPIO(2,1)<<3);
@@ -197,12 +203,12 @@ void Comms_DTMF_Handler (void)
           DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
       }
-  }
-
-   if( xHigherPriorityTaskWoken )
-   {
-      portYIELD_FROM_ISR();
    }
+
+    if( xHigherPriorityTaskWoken )
+    {
+      portYIELD_FROM_ISR();
+    }
 	IO2IntClr = DTMF_INT_PINS_SIN;//clear the GPIO interrupts
 	EXTINT|= 0x1<<3;//clear the intterupt
 	VICVectAddr =0;

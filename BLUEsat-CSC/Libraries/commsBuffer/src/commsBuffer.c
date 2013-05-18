@@ -1,7 +1,7 @@
 #include "commsBuffer.h"
 #include "debug.h"
 // TaskToken globtoken;
-//extern TaskToken         sharedTaskToken;
+extern TaskToken         sharedTaskToken;
 /*
  *  Bit Stuffing Functions
  * ---------------------
