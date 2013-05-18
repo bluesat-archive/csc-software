@@ -91,15 +91,15 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
     for (i = 0; i < 2 /* telemInterfaceSensorCount[interface] */; i++) {
         curSensor = (char *)telemetry_sensor_map[interface][i];
         for (j = 0; j < 8; j++) {
-            //vDebugPrint(telemTaskToken, "%d ", telemetry_sensor_map[interface][i][j], NO_INSERT, NO_INSERT);
+            vDebugPrint(telemTaskToken, "%d ", telemetry_sensor_map[interface][i][j], NO_INSERT, NO_INSERT);
         }
         vDebugPrint(NULL, "\r\n",0, NO_INSERT, NO_INSERT);
         curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
         telemetry_core_print_temperature(curResult, telemTaskToken);
-        curResult = (unsigned char)(magicNum * 1337 + i + (100 * interface))%1000;
+        //curResult = (unsigned char)(magicNum * 1337 + i + (100 * interface))%1000;
         /* Store current result. */
         vDebugPrint(telemTaskToken, "TELEM | cur result is %d...at %d\n\r", curResult, baseIndex+i, 0);
-        entry->values[i] = curResult;
+        entry->values[baseIndex+ i] = curResult;
     }
     magicNum++;
 }

@@ -64,10 +64,10 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 	(void) pvParameters;
 	struct telem_storage_entry_t temp;
 	stateBlock present;
-    char input [64];
-    char actual [64];
+    char input [128];
+    char actual [128];
 
-    unsigned int actual_size = 64;
+    unsigned int actual_size = 128;
     int i, m;
     switching_RX(0);
 	switching_OPMODE(DEVICE_MODE);
@@ -89,8 +89,12 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		input[4] = (temp.timestamp & 63)%10 + '0';
 		input[5] = '\r';
 
-		for (i = 0; i < 6; i++ ){
-			input[6+i*6] = i+'0';
+		for (i = 0; i < 15; i++ ){
+			if (i > 9){
+				input[6+i*6] = i - 10 +'A';
+			} else {
+				input[6+i*6] = i+'0';
+			}
 			input[6+i*6+1] = ':';
 			input[6+i*6+2] = temp.values[i]/100+'0';
 			input[6+i*6+3] = (temp.values[i]/10)%10+'0';
@@ -98,7 +102,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			input[6+i*6+5] = '\r';
 		}
 
-		present.srcSize = 41;
+		present.srcSize = 95;
 		present.src = input;
 		memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
 		memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
@@ -118,8 +122,8 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		present.completed = false;
 
 		vSetToken(Comms_TaskToken);
-		actual_size = 64;
-		memset (actual, 0, 64);
+		actual_size = 128;
+		memset (actual, 0, 128);
 		ax25Entry (&present, actual, &actual_size );
 
 		vDebugPrint(Comms_TaskToken, "%d, %33x\n\r",actual_size ,actual, NO_INSERT);
