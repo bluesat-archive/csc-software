@@ -36,7 +36,7 @@ unsigned int initDrivers(void)
 #endif//
 
 #ifdef MODEM_H_
-	//Comms_Modem_Timer_Init();
+	Comms_Modem_Timer_Init();
 #endif//
 
 #ifdef IAP_H_
@@ -72,7 +72,7 @@ unsigned int initServices(void)
 
 #ifdef MEMORY_H_
 	//memory task
-	//vMemory_Init(SERV_TASK_PRIORITY);
+	vMemory_Init(SERV_TASK_PRIORITY);
 #endif//
 
 #ifdef COMMAND_H_
@@ -99,11 +99,11 @@ unsigned int initServices(void)
 #endif
 
 #ifdef COMMS_DTMF_H_
-	//Comms_DTMF_Init();
+	Comms_DTMF_Init();
 #endif
 
 #ifdef COMMS_H_
-	//vComms_Init(SERV_TASK_PRIORITY);
+	vComms_Init(SERV_TASK_PRIORITY);
 #endif
 	return 0;
 }
