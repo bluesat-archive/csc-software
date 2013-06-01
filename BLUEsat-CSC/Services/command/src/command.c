@@ -61,7 +61,6 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	for ( ; ; )
 	{
 		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_packet, portMAX_DELAY);
-
 		if (xResult != pdTRUE) continue;
 
 		if (incoming_packet.Dest == TASK_COMMAND)
@@ -133,6 +132,20 @@ UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_
 	{
 		return URC_BUSY;
 	}
+}
+
+UnivRetCode dtmfRequest (MessagePacket *pMessagePacket)
+{
+	portBASE_TYPE a;
+	//catch NO message packet input input
+	if (pMessagePacket == NULL) return URC_FAIL;
+
+	//insert quest into command task queue
+	if (xQueueSendFromISR(xTaskQueueHandles[TASK_COMMAND], pMessagePacket, &a) == pdTRUE)
+	{
+		return URC_SUCCESS;
+	}
+	return URC_FAIL;
 }
 
 UnivRetCode enGetRequest (TaskToken taskToken,

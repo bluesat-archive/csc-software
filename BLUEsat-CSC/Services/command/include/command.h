@@ -87,6 +87,9 @@ typedef struct
  */
 void vCommand_Init(unsigned portBASE_TYPE uxPriority);
 
+UnivRetCode dtmfRequest (MessagePacket *pMessagePacket);
+
+
 /**
  * \brief Attempt to process request & put request task to sleep
  *
@@ -96,6 +99,8 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority);
  *			
  * \returns enum Containing the processed result
  */
+
+
 UnivRetCode enProcessRequest (MessagePacket *pMessagePacket, portTickType block_time);
 
 /**

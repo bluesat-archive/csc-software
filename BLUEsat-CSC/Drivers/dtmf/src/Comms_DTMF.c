@@ -130,13 +130,14 @@ void Comms_DTMF_Init(void)
 	IO2IntEnF &=~ DTMF_INT_PINS_SIN;
 
     // TODO: Move setting up GPIO VIC to gpio driver
-	EXTINT|= 0x1<<3;//clear the intterupt
+	EXTINT|= 0x1<<3;//clear the interupt
 	VICVectAddr =0;
 	IO2IntClr = DTMF_INT_PINS_SIN;//clear the GPIO interrupts
 	VICIntEnable |= BIT(17);//enable VIC interrupt for EXT3
 	install_irq(17, GPIO_Handler, HIGHEST_PRIORITY );
 	enable_VIC_irq(17);
-
+	led_init();
+	led(0);
 }
 
 
@@ -214,15 +215,21 @@ void Comms_DTMF_Handler (void)
           DTMF_BUFF_EP = (DTMF_BUFF_EP+1)%DTMF_SIZE;
          //xQueueSendFromISR(DTMF_BUFF,&tone,&xHigherPriorityTaskWoken);
       }
+      if (DTMF_BUFF_EP%2==0){
+    	  // Push the tone to the Command task
+		  MessagePacket outgoingPacket;
+		  outgoingPacket.Src         = TASK_COMMAND; // XXX: Pretend we are the Command task, since we're not really a task
+		  outgoingPacket.Dest        = TASK_COMMAND;
+		  outgoingPacket.Token       = enGetTaskToken(TASK_COMMAND);
+		  if(DTMF_BUFF_EP != 0){
+			  outgoingPacket.Data = DTMF_BUFF[DTMF_BUFF_EP-2]*16+DTMF_BUFF[DTMF_BUFF_EP-1]; // We don't care about the decoder
+		  } else {
+			  outgoingPacket.Data = DTMF_BUFF[DTMF_SIZE-2]*16+DTMF_BUFF[DTMF_SIZE-1];
+		  }
+		  UnivRetCode ret = dtmfRequest(&outgoingPacket);
+      }
    }
 
-   // Push the tone to the Command task
-   MessagePacket outgoingPacket;
-   outgoingPacket.Src         = TASK_COMMAND; // XXX: Pretend we are the Command task, since we're not really a task
-   outgoingPacket.Dest        = TASK_COMMAND;
-   outgoingPacket.Token       = enGetTaskToken(TASK_COMMAND);
-   outgoingPacket.Data        = (unsigned portLONG) tone.tone; // We don't care about the decoder
-   UnivRetCode ret = enProcessRequest(&outgoingPacket, portMAX_DELAY);
 
     if( xHigherPriorityTaskWoken )
     {
@@ -238,12 +245,6 @@ void Comms_DTMF_Handler (void)
 void GPIO_Handler(void)
 {
    portSAVE_CONTEXT();     // Save the context
-   TaskToken commandToken = enGetTaskToken(TASK_COMMAND);
-   vDebugPrint(commandToken,
-                "INTERRUPT!\n",
-                NO_INSERT,
-                NO_INSERT,
-                NO_INSERT);
    // Check the pins
    if (FIO2PIN&DTMF_INT_PINS_SIN) {//Will only be necessary/have effect if we have other GPIO Interrupt sources
        Comms_DTMF_Handler();
@@ -252,31 +253,17 @@ void GPIO_Handler(void)
        // Rising edge of DET pin on modem
        // Turn on the switching circuit from TX -> RX
        switching_OPMODE(REPEATER_MODE);
-	    vDebugPrint(commandToken,
-					"REPEATER ON!\n",
-                    NO_INSERT,
-					NO_INSERT,
-					NO_INSERT);
        IO0IntClr = BIT(17) | BIT(20);//clear the GPIO interrupts
    } else if (IO0IntStatF & BIT(17) || IO0IntStatF & BIT(20)){
        // Falling edge of DET pin on modem
        // Turn off switching circuit from TX -> RX
        switching_OPMODE(DEVICE_MODE);
        switching_RX_Device(GMSK_1);
-	    vDebugPrint(commandToken,
-					"Repeater off!\n",
-                    NO_INSERT,
-					NO_INSERT,
-					NO_INSERT);
        IO0IntClr = BIT(17) | BIT(20);//clear the GPIO interrupts
    }
    EXTINT|= 0x1<<3;//clear the intterupt
    VICVectAddr =0;
    // Clear the interrupt
-    vDebugPrint(commandToken,
-                "INTERRUPT HANDLED BITCH\n\n",
-                NO_INSERT,
-                NO_INSERT,
-                NO_INSERT);
+
    portRESTORE_CONTEXT();  // Restore the context
 }

@@ -96,9 +96,9 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 				input[6+i*6] = i+'0';
 			}
 			input[6+i*6+1] = ':';
-			input[6+i*6+2] = temp.values[i]/100+'0';
-			input[6+i*6+3] = (temp.values[i]/10)%10+'0';
-			input[6+i*6+4] = temp.values[i]%10+'0';
+			input[6+i*6+2] = temp.values[i+30]/100+'0';
+			input[6+i*6+3] = (temp.values[i+30]/10)%10+'0';
+			input[6+i*6+4] = temp.values[i+30]%10+'0';
 			input[6+i*6+5] = '\r';
 		}
 
