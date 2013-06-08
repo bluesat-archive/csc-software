@@ -16,9 +16,13 @@
 #define TELEM_STORAGE_BASE_ADDR (STATIC_BANK_0_START_ADDR + 0x5004)
 #define TELEM_MAX_ENTRIES 2000
 
+#define TELEM_POWER_MON_COUNT 16
+
 struct telem_storage_entry_t
 {
     unsigned short values[TELEM_SENSOR_COUNT];
+    unsigned short voltages[TELEM_POWER_MON_COUNT];
+    unsigned short currents[TELEM_POWER_MON_COUNT];
     unsigned int timestamp;
 };
 

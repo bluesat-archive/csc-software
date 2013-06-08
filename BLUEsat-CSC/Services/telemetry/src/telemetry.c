@@ -15,7 +15,10 @@
 #include "telemetry_core.h"
 #include "telemetry_storage.h"
 #include "telemetry_sensor_map.h"
+#include "power_monitor.h"
 #include "rtc.h"
+
+//#define TELEM_DEBUG 1
 
 /* Telemetry hardware information definition. */
 #define TRANSLATOR_COUNT                4
@@ -29,7 +32,7 @@
 #define DEF_SWEEP_TIME                  2000 / portTICK_RATE_MS /* 20 seconds. */
 
 /* Telemetry interface sensor count definition. */
-static unsigned int telemInterfaceSensorCount[] = {10, 10, 10, 10};
+static unsigned int telemInterfaceSensorCount[] = {10, 10, 10, 9};
 
 TaskToken telemTaskToken;
 static xSemaphoreHandle telemMutex;
@@ -43,15 +46,21 @@ telemetry_read_single(unsigned int index, char *buffer, unsigned int size)
     unsigned int nbytes = ((size < sizeof(struct telem_storage_entry_t)) ?
             size : sizeof(struct telem_storage_entry_t));
     struct telem_storage_entry_t entry;
+#ifdef TELEM_DEBUG
     struct telem_storage_entry_t *ptr;
+#endif
 
     telemetry_storage_read_index(index, &entry);
     memcpy(buffer, &entry, nbytes);
     /********** testing. *************/
-    vDebugPrint(telemTaskToken, "TELEM | Now check the content is actually stored - single...\n\r", 0,
-                NO_INSERT, NO_INSERT);
+    vDebugPrint(telemTaskToken, "TELEM | Now check the content is actually stored - single...\n\r",
+            NO_INSERT, NO_INSERT, NO_INSERT);
+
+#ifdef TELEM_DEBUG
+    /* The following two lines are for debugging. Can be commented out. */
     ptr = (struct telem_storage_entry_t *)buffer;
     telemetry_print_entry_content(ptr);
+#endif
 }
 
 static void
@@ -61,17 +70,20 @@ telemetry_read_latest(char *buffer, unsigned int size)
     unsigned int nbytes = ((size < sizeof(struct telem_storage_entry_t)) ?
             size : sizeof(struct telem_storage_entry_t));
     struct telem_storage_entry_t entry;
+#ifdef TELEM_DEBUG
     struct telem_storage_entry_t *ptr;
-
+#endif
 
     telemetry_storage_read_cur(&entry);
     memcpy(buffer, &entry, nbytes);
 
     /********** testing. *************/
-    vDebugPrint(telemTaskToken, "TELEM | Now check the content is actually stored...\n\r", 0,
-                NO_INSERT, NO_INSERT);
+    vDebugPrint(telemTaskToken, "TELEM | Now check the content is actually stored...\n\r",
+            NO_INSERT, NO_INSERT, NO_INSERT);
+#ifdef TELEM_DEBUG
     ptr = (struct telem_storage_entry_t *)buffer;
     telemetry_print_entry_content(ptr);
+#endif
 }
 
 static void
@@ -94,7 +106,7 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
             vDebugPrint(telemTaskToken, "%d ", telemetry_sensor_map[interface][i][j], NO_INSERT, NO_INSERT);
         }
         vDebugPrint(NULL, "\r\n",0, NO_INSERT, NO_INSERT);
-        curResult = (unsigned short)telemetry_core_read(BUS1, interface, curSensor);
+        curResult = (unsigned short)telemetry_core_read(BUS2, interface, curSensor);
         telemetry_core_print_temperature(curResult, telemTaskToken);
         //curResult = (unsigned char)(magicNum * 1337 + i + (100 * interface))%1000;
         /* Store current result. */
@@ -105,6 +117,16 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
 }
 
 static void
+power_monitor_print(unsigned short *voltages, unsigned short *currents)
+{
+    int i;
+    for (i = 0; i < 16; i++) {
+        vDebugPrint(telemTaskToken, "POWER | Dev %d voltage %d\n\r", i, voltages[i], NO_INSERT);
+        vDebugPrint(telemTaskToken, "POWER | Dev %d current %d\n\r", i, currents[i], NO_INSERT);
+    }
+}
+
+static void
 telemetry_sensor_poll(void)
 {
     rtc_time_t time;
@@ -112,7 +134,7 @@ telemetry_sensor_poll(void)
     struct telem_storage_entry_t entry;
     memset((char *)&entry, 0, sizeof(struct telem_storage_entry_t));
     for (i = 0; i < TRANSLATOR_COUNT; i++) {
-        telemetry_core_conversion(BUS1, i);
+        telemetry_core_conversion(BUS2, i);
     }
     vDebugPrint(telemTaskToken, "TELEM | End of conversion stage...\n\r", 0,
                 NO_INSERT, NO_INSERT);
@@ -123,6 +145,9 @@ telemetry_sensor_poll(void)
     //telemetry_sensor_store(2, &entry);
     telemetry_sensor_store(3, &entry);
 
+    /* Read power monitor data. */
+    power_monitor_sweep(BUS1, &(entry.voltages[0]), &(entry.currents[0]));
+
     /* Calculate timestamp. */
     /* Timestamp format. */
     /*  31 - 22 | 21 - 17 | 16 - 12 | 11 - 6 | 5 - 0  */
@@ -132,6 +157,8 @@ telemetry_sensor_poll(void)
             (time.rtcMin << 6) | time.rtcSec;
     vDebugPrint(telemTaskToken, "timestamp is %d\r\n", entry.timestamp, 0, 0);
     vDebugPrint(telemTaskToken, "TELEM | cur addr is %d...\n\r", (int)cur, 0, 0);
+
+    power_monitor_print(&(entry.voltages[0]), &(entry.currents[0]));
     /* Store the data in memory. */
     telemetry_storage_write(&entry);
 }
@@ -153,7 +180,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
     UnivRetCode enResult;
     MessagePacket incomingPacket;
     telem_command_t *pComamndHandle;
-    rtc_time_t time;
+    //rtc_time_t time;
 
     /* Test feed dog. */
     /*while (1) {
@@ -166,9 +193,13 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
     /* Initialise telemetry semaphore. */
     vSemaphoreCreateBinary(telemMutex);
 
+    /* Set up temperature sensor semaphore. */
     telem_core_semph_create();
+    /* Set up power monitor semaphore. */
+    power_mon_core_semph_create();
     telemetry_storage_reset();
     telemetry_storage_init();
+
     for (;;)
     {
         enResult = enGetRequest(telemTaskToken, &incomingPacket, DEF_SWEEP_TIME);
@@ -222,7 +253,6 @@ UnivRetCode enTelemServiceMessageSend(TaskToken taskToken, unsigned portLONG dat
     return enProcessRequest(&outgoingPacket, portMAX_DELAY);
 }
 
-
 UnivRetCode
 vTelemInit(unsigned portBASE_TYPE uxPriority)
 {
@@ -230,7 +260,7 @@ vTelemInit(unsigned portBASE_TYPE uxPriority)
                                 "Telem",
                                 SEV_TASK_TYPE,
                                 uxPriority,
-                                SERV_STACK_SIZE,
+                                1024,
                                 vTelemTask);
 
     vActivateQueue(telemTaskToken, TELEM_QUEUE_SIZE);

@@ -9,6 +9,7 @@
 #define TELEMETRY_H_
 
 #include "UniversalReturnCode.h"
+#include "command.h"
 
 typedef enum
 {
@@ -36,6 +37,8 @@ typedef struct
     char *buffer;
     char size;
 } telem_command_t;
+
+extern TaskToken telemTaskToken;
 
 UnivRetCode enTelemServiceMessageSend(TaskToken taskToken, unsigned portLONG data);
 
