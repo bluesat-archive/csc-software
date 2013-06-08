@@ -23,6 +23,11 @@
 
 #define MAX_QUEUE_REQ_SIZE	10
 
+#define TELE_MODE 1
+#define REPEATER_MODE 2
+#define LOOPBACK_MODE 3
+#define COMMAND_MODE 4
+
 static xQueueHandle 	xTaskQueueHandles	[NUM_TASKID];
 static struct taskToken TaskTokens			[NUM_TASKID];
 static xSemaphoreHandle	TaskSemphrs			[NUM_TASKID];
@@ -68,6 +73,21 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 			//TODO msg for command task
             if (incoming_packet.Src == TASK_COMMAND)
             {
+            	switch (incoming_packet.Data){
+					case TELE_MODE:
+
+						break;
+					case REPEATER_MODE:
+
+						break;
+					case LOOPBACK_MODE:
+
+						break;
+					case COMMAND_MODE:
+
+						break;
+
+            	}
                 // It was a message from the DTMF interrupt handler! :3
             }
 		}

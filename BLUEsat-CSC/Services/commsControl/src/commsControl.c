@@ -33,6 +33,10 @@ static TaskToken Comms_TaskToken;
 //prototype for task function
 static portTASK_FUNCTION(vCommsTask, pvParameters);
 
+int transmitTele = 1;
+int transmitBeacon = 1;
+
+
 extern char DTMF_BUFF[DTMF_SIZE];
 extern int DTMF_BUFF_SP; //Start position
 extern int DTMF_BUFF_EP; //End position
@@ -80,60 +84,61 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		m = 0;
 		// grab message from telem log
 		//telemetry_storage_read_index(0,&temp);
-		m = telemetry_storage_read_cur(&temp);
-		vDebugPrint(Comms_TaskToken,"m = %d and time = %d\r\n",m,temp.timestamp,NO_INSERT);
-		input[0] = ((temp.timestamp & (63 << 6))>>6)/10 + '0';
-		input[1] = ((temp.timestamp & (63 << 6))>>6)%10 + '0';
-		input[2] = ':';
-		input[3] = (temp.timestamp & 63)/10 + '0';
-		input[4] = (temp.timestamp & 63)%10 + '0';
-		input[5] = '\r';
+		if (transmitTele){
+			m = telemetry_storage_read_cur(&temp);
+			vDebugPrint(Comms_TaskToken,"m = %d and time = %d\r\n",m,temp.timestamp,NO_INSERT);
+			input[0] = ((temp.timestamp & (63 << 6))>>6)/10 + '0';
+			input[1] = ((temp.timestamp & (63 << 6))>>6)%10 + '0';
+			input[2] = ':';
+			input[3] = (temp.timestamp & 63)/10 + '0';
+			input[4] = (temp.timestamp & 63)%10 + '0';
+			input[5] = '\r';
 
-		for (i = 0; i < 15; i++ ){
-			if (i > 9){
-				input[6+i*6] = i - 10 +'A';
-			} else {
-				input[6+i*6] = i+'0';
+			for (i = 0; i < 15; i++ ){
+				if (i > 9){
+					input[6+i*6] = i - 10 +'A';
+				} else {
+					input[6+i*6] = i+'0';
+				}
+				input[6+i*6+1] = ':';
+				input[6+i*6+2] = temp.values[i+30]/100+'0';
+				input[6+i*6+3] = (temp.values[i+30]/10)%10+'0';
+				input[6+i*6+4] = temp.values[i+30]%10+'0';
+				input[6+i*6+5] = '\r';
 			}
-			input[6+i*6+1] = ':';
-			input[6+i*6+2] = temp.values[i+30]/100+'0';
-			input[6+i*6+3] = (temp.values[i+30]/10)%10+'0';
-			input[6+i*6+4] = temp.values[i+30]%10+'0';
-			input[6+i*6+5] = '\r';
+
+			present.srcSize = 95;
+			present.src = input;
+			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
+			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
+
+			present.route.dest.callSignSize = 6;
+			present.route.src.callSignSize = 6;
+			present.route.dest.ssid = 1;
+			present.route.src.ssid = 1;
+			present.route.repeats  = NULL;
+			present.route.totalRepeats = 0;
+			present.route.type = Response;
+			present.presState = stateless;
+			present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
+			present.packetCnt = 0;
+			present.nxtIndex = 0;
+			present.mode = unconnected;
+			present.completed = false;
+
+			vSetToken(Comms_TaskToken);
+			actual_size = 128;
+			memset (actual, 0, 128);
+			ax25Entry (&present, actual, &actual_size );
+
+			vDebugPrint(Comms_TaskToken, "%d, %33x\n\r",actual_size ,actual, NO_INSERT);
+			// TX and modem will be chosen by GS
+
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
 		}
-
-		present.srcSize = 95;
-		present.src = input;
-		memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
-		memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
-
-		present.route.dest.callSignSize = 6;
-		present.route.src.callSignSize = 6;
-		present.route.dest.ssid = 1;
-		present.route.src.ssid = 1;
-		present.route.repeats  = NULL;
-		present.route.totalRepeats = 0;
-		present.route.type = Response;
-		present.presState = stateless;
-		present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
-		present.packetCnt = 0;
-		present.nxtIndex = 0;
-		present.mode = unconnected;
-		present.completed = false;
-
-		vSetToken(Comms_TaskToken);
-		actual_size = 128;
-		memset (actual, 0, 128);
-		ax25Entry (&present, actual, &actual_size );
-
-		vDebugPrint(Comms_TaskToken, "%d, %33x\n\r",actual_size ,actual, NO_INSERT);
-		// TX and modem will be chosen by GS
-
-		Comms_Modem_Write_Str(actual, actual_size);
-		modem_takeSemaphore();
-		Comms_Modem_Write_Str(actual, actual_size);
-		modem_takeSemaphore();
-
 
 		vDebugPrint(Comms_TaskToken,"SP %d EP %d\r\n",DTMF_BUFF_SP,DTMF_BUFF_EP,NO_INSERT);
 
@@ -199,11 +204,12 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 		vDebugPrint(Comms_TaskToken,"T\r\n",NO_INSERT,NO_INSERT,NO_INSERT);
 
 		//now beacon
-		switching_OPMODE(DEVICE_MODE);
-		switching_TX_Device(BEACON);
+		if (transmitBeacon){
+			switching_OPMODE(DEVICE_MODE);
+			switching_TX_Device(BEACON);
 
-		vDebugPrint(Comms_TaskToken, "Finished setup switching TX device, transmit for %d ms\n\r", TRANSMISSION_TIME ,0, 0);
-
+			vDebugPrint(Comms_TaskToken, "Finished setup switching TX device, transmit for %d ms\n\r", TRANSMISSION_TIME ,0, 0);
+		}
 		vSleep( TRANSMISSION_TIME );
 		//turn off beacon
 		switching_TX_Device(AFSK_1);

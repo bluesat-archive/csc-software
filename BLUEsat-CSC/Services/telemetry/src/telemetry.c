@@ -88,7 +88,7 @@ telemetry_sensor_store(int interface, struct telem_storage_entry_t *entry)
         baseIndex += telemInterfaceSensorCount[interface];
     }
 
-    for (i = 0; i < 5 /* telemInterfaceSensorCount[interface] */; i++) {
+    for (i = 0; i < telemInterfaceSensorCount[interface]; i++) {
         curSensor = (char *)telemetry_sensor_map[interface][i];
         for (j = 0; j < 8; j++) {
             vDebugPrint(telemTaskToken, "%d ", telemetry_sensor_map[interface][i][j], NO_INSERT, NO_INSERT);
