@@ -196,7 +196,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
     /* Set up temperature sensor semaphore. */
     telem_core_semph_create();
     /* Set up power monitor semaphore. */
-    //power_mon_core_semph_create();
+    power_mon_core_semph_create();
     telemetry_storage_reset();
     telemetry_storage_init();
 
