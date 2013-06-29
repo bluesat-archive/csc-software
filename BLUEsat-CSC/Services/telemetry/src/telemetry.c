@@ -32,7 +32,7 @@
 #define DEF_SWEEP_TIME                  2000 / portTICK_RATE_MS /* 20 seconds. */
 
 /* Telemetry interface sensor count definition. */
-static unsigned int telemInterfaceSensorCount[] = {10, 10, 10, 9};
+static unsigned int telemInterfaceSensorCount[] = {9, 8, 10, 9};
 
 TaskToken telemTaskToken;
 static xSemaphoreHandle telemMutex;
@@ -140,13 +140,13 @@ telemetry_sensor_poll(void)
                 NO_INSERT, NO_INSERT);
 
     /* Read all data and store into the storage. */
-    //telemetry_sensor_store(0, &entry);
-    //telemetry_sensor_store(1, &entry);
-    //telemetry_sensor_store(2, &entry);
+    telemetry_sensor_store(0, &entry);
+    telemetry_sensor_store(1, &entry);
+    telemetry_sensor_store(2, &entry); /* Tray 2. */
     telemetry_sensor_store(3, &entry);
 
     /* Read power monitor data. */
-    power_monitor_sweep(BUS1, &(entry.voltages[0]), &(entry.currents[0]));
+    //power_monitor_sweep(BUS1, &(entry.voltages[0]), &(entry.currents[0]));
 
     /* Calculate timestamp. */
     /* Timestamp format. */
@@ -158,7 +158,7 @@ telemetry_sensor_poll(void)
     vDebugPrint(telemTaskToken, "timestamp is %d\r\n", entry.timestamp, 0, 0);
     vDebugPrint(telemTaskToken, "TELEM | cur addr is %d...\n\r", (int)cur, 0, 0);
 
-    power_monitor_print(&(entry.voltages[0]), &(entry.currents[0]));
+    //power_monitor_print(&(entry.voltages[0]), &(entry.currents[0]));
     /* Store the data in memory. */
     telemetry_storage_write(&entry);
 }
@@ -196,7 +196,7 @@ static portTASK_FUNCTION(vTelemTask, pvParameters)
     /* Set up temperature sensor semaphore. */
     telem_core_semph_create();
     /* Set up power monitor semaphore. */
-    power_mon_core_semph_create();
+    //power_mon_core_semph_create();
     telemetry_storage_reset();
     telemetry_storage_init();
 
