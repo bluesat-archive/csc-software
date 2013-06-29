@@ -17,6 +17,9 @@
 #include "task.h"
 #include "queue.h"
 #include "command.h"
+#include "i2c.h"
+#include "semphr.h"
+#include "switching.h"
 
 #define CMD_Q_SIZE			1
 #define CMD_PUSH_BLK_TIME	0
@@ -27,13 +30,29 @@
 #define REPEATER_MODE 2
 #define LOOPBACK_MODE 3
 #define COMMAND_MODE 4
+#define RX_1	5
+#define RX_2	6
+#define TX_1	7
+#define TX_2	8
+#define RESET   9
+
 
 static xQueueHandle 	xTaskQueueHandles	[NUM_TASKID];
 static struct taskToken TaskTokens			[NUM_TASKID];
 static xSemaphoreHandle	TaskSemphrs			[NUM_TASKID];
 static xTaskHandle 		TaskHandles			[NUM_TASKID];
 
+#define INIT_SEMAPHORE_BLOCK_TIME      (portTICK_RATE_MS * 5)
+#define SLAVE_ADDRESS_PREFIX 32
+
+static xSemaphoreHandle initMutex = NULL;
+
 static portTASK_FUNCTION(vCommandTask, pvParameters);
+static void setupPortExpander (unsigned int bus);
+static void reset (unsigned int bus);
+
+extern int transmitTele;
+extern int transmitBeacon;
 
 void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 {
@@ -55,6 +74,8 @@ void vCommand_Init(unsigned portBASE_TYPE uxPriority)
 				 vCommandTask);
 
 	vActivateQueue(&TaskTokens[TASK_COMMAND], CMD_Q_SIZE);
+	vSemaphoreCreateBinary(initMutex);
+
 }
 
 static portTASK_FUNCTION(vCommandTask, pvParameters)
@@ -63,6 +84,7 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
 	signed portBASE_TYPE xResult;
 	MessagePacket incoming_packet;
 
+	setupPortExpander(BUS0);
 	for ( ; ; )
 	{
 		xResult = xQueueReceive(xTaskQueueHandles[TASK_COMMAND], &incoming_packet, portMAX_DELAY);
@@ -75,18 +97,39 @@ static portTASK_FUNCTION(vCommandTask, pvParameters)
             {
             	switch (incoming_packet.Data){
 					case TELE_MODE:
-
+						switching_OPMODE(DEVICE_MODE);
+						transmitTele = 1;
+						transmitBeacon = 1;
 						break;
 					case REPEATER_MODE:
-
+						transmitTele = 0;
+						transmitBeacon = 0;
 						break;
 					case LOOPBACK_MODE:
-
+						switching_OPMODE(REPEATER_MODE);
+						transmitTele = 0;
+						transmitBeacon = 0;
 						break;
 					case COMMAND_MODE:
-
+						switching_OPMODE(DEVICE_MODE);
+						transmitTele = 0;
+						transmitBeacon = 1;
 						break;
-
+					case RX_1:
+						switching_RX(RX_1);
+						break;
+					case RX_2:
+						switching_RX(RX_2);
+						break;
+					case TX_1:
+						switching_TX(TX_1);
+						break;
+					case TX_2:
+						switching_TX(TX_2);
+						break;
+					case RESET:
+						reset(BUS0);
+						break;
             	}
                 // It was a message from the DTMF interrupt handler! :3
             }
@@ -316,3 +359,230 @@ void vSleep(unsigned portSHORT usTimeMS)
 		}
 	}
 #endif
+
+static void setupPortExpander (unsigned int bus){
+	int isValid = 1;
+	char command[2];
+	unsigned int length;
+	portBASE_TYPE returnVal;
+
+//chip U8
+	command[0] = 0x00;
+	command[1] = (0x1<<6)+(0x1<<7);
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, NULL, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+	command[0] = 0x01;
+	command[1] = ~((0x1<<6)+(0x1<<7));
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+	            (char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+	command[0] = 0x12;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+	            (char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+	            (char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U9
+	command[0] = 0x00;
+	command[1] = (0x1<<0)+(0x1<<1)+(0x1<<2)+(0x1<<3);
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, NULL, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+	command[0] = 0x01;
+	command[1] = (0x1<<2)+(0x1<<3)+(0x1<<4)+(0x1<<5);
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+	command[0] = 0x12;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U12
+	command[0] = 0x00;
+	command[1] = (0x1<<0)+(0x1<<1)+(0x1<<2)+(0x1<<3);
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, NULL, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+	command[0] = 0x01;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+	command[0] = 0x12;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+}
+
+static void reset (unsigned int bus){
+	int isValid = 1;
+	char command[2];
+	unsigned int length;
+	portBASE_TYPE returnVal;
+
+//chip U8
+
+	command[0] = 0x12;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+	            (char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+	            (char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U9
+	command[0] = 0x12;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U12
+	command[0] = 0x12;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0x00;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U8
+
+	command[0] = 0x12;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 0, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U9
+	command[0] = 0x12;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 1, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+//chip U12
+	command[0] = 0x12;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+
+
+	command[0] = 0x13;
+	command[1] = 0xFF;
+	length = 2;
+
+	returnVal = Comms_I2C_Master(SLAVE_ADDRESS_PREFIX + 2, I2C_WRITE,
+				(char*)&isValid, (char*)command, (short*)&length, initMutex, bus);
+	xSemaphoreTake(initMutex, INIT_SEMAPHORE_BLOCK_TIME);
+}
