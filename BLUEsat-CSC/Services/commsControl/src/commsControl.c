@@ -97,7 +97,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			input[7] = 'X';
 			input[8] = ':';
 			input[9] = '\r';
-			for (i = 0; i < 6; i++ ){
+			for (i = 0; i < 7; i++ ){
 				if (i > 9){
 					input[10+i*7] = i - 10 +'A';
 				} else {
@@ -115,7 +115,7 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 				input[10+i*7+6] = '\r';
 			}
 
-			present.srcSize = 52;
+			present.srcSize = 59;
 			present.src = input;
 			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
 			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
@@ -164,8 +164,8 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 					input[15+i*7] = i+'0';
 				}
 				input[15+i*7+1] = ':';
-				input[15+i*7+2] = temp.values[i+6]/20+'0';
-				input[15+i*7+3] = (temp.values[i+6]/2)%10+'0';
+				input[15+i*7+2] = temp.values[i+7]/20+'0';
+				input[15+i*7+3] = (temp.values[i+7]/2)%10+'0';
 				input[15+i*7+4] = '.';
 				if (temp.values[i]%2 == 0){
 					input[15+i*7+5] = '0';
@@ -197,8 +197,8 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 					input[11+i*7] = i+'0';
 				}
 				input[11+i*7+1] = ':';
-				input[11+i*7+2] = temp.values[i+15]/20+'0';
-				input[11+i*7+3] = (temp.values[i+15]/2)%10+'0';
+				input[11+i*7+2] = temp.values[i+16]/20+'0';
+				input[11+i*7+3] = (temp.values[i+16]/2)%10+'0';
 				input[11+i*7+4] = '.';
 				if (temp.values[i]%2 == 0){
 					input[11+i*7+5] = '0';
@@ -229,8 +229,8 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 					input[10+i*7] = i+'0';
 				}
 				input[10+i*7+1] = ':';
-				input[10+i*7+2] = temp.values[i+25]/20+'0';
-				input[10+i*7+3] = (temp.values[i+25]/2)%10+'0';
+				input[10+i*7+2] = temp.values[i+26]/20+'0';
+				input[10+i*7+3] = (temp.values[i+26]/2)%10+'0';
 				input[10+i*7+4] = '.';
 				if (temp.values[i]%2 == 0){
 					input[10+i*7+5] = '0';
