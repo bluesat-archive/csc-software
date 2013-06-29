@@ -93,21 +93,28 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			input[3] = (temp.timestamp & 63)/10 + '0';
 			input[4] = (temp.timestamp & 63)%10 + '0';
 			input[5] = '\r';
-
-			for (i = 0; i < 15; i++ ){
+			input[6] = 'B';
+			input[7] = 'a';
+			input[8] = 't';
+			input[9] = 't';
+			input[10] = 'e';
+			input[11] = 'r';
+			input[12] = 'y';
+			input[13] = ':';
+			input[14] = '\r';
+			for (i = 0; i < 9; i++ ){
 				if (i > 9){
-					input[6+i*6] = i - 10 +'A';
+					input[15+i*6] = i - 10 +'A';
 				} else {
-					input[6+i*6] = i+'0';
+					input[15+i*6] = i+'0';
 				}
-				input[6+i*6+1] = ':';
-				input[6+i*6+2] = temp.values[i+30]/100+'0';
-				input[6+i*6+3] = (temp.values[i+30]/10)%10+'0';
-				input[6+i*6+4] = temp.values[i+30]%10+'0';
-				input[6+i*6+5] = '\r';
+				input[15+i*6+1] = ':';
+				input[15+i*6+2] = temp.values[i+9]/100+'0';
+				input[15+i*6+3] = (temp.values[i+9]/10)%10+'0';
+				input[15+i*6+4] = temp.values[i+9]%10+'0';
+				input[15+i*6+5] = '\r';
 			}
-
-			present.srcSize = 95;
+			present.srcSize = 68;
 			present.src = input;
 			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
 			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
