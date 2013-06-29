@@ -93,28 +93,29 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			input[3] = (temp.timestamp & 63)/10 + '0';
 			input[4] = (temp.timestamp & 63)%10 + '0';
 			input[5] = '\r';
-			input[6] = 'B';
-			input[7] = 'a';
-			input[8] = 't';
-			input[9] = 't';
-			input[10] = 'e';
-			input[11] = 'r';
-			input[12] = 'y';
-			input[13] = ':';
-			input[14] = '\r';
-			for (i = 0; i < 9; i++ ){
+			input[6] = 'T';
+			input[7] = 'X';
+			input[8] = ':';
+			input[9] = '\r';
+			for (i = 0; i < 6; i++ ){
 				if (i > 9){
-					input[15+i*6] = i - 10 +'A';
+					input[10+i*7] = i - 10 +'A';
 				} else {
-					input[15+i*6] = i+'0';
+					input[10+i*7] = i+'0';
 				}
-				input[15+i*6+1] = ':';
-				input[15+i*6+2] = temp.values[i+9]/100+'0';
-				input[15+i*6+3] = (temp.values[i+9]/10)%10+'0';
-				input[15+i*6+4] = temp.values[i+9]%10+'0';
-				input[15+i*6+5] = '\r';
+				input[10+i*7+1] = ':';
+				input[10+i*7+2] = temp.values[i]/20+'0';
+				input[10+i*7+3] = (temp.values[i]/2)%10+'0';
+				input[10+i*7+4] = '.';
+				if (temp.values[i]%2 == 0){
+					input[10+i*7+5] = '0';
+				} else {
+					input[10+i*7+5] = '5';
+				}
+				input[10+i*7+6] = '\r';
 			}
-			present.srcSize = 68;
+
+			present.srcSize = 52;
 			present.src = input;
 			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
 			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
@@ -138,11 +139,113 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			memset (actual, 0, 128);
 			ax25Entry (&present, actual, &actual_size );
 
-			vDebugPrint(Comms_TaskToken, "%d, %33x\n\r",actual_size ,actual, NO_INSERT);
+			//vDebugPrint(Comms_TaskToken, "%d, %33x\n\r",actual_size ,actual, NO_INSERT);
 			// TX and modem will be chosen by GS
 
 			Comms_Modem_Write_Str(actual, actual_size);
 			modem_takeSemaphore();
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
+
+			input[6] = 'B';
+			input[7] = 'a';
+			input[8] = 't';
+			input[9] = 't';
+			input[10] = 'e';
+			input[11] = 'r';
+			input[12] = 'y';
+			input[13] = ':';
+			input[14] = '\r';
+
+			for (i = 0; i < 9; i++ ){
+				if (i > 9){
+					input[15+i*7] = i - 10 +'A';
+				} else {
+					input[15+i*7] = i+'0';
+				}
+				input[15+i*7+1] = ':';
+				input[15+i*7+2] = temp.values[i+6]/20+'0';
+				input[15+i*7+3] = (temp.values[i+6]/2)%10+'0';
+				input[15+i*7+4] = '.';
+				if (temp.values[i]%2 == 0){
+					input[15+i*7+5] = '0';
+				} else {
+					input[15+i*7+5] = '5';
+				}
+				input[15+i*7+6] = '\r';
+			}
+
+			present.srcSize = 78;
+			present.src = input;
+			actual_size = 128;
+			memset (actual, 0, 128);
+			ax25Entry (&present, actual, &actual_size );
+
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
+
+			input[6] = 'C';
+			input[7] = 'S';
+			input[8] = 'C';
+			input[9] = ':';
+			input[10] = '\r';
+
+			for (i = 0; i < 10; i++ ){
+				if (i > 9){
+					input[11+i*7] = i - 10 +'A';
+				} else {
+					input[11+i*7] = i+'0';
+				}
+				input[11+i*7+1] = ':';
+				input[11+i*7+2] = temp.values[i+15]/20+'0';
+				input[11+i*7+3] = (temp.values[i+15]/2)%10+'0';
+				input[11+i*7+4] = '.';
+				if (temp.values[i]%2 == 0){
+					input[11+i*7+5] = '0';
+				} else {
+					input[11+i*7+5] = '5';
+				}
+				input[11+i*7+6] = '\r';
+			}
+
+			present.srcSize = 81;
+			present.src = input;
+			actual_size = 128;
+			memset (actual, 0, 128);
+			ax25Entry (&present, actual, &actual_size );
+
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
+
+			input[6] = 'R';
+			input[7] = 'X';
+			input[8] = ':';
+			input[9] = '\r';
+
+			for (i = 0; i < 9; i++ ){
+				if (i > 9){
+					input[10+i*7] = i - 10 +'A';
+				} else {
+					input[10+i*7] = i+'0';
+				}
+				input[10+i*7+1] = ':';
+				input[10+i*7+2] = temp.values[i+25]/20+'0';
+				input[10+i*7+3] = (temp.values[i+25]/2)%10+'0';
+				input[10+i*7+4] = '.';
+				if (temp.values[i]%2 == 0){
+					input[10+i*7+5] = '0';
+				} else {
+					input[10+i*7+5] = '5';
+				}
+				input[10+i*7+6] = '\r';
+			}
+
+			present.srcSize = 73;
+			present.src = input;
+			actual_size = 128;
+			memset (actual, 0, 128);
+			ax25Entry (&present, actual, &actual_size );
+
 			Comms_Modem_Write_Str(actual, actual_size);
 			modem_takeSemaphore();
 		}
