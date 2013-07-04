@@ -32,7 +32,7 @@
 #define DEF_SWEEP_TIME                  2000 / portTICK_RATE_MS /* 20 seconds. */
 
 /* Telemetry interface sensor count definition. */
-static unsigned int telemInterfaceSensorCount[] = {9, 8, 10, 9};
+static unsigned int telemInterfaceSensorCount[] = {7, 9, 10, 9};
 
 TaskToken telemTaskToken;
 static xSemaphoreHandle telemMutex;
