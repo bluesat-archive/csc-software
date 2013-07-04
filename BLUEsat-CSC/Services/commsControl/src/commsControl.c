@@ -146,7 +146,12 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 			modem_takeSemaphore();
 			Comms_Modem_Write_Str(actual, actual_size);
 			modem_takeSemaphore();
-
+			input[0] = ((temp.timestamp & (63 << 6))>>6)/10 + '0';
+			input[1] = ((temp.timestamp & (63 << 6))>>6)%10 + '0';
+			input[2] = ':';
+			input[3] = (temp.timestamp & 63)/10 + '0';
+			input[4] = (temp.timestamp & 63)%10 + '0';
+			input[5] = '\r';
 			input[6] = 'B';
 			input[7] = 'a';
 			input[8] = 't';
@@ -177,13 +182,38 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 
 			present.srcSize = 78;
 			present.src = input;
+			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
+			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
+
+			present.route.dest.callSignSize = 6;
+			present.route.src.callSignSize = 6;
+			present.route.dest.ssid = 1;
+			present.route.src.ssid = 1;
+			present.route.repeats  = NULL;
+			present.route.totalRepeats = 0;
+			present.route.type = Response;
+			present.presState = stateless;
+			present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
+			present.packetCnt = 0;
+			present.nxtIndex = 0;
+			present.mode = unconnected;
+			present.completed = false;
+
 			actual_size = 128;
 			memset (actual, 0, 128);
 			ax25Entry (&present, actual, &actual_size );
 
 			Comms_Modem_Write_Str(actual, actual_size);
 			modem_takeSemaphore();
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
 
+			input[0] = ((temp.timestamp & (63 << 6))>>6)/10 + '0';
+			input[1] = ((temp.timestamp & (63 << 6))>>6)%10 + '0';
+			input[2] = ':';
+			input[3] = (temp.timestamp & 63)/10 + '0';
+			input[4] = (temp.timestamp & 63)%10 + '0';
+			input[5] = '\r';
 			input[6] = 'C';
 			input[7] = 'S';
 			input[8] = 'C';
@@ -210,13 +240,38 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 
 			present.srcSize = 81;
 			present.src = input;
+			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
+			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
+
+			present.route.dest.callSignSize = 6;
+			present.route.src.callSignSize = 6;
+			present.route.dest.ssid = 1;
+			present.route.src.ssid = 1;
+			present.route.repeats  = NULL;
+			present.route.totalRepeats = 0;
+			present.route.type = Response;
+			present.presState = stateless;
+			present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
+			present.packetCnt = 0;
+			present.nxtIndex = 0;
+			present.mode = unconnected;
+			present.completed = false;
+
 			actual_size = 128;
 			memset (actual, 0, 128);
 			ax25Entry (&present, actual, &actual_size );
 
 			Comms_Modem_Write_Str(actual, actual_size);
 			modem_takeSemaphore();
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
 
+			input[0] = ((temp.timestamp & (63 << 6))>>6)/10 + '0';
+			input[1] = ((temp.timestamp & (63 << 6))>>6)%10 + '0';
+			input[2] = ':';
+			input[3] = (temp.timestamp & 63)/10 + '0';
+			input[4] = (temp.timestamp & 63)%10 + '0';
+			input[5] = '\r';
 			input[6] = 'R';
 			input[7] = 'X';
 			input[8] = ':';
@@ -242,9 +297,29 @@ static portTASK_FUNCTION(vCommsTask, pvParameters)
 
 			present.srcSize = 73;
 			present.src = input;
+			memcpy (present.route.dest.callSign,"BLUSAT",CALLSIGN_SIZE);
+			memcpy (present.route.src.callSign, "BLUEGS",CALLSIGN_SIZE);
+
+			present.route.dest.callSignSize = 6;
+			present.route.src.callSignSize = 6;
+			present.route.dest.ssid = 1;
+			present.route.src.ssid = 1;
+			present.route.repeats  = NULL;
+			present.route.totalRepeats = 0;
+			present.route.type = Response;
+			present.presState = stateless;
+			present.pid = AX25_PID_NO_LAYER3_PROTOCOL_UI_MODE;
+			present.packetCnt = 0;
+			present.nxtIndex = 0;
+			present.mode = unconnected;
+			present.completed = false;
+
 			actual_size = 128;
 			memset (actual, 0, 128);
 			ax25Entry (&present, actual, &actual_size );
+
+			Comms_Modem_Write_Str(actual, actual_size);
+			modem_takeSemaphore();
 
 			Comms_Modem_Write_Str(actual, actual_size);
 			modem_takeSemaphore();
