@@ -4,9 +4,8 @@ $ make -C scripts
 
 Requires GNU ARM toolchain and perl.
 
-Incremental compilation is currently broken. Some source files are
-modified during compilation, and I wouldn't be surpised if there
-are also dependency issues. Sorry!
+Incremental compilation and/or parallel building is currently
+broken. There are dependency issues. Sorry!
 
 ============
 
@@ -15,7 +14,7 @@ $ ls /dev/ | grep tty
 $ cd csc-software
 $ make -C scripts burn BURN_DEV=/dev/ttyUSB0 (or other device)
 
-Simplest burn device for  CSC >= v2 is a 5V FTDI dongle (NOT 3.3V!!)
+Simplest burn device for CSC >= v2 is a 5V FTDI dongle. (NOT 3.3V!)
 Requires lpc21isp in your path. Ensure CSC is in ISP mode (S1) and
 it has been reset.
 
