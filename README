@@ -1,0 +1,19 @@
+To do a full compile:
+# cd csc-software
+# make -C scripts
+
+Requires GNU ARM toolchain and perl.
+
+Incremental compilation is currently broken. Some source files are modified during compilation, and I wouldn't be surpised if there are also dependency issues. Sorry!
+
+============
+
+To burn to device:
+# ls /dev/ | grep tty
+# cd csc-software
+# make -C scripts burn BURN_DEV=/dev/ttyUSB0 (or other device)
+
+Requires lpc21isp in your path.
+Ensure CSC is in ISP mode (S1) and it has been reset.
+
+
