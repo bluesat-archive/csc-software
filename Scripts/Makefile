@@ -14,8 +14,6 @@
 #----------
 
 default: clean hex
-include ../Burner/lpcburn/Makefile
-
 
 #------------- 
 # Directories
@@ -23,7 +21,6 @@ include ../Burner/lpcburn/Makefile
 CSC_DIR           	=../BLUEsat-CSC
 APP_SOURCE_DIR		=$(CSC_DIR)/Applications
 CORE_SOURCE_DIR		=$(CSC_DIR)/FreeRTOS/post_src
-BURNER_DIR			=../Burner/lpcburn
 BUILDS_DIR			=../Builds
 IMAGE_DIR			=../Dist
 SCRIPTS_DIR			=.
@@ -57,6 +54,8 @@ LINKER_FLAGS=-lgcc -Xlinker -o$(IMAGE_DIR)/csc.elf -Xlinker -M -Xlinker -Map=$(I
 TESTWARNINGS 	=-Wall
 TESTCFLAGS 		=-I$(UNIT_TESTS_DIR) $(patsubst %,-I%,$(subst :, ,$(INC_DIRS))) -DUNIT_TEST
 TESTOUT			=-o $(IMAGE_DIR)/$(<F).exe
+BURN_DEV =/dev/ttyUSB0
+
 #--------------
 # Source files
 #--------------
@@ -159,14 +158,7 @@ runAllTests:
 #-----------
 
 burn:
-	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex /dev/ttyUSB0 115200 14746
-#	$(IMAGE_DIR)/lpc21isp $(IMAGE_DIR)/csc.hex com5 115200 14746
-	
-burner:
-	$(MAKE) --directory=$(BURNER_DIR) -f Makefile lpc21isp
-	
-burnerclean:
-	$(MAKE) --directory=$(BURNER_DIR) -f Makefile lpcclean
+	lpc21isp $(IMAGE_DIR)/csc.hex $(BURN_DEV) 115200 14746
 	
 keys: 
 	perl $(SCRIPTS_DIR)/genDtmfKeys.pl > $(APP_SOURCE_DIR)/Dtmf_keys.c
