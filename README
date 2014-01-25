@@ -1,6 +1,6 @@
 To do a full compile:
 $ cd csc-software
-$ make -C scripts
+$ make -C Scripts
 
 Requires GNU ARM toolchain and perl.
 
@@ -12,7 +12,7 @@ broken. There are dependency issues. Sorry!
 To burn to device:
 $ ls /dev/ | grep tty
 $ cd csc-software
-$ make -C scripts burn BURN_DEV=/dev/ttyUSB0 (or other device)
+$ make -C Scripts burn BURN_DEV=/dev/ttyUSB0 (or other device)
 
 Simplest burn device for CSC >= v2 is a 5V FTDI dongle. (NOT 3.3V!)
 Requires lpc21isp in your path. Ensure CSC is in ISP mode (S1) and
